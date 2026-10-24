@@ -291,7 +291,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     <input
                       type="text"
                       disabled
-                      value={`${currentUserProfile?.fullName || 'Logged-in Student'} (${currentUserProfile?.email || 'me@oakridge.edu'})`}
+                      value={`${currentUserProfile?.fullName || 'Logged-in Student'} (${currentUserProfile?.email || 'student@school.edu'})`}
                       className="w-full px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50 text-xs text-slate-400"
                     />
                   </div>

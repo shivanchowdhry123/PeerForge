@@ -56,7 +56,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h3 className="text-base font-bold text-white font-display">
-                {mode === 'signin' ? 'OPG World School Sign In' : 'Join OPG World School PeerForge'}
+                {mode === 'signin' ? 'Student Sign In' : 'Join PeerForge'}
               </h3>
               <p className="text-xs text-slate-400">Internal Talent &amp; Mentorship Network</p>
             </div>
@@ -117,7 +117,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">OPG World School Email</label>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Student / School Email</label>
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -125,7 +125,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="student@opgworldschool.com"
+                placeholder="student@school.edu"
                 className="w-full pl-9 pr-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
               />
             </div>

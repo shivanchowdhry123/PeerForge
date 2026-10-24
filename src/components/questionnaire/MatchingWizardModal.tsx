@@ -143,7 +143,7 @@ export const MatchingWizardModal: React.FC<MatchingWizardModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-bold text-white font-display">Interactive Talent Matcher</h3>
-              <p className="text-xs text-slate-400">Oakridge Academy Peer Recommendation Engine</p>
+              <p className="text-xs text-slate-400">Smart Peer Recommendation Engine</p>
             </div>
           </div>
           <button

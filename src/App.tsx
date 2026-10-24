@@ -131,7 +131,7 @@ function MainApp() {
           senderName: currentUserProfile.fullName,
           senderAvatar: currentUserProfile.avatarUrl,
           title: `Skill Endorsement Received`,
-          message: `${currentUserProfile.fullName} endorsed your skills on OPG World School PeerForge!`,
+          message: `${currentUserProfile.fullName} endorsed your skills on PeerForge!`,
           type: 'endorsement',
           linkTab: 'directory',
           targetId: updated.id

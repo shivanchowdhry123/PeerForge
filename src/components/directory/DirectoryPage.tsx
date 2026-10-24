@@ -79,7 +79,7 @@ export const DirectoryPage: React.FC<DirectoryPageProps> = ({
           <div className="flex items-center gap-2 mb-1">
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-950 text-indigo-300 border border-indigo-800/60 flex items-center gap-1">
               <Users className="w-3.5 h-3.5" />
-              OPG World School Directory
+              Student Directory
             </span>
             {profiles.length > 0 && (
               <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-300 border border-emerald-800/50 flex items-center gap-1">
@@ -288,7 +288,7 @@ export const DirectoryPage: React.FC<DirectoryPageProps> = ({
             </h3>
             <p className="text-xs text-slate-400 leading-relaxed">
               {profiles.length === 0
-                ? 'Be the very first real Oakridge student to register your account, list your classes, and share your skills!'
+                ? 'Be the very first student to register your account, list your classes, and share your skills!'
                 : 'Try adjusting your search query, or clear your department/grade filters.'}
             </p>
           </div>

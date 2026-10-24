@@ -40,7 +40,7 @@ export const AboutUsPage: React.FC = () => {
       name: 'Sophia Montgomery',
       role: 'Head of Student Outreach & Editorial',
       grade: 'Grade 11',
-      bio: 'Editor-in-Chief of The Oakridge Chronicle. Leads student mentor orientation, honor code workshops, and humanities curriculum integration.',
+      bio: 'Editor-in-Chief of the Student Newspaper. Leads student mentor orientation, honor code workshops, and humanities curriculum integration.',
       avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80'
     },
     {
@@ -69,7 +69,7 @@ export const AboutUsPage: React.FC = () => {
       <section className="space-y-6 max-w-4xl mx-auto text-center">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-950/80 text-indigo-300 border border-indigo-700/50">
           <Compass className="w-3.5 h-3.5" />
-          The Story Behind OPG World School PeerForge
+          The Story Behind PeerForge
         </div>
 
         <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight font-display">
@@ -77,7 +77,7 @@ export const AboutUsPage: React.FC = () => {
         </h1>
 
         <p className="text-base sm:text-lg text-slate-300 leading-relaxed font-normal">
-          In early 2024, students across OPG World School faced a common challenge: with students across Classes 1-12 and alumni, finding peer study partners, robotics collaborators, and verified tutors was fragmented.
+          In early 2024, students faced a common challenge: across Classes 1-12 and alumni, finding peer study partners, robotics collaborators, and verified tutors was fragmented.
         </p>
 
         <p className="text-sm text-slate-400 leading-relaxed">
@@ -93,7 +93,7 @@ export const AboutUsPage: React.FC = () => {
           </div>
           <h3 className="text-base font-bold text-white font-display">Democratized Mentorship</h3>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Tutoring should never be a luxury. Every single student at OPG World School has unlimited access to peer assistance, study buddies, and academic coaching.
+            Tutoring should never be a luxury. Every single student has unlimited access to peer assistance, study buddies, and academic coaching.
           </p>
         </div>
 
@@ -125,7 +125,7 @@ export const AboutUsPage: React.FC = () => {
             Meet the Team &amp; Advisors
           </h2>
           <p className="text-xs sm:text-sm text-slate-400">
-            The student leaders and faculty sponsors steering the OPG World School Talent Exchange.
+            The student leaders and faculty sponsors steering the PeerForge Talent Exchange.
           </p>
         </div>
 
@@ -172,12 +172,12 @@ export const AboutUsPage: React.FC = () => {
           <div className="space-y-3 pt-2 text-xs text-slate-300">
             <div className="flex items-center gap-3">
               <MapPin className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-              <span>OPG World School Campus — Student Center &amp; Library Commons</span>
+              <span>Campus — Student Center &amp; Library Commons</span>
             </div>
             <div className="flex items-center gap-3">
               <Mail className="w-4 h-4 text-indigo-400 flex-shrink-0" />
-              <a href="mailto:peerforge@opgworldschool.com" className="hover:underline text-indigo-300">
-                peerforge@opgworldschool.com
+              <a href="mailto:contact@peerforge.edu" className="hover:underline text-indigo-300">
+                contact@peerforge.edu
               </a>
             </div>
             <div className="flex items-center gap-3">
@@ -218,13 +218,13 @@ export const AboutUsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">OPG World School Email</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Student / School Email</label>
                 <input
                   type="email"
                   required
                   value={contactEmail}
                   onChange={(e) => setContactEmail(e.target.value)}
-                  placeholder="student@opgworldschool.com"
+                  placeholder="student@school.edu"
                   className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                 />
               </div>

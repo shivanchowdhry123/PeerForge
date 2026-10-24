@@ -82,7 +82,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-950/80 text-indigo-300 border border-indigo-700/50 shadow-sm">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              OPG World School Official Internal Talent Network
+              Official Student Talent &amp; Mentorship Network
             </span>
             <span className="hidden sm:inline-flex items-center gap-1 text-xs text-slate-400">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -203,7 +203,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           <div>
             <div className="flex items-center gap-2 text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-1">
               <Award className="w-4 h-4" />
-              Verified OPG World School Students
+              Verified Students &amp; Tutors
             </div>
             <h2 className="text-2xl font-bold text-white font-display">
               Featured Registered Peers
@@ -224,7 +224,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               <GraduationCap className="w-7 h-7" />
             </div>
             <div className="max-w-md mx-auto space-y-1.5">
-              <h3 className="text-lg font-bold text-white font-display">OPG World School Student Registration is Open</h3>
+              <h3 className="text-lg font-bold text-white font-display">Student Registration is Open</h3>
               <p className="text-xs sm:text-sm text-slate-400">
                 All mock profiles have been purged. Be the first real student to register your skills, courses, and study hall availability.
               </p>
@@ -385,7 +385,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         <div className="p-8 sm:p-12 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-8">
           <div className="max-w-2xl mx-auto space-y-2">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white font-display">
-              Designed for 1,000+ Oakridge Students
+              Designed for 1,000+ Students
             </h2>
             <p className="text-xs sm:text-sm text-slate-400">
               A friction-free workflow that pairs students based on coursework, availability, and verified skill endorsements.

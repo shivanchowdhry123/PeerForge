@@ -1,6 +1,6 @@
 {
   "name": "PeerForge - OPG World School Talent Directory",
-  "description": "Internal talent directory and peer matching network for OPG World School students, tutors, club leaders, and project collaborators.",
+  "description": "Internal talent directory and peer matching network for students, tutors, club leaders, and project collaborators.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

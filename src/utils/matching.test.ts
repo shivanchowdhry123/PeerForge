@@ -8,7 +8,7 @@ const mockProfileA: StudentProfile = {
   userId: 'u1',
   fullName: 'Elena Rostova',
   handle: '@elena_calc',
-  email: 'elena.rostova@oakridge.edu',
+  email: 'elena.rostova@school.edu',
   avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb',
   grade: 'Grade 12',
   department: 'STEM & Coding',
@@ -24,7 +24,7 @@ const mockProfileA: StudentProfile = {
   tutoringSubjects: ['Calculus BC', 'Precalculus', 'Physics C'],
   seekingHelpWith: ['AP Literature'],
   contactMethods: {
-    email: 'elena.rostova@oakridge.edu',
+    email: 'elena.rostova@school.edu',
     campusLocation: 'Math Wing Room 204'
   },
   totalSessionsCompleted: 38,
@@ -37,7 +37,7 @@ const mockProfileB: StudentProfile = {
   userId: 'u2',
   fullName: 'Marcus Vance',
   handle: '@marcus_v',
-  email: 'marcus.v@oakridge.edu',
+  email: 'marcus.v@school.edu',
   avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d',
   grade: 'Grade 10',
   department: 'Humanities & Writing',
@@ -52,7 +52,7 @@ const mockProfileB: StudentProfile = {
   tutoringSubjects: ['World History', 'Rhetoric'],
   seekingHelpWith: ['Chemistry'],
   contactMethods: {
-    email: 'marcus.v@oakridge.edu'
+    email: 'marcus.v@school.edu'
   },
   totalSessionsCompleted: 6,
   rating: 4.6,

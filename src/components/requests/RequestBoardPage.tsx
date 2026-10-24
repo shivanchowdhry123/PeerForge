@@ -201,7 +201,7 @@ export const RequestBoardPage: React.FC<RequestBoardPageProps> = ({
             <HelpCircle className="w-12 h-12 text-slate-600 mx-auto mb-3" />
             <h3 className="text-base font-semibold text-white">No requests match your filters</h3>
             <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-              Try adjusting your search criteria, or post a new help request for the Oakridge student body.
+              Try adjusting your search criteria, or post a new help request for the student body.
             </p>
             <button
               onClick={onOpenNewRequest}

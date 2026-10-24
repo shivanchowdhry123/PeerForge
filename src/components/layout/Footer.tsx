@@ -19,11 +19,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               <span className="font-bold text-white tracking-tight font-display text-base">PeerForge</span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
-              OPG World School’s peer talent exchange and student directory. Fostering cross-grade mentorship and academic collaboration across Classes 1-12+, Alumni, and Faculty.
+              A comprehensive peer talent exchange and student directory. Fostering cross-grade mentorship and academic collaboration across Classes 1-12+, Alumni, and Faculty.
             </p>
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>OPG World School Honor Code Compliant</span>
+              <span>Honor Code Compliant</span>
             </div>
           </div>
 
@@ -105,7 +105,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         </div>
 
         <div className="mt-8 pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-          <p>© {new Date().getFullYear()} OPG World School Talent Exchange. Built for students, by students.</p>
+          <p>© {new Date().getFullYear()} PeerForge Student Talent Exchange. Built for students, by students.</p>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
               Crafted with <Heart className="w-3.5 h-3.5 text-rose-500 inline fill-rose-500" /> for peer education

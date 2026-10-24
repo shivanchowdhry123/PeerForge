@@ -303,7 +303,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
                 <div>
                   <h4 className="font-bold text-rose-100 text-sm">Delete Account Permanently?</h4>
                   <p className="text-rose-300 mt-0.5 leading-relaxed">
-                    This action will permanently delete your student profile, skills, and account record from the OPG World School system. This cannot be undone.
+                    This action will permanently delete your student profile, skills, and account record from the system. This cannot be undone.
                   </p>
                 </div>
               </div>

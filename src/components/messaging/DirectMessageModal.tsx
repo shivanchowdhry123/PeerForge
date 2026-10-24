@@ -138,7 +138,7 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
         {/* Safety & Honor Code Banner */}
         <div className="px-4 py-2 bg-slate-950/60 border-b border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-2">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-          <span className="truncate">OPG World School Direct Peer Exchange • Honor Code Protected</span>
+          <span className="truncate">Direct Peer Exchange • Honor Code Protected</span>
         </div>
 
         {/* Chat Messages Body */}

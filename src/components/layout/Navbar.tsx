@@ -68,7 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   PeerForge
                 </span>
                 <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-950 text-indigo-300 border border-indigo-800/60 whitespace-nowrap">
-                  OPG World School
+                  Student Network
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden lg:block truncate">Talent Exchange &amp; Student Directory</p>
@@ -318,7 +318,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           ) : (
             <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-950/60 to-indigo-950/60 border border-emerald-800/40 flex items-center justify-between gap-2">
               <div>
-                <p className="text-xs font-bold text-white">Join OPG World School Network</p>
+                <p className="text-xs font-bold text-white">Join the Student Network</p>
                 <p className="text-[11px] text-slate-300">Create your student profile</p>
               </div>
               <button
