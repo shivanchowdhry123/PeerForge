@@ -1,11 +1,12 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { StudentProfile, RequestTicket, HelpOffer } from '../types';
+import { StudentProfile, RequestTicket, HelpOffer, AppNotification, DirectMessage } from '../types';
 import { INITIAL_PROFILES, INITIAL_REQUESTS } from './seedData';
 
 // Local storage keys
 const STORAGE_KEY_PROFILES = 'peerforge_profiles_v1';
 const STORAGE_KEY_REQUESTS = 'peerforge_requests_v1';
-const STORAGE_KEY_SUPABASE_CONFIG = 'peerforge_supabase_creds';
+const STORAGE_KEY_NOTIFICATIONS = 'peerforge_notifications_v1';
+const STORAGE_KEY_MESSAGES = 'peerforge_messages_v1';
 
 export interface SupabaseConfig {
   url: string;
@@ -13,19 +14,15 @@ export interface SupabaseConfig {
   isCustom: boolean;
 }
 
-// Default fallback or env values
-const DEFAULT_SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL || '';
-const DEFAULT_SUPABASE_ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
-
 export function getStoredSupabaseConfig(): SupabaseConfig {
   return {
-    url: (import.meta as any).env?.VITE_SUPABASE_URL || '',
+    url: (import.meta as any).env?.VITE_SUPABASE_URL || 'https://hgwmksnszoeqztqvvzkg.supabase.co',
     anonKey: (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '',
     isCustom: false
   };
 }
 
-export function saveSupabaseConfig(url: string, anonKey: string): void {
+export function saveSupabaseConfig(_url: string, _anonKey: string): void {
   // Configuration is locked to root environment variables
 }
 
@@ -45,7 +42,7 @@ export function initSupabaseClient(): SupabaseClient | null {
       isConnectedToLiveSupabase = true;
       return supabaseInstance;
     } catch (err) {
-      console.warn('Failed to initialize live Supabase client, falling back to managed offline store:', err);
+      console.warn('Failed to initialize live Supabase client, using live API backend:', err);
       supabaseInstance = null;
       isConnectedToLiveSupabase = false;
     }
@@ -56,7 +53,6 @@ export function initSupabaseClient(): SupabaseClient | null {
   return null;
 }
 
-// Initial setup
 initSupabaseClient();
 
 export function getSupabase(): SupabaseClient | null {
@@ -68,26 +64,25 @@ export function isLiveSupabaseActive(): boolean {
 }
 
 /* =====================================================================
-   DATA REPOSITORY API (Graceful live Supabase with fallback engine)
+   DATA REPOSITORY API (Live Cross-Device Server API + Supabase Mirror)
 ===================================================================== */
 
 export async function fetchAllProfiles(): Promise<StudentProfile[]> {
-  // Read local storage and strictly filter out any mock/sample profiles
-  const stored = localStorage.getItem(STORAGE_KEY_PROFILES);
-  let localRealProfiles: StudentProfile[] = [];
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) {
-        localRealProfiles = parsed.filter((p) => p && p.isRealRegistration === true);
+  // 1. Try server API first (centralized cross-device database)
+  try {
+    const res = await fetch('/api/profiles');
+    if (res.ok) {
+      const serverProfiles: StudentProfile[] = await res.json();
+      if (Array.isArray(serverProfiles)) {
+        localStorage.setItem(STORAGE_KEY_PROFILES, JSON.stringify(serverProfiles));
+        return serverProfiles;
       }
-    } catch {
-      localRealProfiles = [];
     }
+  } catch (err) {
+    // network fallback
   }
-  // Keep local storage strictly real
-  localStorage.setItem(STORAGE_KEY_PROFILES, JSON.stringify(localRealProfiles));
 
+  // 2. Try Supabase if live
   if (isLiveSupabaseActive() && supabaseInstance) {
     try {
       const { data, error } = await supabaseInstance
@@ -95,80 +90,120 @@ export async function fetchAllProfiles(): Promise<StudentProfile[]> {
         .select('*')
         .order('joinedDate', { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        const realFromDb = (data as StudentProfile[]).filter((p) => p && p.isRealRegistration === true);
-        const combined = [...realFromDb];
-        for (const lp of localRealProfiles) {
-          if (!combined.some((cp) => cp.id === lp.id)) {
-            combined.push(lp);
-          }
-        }
-        localStorage.setItem(STORAGE_KEY_PROFILES, JSON.stringify(combined));
-        return combined;
+      if (!error && Array.isArray(data) && data.length > 0) {
+        localStorage.setItem(STORAGE_KEY_PROFILES, JSON.stringify(data));
+        return data as StudentProfile[];
       }
     } catch (err) {
-      console.warn('Supabase query failed, falling back to local dataset', err);
+      console.warn('Supabase query fallback', err);
     }
   }
 
-  return localRealProfiles;
-}
-
-export async function saveProfile(profile: StudentProfile): Promise<StudentProfile> {
-  if (isLiveSupabaseActive() && supabaseInstance) {
-    try {
-      const { error } = await supabaseInstance
-        .from('profiles')
-        .upsert(profile, { onConflict: 'id' });
-      if (error) console.warn('Supabase upsert profile warning:', error.message);
-    } catch (err) {
-      console.warn('Supabase upsert error:', err);
-    }
-  }
-
-  // Always update local cache for instant UI responsiveness
-  const profiles = await fetchAllProfiles();
-  const index = profiles.findIndex((p) => p.id === profile.id);
-  let updated: StudentProfile[];
-  if (index >= 0) {
-    updated = [...profiles];
-    updated[index] = profile;
-  } else {
-    updated = [profile, ...profiles];
-  }
-  localStorage.setItem(STORAGE_KEY_PROFILES, JSON.stringify(updated));
-  return profile;
-}
-
-export async function deleteProfile(profileId: string): Promise<boolean> {
-  if (isLiveSupabaseActive() && supabaseInstance) {
-    try {
-      const { error } = await supabaseInstance
-        .from('profiles')
-        .delete()
-        .eq('id', profileId);
-      if (error) console.warn('Supabase delete profile warning:', error.message);
-    } catch (err) {
-      console.warn('Supabase delete profile error:', err);
-    }
-  }
-
+  // 3. Fallback to local cache
   const stored = localStorage.getItem(STORAGE_KEY_PROFILES);
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) {
+        return parsed.filter((p) => p && p.isRealRegistration === true);
+      }
+    } catch {}
+  }
+
+  return [];
+}
+
+export async function saveProfile(profile: StudentProfile): Promise<StudentProfile> {
+  // 1. Send to server API for live cross-device sync
+  try {
+    await fetch('/api/profiles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile)
+    });
+  } catch (err) {
+    console.warn('Server saveProfile error:', err);
+  }
+
+  // 2. Mirror to Supabase if live
+  if (isLiveSupabaseActive() && supabaseInstance) {
+    try {
+      await supabaseInstance
+        .from('profiles')
+        .upsert(profile, { onConflict: 'id' });
+    } catch (err) {
+      console.warn('Supabase upsert error:', err);
+    }
+  }
+
+  // 3. Update local cache
+  const stored = localStorage.getItem(STORAGE_KEY_PROFILES);
+  let localList: StudentProfile[] = [];
+  if (stored) {
+    try {
+      localList = JSON.parse(stored);
+    } catch {}
+  }
+  const index = localList.findIndex((p) => p.id === profile.id);
+  const updated = index >= 0
+    ? localList.map((p, i) => (i === index ? profile : p))
+    : [profile, ...localList];
+  localStorage.setItem(STORAGE_KEY_PROFILES, JSON.stringify(updated));
+
+  return profile;
+}
+
+export async function deleteProfile(profileId: string): Promise<boolean> {
+  // 1. Delete on server
+  try {
+    await fetch(`/api/profiles/${encodeURIComponent(profileId)}`, {
+      method: 'DELETE'
+    });
+  } catch (err) {
+    console.warn('Server deleteProfile error:', err);
+  }
+
+  // 2. Delete on Supabase if live
+  if (isLiveSupabaseActive() && supabaseInstance) {
+    try {
+      await supabaseInstance
+        .from('profiles')
+        .delete()
+        .eq('id', profileId);
+    } catch (err) {
+      console.warn('Supabase delete profile error:', err);
+    }
+  }
+
+  // 3. Remove from local cache
+  const stored = localStorage.getItem(STORAGE_KEY_PROFILES);
+  if (stored) {
+    try {
+      const parsed: StudentProfile[] = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
         const filtered = parsed.filter((p) => p && p.id !== profileId);
         localStorage.setItem(STORAGE_KEY_PROFILES, JSON.stringify(filtered));
       }
-    } catch (e) {
-      console.warn('Local storage profiles parse error during delete:', e);
-    }
+    } catch {}
   }
   return true;
 }
 
 export async function endorseSkill(profileId: string, skillId: string): Promise<StudentProfile | null> {
+  // 1. Send to server
+  try {
+    const res = await fetch(`/api/profiles/${encodeURIComponent(profileId)}/endorse`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ skillId })
+    });
+    if (res.ok) {
+      const updatedProfile = await res.json();
+      return updatedProfile;
+    }
+  } catch {}
+
+  // 2. Local fallback
   const profiles = await fetchAllProfiles();
   const target = profiles.find((p) => p.id === profileId);
   if (!target) return null;
@@ -189,6 +224,19 @@ export async function endorseSkill(profileId: string, skillId: string): Promise<
 }
 
 export async function fetchAllRequests(): Promise<RequestTicket[]> {
+  // 1. Server API
+  try {
+    const res = await fetch('/api/requests');
+    if (res.ok) {
+      const data: RequestTicket[] = await res.json();
+      if (Array.isArray(data)) {
+        localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(data));
+        return data;
+      }
+    }
+  } catch {}
+
+  // 2. Supabase if live
   if (isLiveSupabaseActive() && supabaseInstance) {
     try {
       const { data, error } = await supabaseInstance
@@ -197,28 +245,22 @@ export async function fetchAllRequests(): Promise<RequestTicket[]> {
         .order('createdAt', { ascending: false });
 
       if (!error && data && data.length > 0) {
+        localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(data));
         return data as RequestTicket[];
       }
-    } catch (err) {
-      console.warn('Supabase requests query failed, falling back to local', err);
-    }
+    } catch {}
   }
 
+  // 3. Local storage fallback
   const stored = localStorage.getItem(STORAGE_KEY_REQUESTS);
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) {
-        // Return only user created requests (non-mock)
-        const realOnly = parsed.filter((r) => r && r.id && !r.isMock);
-        localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(realOnly));
-        return realOnly;
+        return parsed.filter((r) => r && r.id && !r.isMock);
       }
-    } catch {
-      // fallback
-    }
+    } catch {}
   }
-  localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify([]));
   return [];
 }
 
@@ -230,15 +272,25 @@ export async function createRequestTicket(ticket: Omit<RequestTicket, 'id' | 'cr
     offers: []
   };
 
-  if (isLiveSupabaseActive() && supabaseInstance) {
-    try {
-      const { error } = await supabaseInstance.from('requests').insert([newTicket]);
-      if (error) console.warn('Supabase insert request error:', error.message);
-    } catch (err) {
-      console.warn('Supabase request insert error:', err);
-    }
+  // 1. Server API
+  try {
+    await fetch('/api/requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newTicket)
+    });
+  } catch (err) {
+    console.warn('Server createRequestTicket error:', err);
   }
 
+  // 2. Supabase mirror
+  if (isLiveSupabaseActive() && supabaseInstance) {
+    try {
+      await supabaseInstance.from('requests').insert([newTicket]);
+    } catch {}
+  }
+
+  // 3. Local cache
   const requests = await fetchAllRequests();
   const updated = [newTicket, ...requests];
   localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(updated));
@@ -246,15 +298,29 @@ export async function createRequestTicket(ticket: Omit<RequestTicket, 'id' | 'cr
 }
 
 export async function addOfferToRequest(requestId: string, offer: Omit<HelpOffer, 'id' | 'createdAt'>): Promise<RequestTicket | null> {
-  const requests = await fetchAllRequests();
-  const target = requests.find((r) => r.id === requestId);
-  if (!target) return null;
-
   const newOffer: HelpOffer = {
     ...offer,
     id: `off-${Date.now()}`,
     createdAt: new Date().toISOString()
   };
+
+  // 1. Server API
+  try {
+    const res = await fetch(`/api/requests/${encodeURIComponent(requestId)}/offers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newOffer)
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      return updated;
+    }
+  } catch {}
+
+  // 2. Fallback
+  const requests = await fetchAllRequests();
+  const target = requests.find((r) => r.id === requestId);
+  if (!target) return null;
 
   const updatedTicket: RequestTicket = {
     ...target,
@@ -265,9 +331,7 @@ export async function addOfferToRequest(requestId: string, offer: Omit<HelpOffer
   if (isLiveSupabaseActive() && supabaseInstance) {
     try {
       await supabaseInstance.from('requests').update(updatedTicket).eq('id', requestId);
-    } catch (err) {
-      console.warn('Supabase update offer error:', err);
-    }
+    } catch {}
   }
 
   const updatedList = requests.map((r) => (r.id === requestId ? updatedTicket : r));
@@ -276,6 +340,20 @@ export async function addOfferToRequest(requestId: string, offer: Omit<HelpOffer
 }
 
 export async function updateRequestStatus(requestId: string, status: 'Open' | 'In Progress' | 'Resolved'): Promise<RequestTicket | null> {
+  // 1. Server API
+  try {
+    const res = await fetch(`/api/requests/${encodeURIComponent(requestId)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      return updated;
+    }
+  } catch {}
+
+  // 2. Fallback
   const requests = await fetchAllRequests();
   const target = requests.find((r) => r.id === requestId);
   if (!target) return null;
@@ -288,9 +366,7 @@ export async function updateRequestStatus(requestId: string, status: 'Open' | 'I
   if (isLiveSupabaseActive() && supabaseInstance) {
     try {
       await supabaseInstance.from('requests').update({ status }).eq('id', requestId);
-    } catch (err) {
-      console.warn('Supabase update status error:', err);
-    }
+    } catch {}
   }
 
   const updatedList = requests.map((r) => (r.id === requestId ? updatedTicket : r));
@@ -298,16 +374,21 @@ export async function updateRequestStatus(requestId: string, status: 'Open' | 'I
   return updatedTicket;
 }
 
-
 /* =====================================================================
-   NOTIFICATIONS & DIRECT MESSAGING ENGINE
+   NOTIFICATIONS & DIRECT MESSAGING (Cross-Device API)
 ===================================================================== */
-const STORAGE_KEY_NOTIFICATIONS = 'peerforge_notifications_v1';
-const STORAGE_KEY_MESSAGES = 'peerforge_messages_v1';
-
-import { AppNotification, DirectMessage } from '../types';
 
 export async function fetchNotifications(recipientId: string): Promise<AppNotification[]> {
+  try {
+    const res = await fetch(`/api/notifications/${encodeURIComponent(recipientId)}`);
+    if (res.ok) {
+      const data: AppNotification[] = await res.json();
+      if (Array.isArray(data)) {
+        return data;
+      }
+    }
+  } catch {}
+
   const stored = localStorage.getItem(STORAGE_KEY_NOTIFICATIONS);
   if (!stored) return [];
   try {
@@ -330,31 +411,40 @@ export async function addNotification(
     createdAt: new Date().toISOString()
   };
 
+  try {
+    await fetch('/api/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newNotif)
+    });
+  } catch {}
+
   const stored = localStorage.getItem(STORAGE_KEY_NOTIFICATIONS);
   let all: AppNotification[] = [];
   if (stored) {
     try {
       all = JSON.parse(stored);
-    } catch {
-      all = [];
-    }
+    } catch {}
   }
-
   const updated = [newNotif, ...all];
   localStorage.setItem(STORAGE_KEY_NOTIFICATIONS, JSON.stringify(updated));
 
   if (isLiveSupabaseActive() && supabaseInstance) {
     try {
       await supabaseInstance.from('notifications').insert([newNotif]);
-    } catch (e) {
-      console.warn('Supabase notification insert warning:', e);
-    }
+    } catch {}
   }
 
   return newNotif;
 }
 
 export async function markNotificationAsRead(id: string): Promise<void> {
+  try {
+    await fetch(`/api/notifications/${encodeURIComponent(id)}/read`, {
+      method: 'PATCH'
+    });
+  } catch {}
+
   const stored = localStorage.getItem(STORAGE_KEY_NOTIFICATIONS);
   if (!stored) return;
   try {
@@ -365,6 +455,14 @@ export async function markNotificationAsRead(id: string): Promise<void> {
 }
 
 export async function markAllNotificationsAsRead(recipientId: string): Promise<void> {
+  try {
+    await fetch('/api/notifications/read-all', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipientId })
+    });
+  } catch {}
+
   const stored = localStorage.getItem(STORAGE_KEY_NOTIFICATIONS);
   if (!stored) return;
   try {
@@ -377,6 +475,16 @@ export async function markAllNotificationsAsRead(recipientId: string): Promise<v
 }
 
 export async function fetchDirectMessages(user1Id: string, user2Id: string): Promise<DirectMessage[]> {
+  try {
+    const res = await fetch(`/api/messages/${encodeURIComponent(user1Id)}/${encodeURIComponent(user2Id)}`);
+    if (res.ok) {
+      const data: DirectMessage[] = await res.json();
+      if (Array.isArray(data)) {
+        return data;
+      }
+    }
+  } catch {}
+
   const stored = localStorage.getItem(STORAGE_KEY_MESSAGES);
   if (!stored) return [];
   try {
@@ -394,6 +502,16 @@ export async function fetchDirectMessages(user1Id: string, user2Id: string): Pro
 }
 
 export async function fetchUserConversations(userId: string): Promise<DirectMessage[]> {
+  try {
+    const res = await fetch(`/api/conversations/${encodeURIComponent(userId)}`);
+    if (res.ok) {
+      const data: DirectMessage[] = await res.json();
+      if (Array.isArray(data)) {
+        return data;
+      }
+    }
+  } catch {}
+
   const stored = localStorage.getItem(STORAGE_KEY_MESSAGES);
   if (!stored) return [];
   try {
@@ -416,37 +534,28 @@ export async function sendDirectMessage(
     createdAt: new Date().toISOString()
   };
 
+  try {
+    await fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newMsg)
+    });
+  } catch {}
+
   const stored = localStorage.getItem(STORAGE_KEY_MESSAGES);
   let all: DirectMessage[] = [];
   if (stored) {
     try {
       all = JSON.parse(stored);
-    } catch {
-      all = [];
-    }
+    } catch {}
   }
-
   const updated = [...all, newMsg];
   localStorage.setItem(STORAGE_KEY_MESSAGES, JSON.stringify(updated));
-
-  // Also trigger a notification for the recipient!
-  await addNotification({
-    recipientId: msg.recipientId,
-    senderId: msg.senderId,
-    senderName: msg.senderName,
-    senderAvatar: msg.senderAvatar,
-    title: `Direct Message from ${msg.senderName}`,
-    message: msg.content.length > 60 ? `${msg.content.substring(0, 60)}...` : msg.content,
-    type: 'message',
-    targetId: msg.senderId
-  });
 
   if (isLiveSupabaseActive() && supabaseInstance) {
     try {
       await supabaseInstance.from('direct_messages').insert([newMsg]);
-    } catch (e) {
-      console.warn('Supabase direct message insert warning:', e);
-    }
+    } catch {}
   }
 
   return newMsg;
@@ -472,11 +581,10 @@ export async function restoreSeedProfiles(): Promise<StudentProfile[]> {
   return combined;
 }
 
-
-// SQL Schema for users/admins wanting to run it in Supabase SQL editor
+// Complete SQL Schema for Supabase project SQL Editor
 export const SUPABASE_SQL_SCHEMA = `-- ============================================================
--- PEERFORGE: School Talent Directory & Matching Database Schema
--- Run this in your Supabase Project SQL Editor
+-- PEERFORGE: Complete Database Schema
+-- Run this in your Supabase Project SQL Editor (1-click setup)
 -- ============================================================
 
 -- 1. Create Profiles Table
@@ -500,6 +608,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   contactMethods JSONB DEFAULT '{}'::jsonb,
   totalSessionsCompleted INT DEFAULT 0,
   rating NUMERIC(3,2) DEFAULT 5.0,
+  isRealRegistration BOOLEAN DEFAULT true,
   joinedDate TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -522,15 +631,51 @@ CREATE TABLE IF NOT EXISTS public.requests (
   createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. Row Level Security (RLS)
+-- 3. Create Notifications Table
+CREATE TABLE IF NOT EXISTS public.notifications (
+  id TEXT PRIMARY KEY,
+  recipientId TEXT NOT NULL,
+  senderId TEXT NOT NULL,
+  senderName TEXT NOT NULL,
+  senderAvatar TEXT,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  type TEXT NOT NULL,
+  read BOOLEAN DEFAULT false,
+  linkTab TEXT,
+  targetId TEXT,
+  createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 4. Create Direct Messages Table
+CREATE TABLE IF NOT EXISTS public.direct_messages (
+  id TEXT PRIMARY KEY,
+  senderId TEXT NOT NULL,
+  senderName TEXT NOT NULL,
+  senderAvatar TEXT,
+  recipientId TEXT NOT NULL,
+  recipientName TEXT NOT NULL,
+  recipientAvatar TEXT,
+  content TEXT NOT NULL,
+  read BOOLEAN DEFAULT false,
+  createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 5. Row Level Security (RLS)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.direct_messages ENABLE ROW LEVEL SECURITY;
 
--- Allow read access to all authenticated and anonymous school members
+-- Allow read access to all users
 CREATE POLICY "Public read profiles" ON public.profiles FOR SELECT USING (true);
 CREATE POLICY "Public read requests" ON public.requests FOR SELECT USING (true);
+CREATE POLICY "Public read notifications" ON public.notifications FOR SELECT USING (true);
+CREATE POLICY "Public read direct_messages" ON public.direct_messages FOR SELECT USING (true);
 
--- Allow inserting and updating
-CREATE POLICY "Allow upsert profiles" ON public.profiles FOR ALL USING (true);
-CREATE POLICY "Allow upsert requests" ON public.requests FOR ALL USING (true);
+-- Allow inserting, updating, and deleting
+CREATE POLICY "Allow all on profiles" ON public.profiles FOR ALL USING (true);
+CREATE POLICY "Allow all on requests" ON public.requests FOR ALL USING (true);
+CREATE POLICY "Allow all on notifications" ON public.notifications FOR ALL USING (true);
+CREATE POLICY "Allow all on direct_messages" ON public.direct_messages FOR ALL USING (true);
 `;
