@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Save, Plus, Trash2, Tag, BookOpen, MapPin, AlertTriangle, Upload, Camera } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Save, Plus, Trash2, Tag, BookOpen, MapPin, AlertTriangle, Upload, Camera, Award, User } from 'lucide-react';
 import { StudentProfile, AvailabilityStatus, Department, GradeLevel, ALL_GRADE_LEVELS } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 
@@ -14,13 +14,18 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Form State initialized from profile
+  const [fullName, setFullName] = useState(profile?.fullName || '');
+  const [email, setEmail] = useState(profile?.email || '');
+  const [handle, setHandle] = useState(profile?.handle || '');
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl || '');
   const [bio, setBio] = useState(profile?.bio || '');
-  const [grade, setGrade] = useState<GradeLevel>(profile?.grade || 'Class 11');
+  const [grade, setGrade] = useState<GradeLevel>(profile?.grade || 'Grade 11');
   const [availability, setAvailability] = useState<AvailabilityStatus>(profile?.availability || 'Available Now');
   const [department, setDepartment] = useState<Department>(profile?.department || 'STEM & Coding');
-  const [discord, setDiscord] = useState(profile?.contactMethods.discord || '');
-  const [campusLocation, setCampusLocation] = useState(profile?.contactMethods.campusLocation || '');
+  const [discord, setDiscord] = useState(profile?.contactMethods?.discord || '');
+  const [campusLocation, setCampusLocation] = useState(profile?.contactMethods?.campusLocation || '');
+  const [isPeerTutorCertified, setIsPeerTutorCertified] = useState(profile?.isPeerTutorCertified || false);
 
   // Lists
   const [classesInput, setClassesInput] = useState('');
@@ -31,6 +36,27 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
 
   const [skillInput, setSkillInput] = useState('');
   const [skills, setSkills] = useState(profile?.skills || []);
+
+  // Sync state whenever modal opens or profile changes
+  useEffect(() => {
+    if (profile && isOpen) {
+      setFullName(profile.fullName || '');
+      setEmail(profile.email || '');
+      setHandle(profile.handle || '');
+      setAvatarUrl(profile.avatarUrl || '');
+      setBio(profile.bio || '');
+      setGrade(profile.grade || 'Grade 11');
+      setAvailability(profile.availability || 'Available Now');
+      setDepartment(profile.department || 'STEM & Coding');
+      setDiscord(profile.contactMethods?.discord || '');
+      setCampusLocation(profile.contactMethods?.campusLocation || '');
+      setClasses(Array.isArray(profile.enrolledClasses) ? profile.enrolledClasses : []);
+      setTutoringSubjects(Array.isArray(profile.tutoringSubjects) ? profile.tutoringSubjects : []);
+      setSkills(Array.isArray(profile.skills) ? profile.skills : []);
+      setIsPeerTutorCertified(Boolean(profile.isPeerTutorCertified));
+      setIsConfirmingDelete(false);
+    }
+  }, [isOpen, profile]);
 
   if (!isOpen || !profile) return null;
 
@@ -95,8 +121,15 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanHandle = handle.trim() 
+      ? (handle.trim().startsWith('@') ? handle.trim() : `@${handle.trim()}`) 
+      : profile.handle;
+
     const updated: StudentProfile = {
       ...profile,
+      fullName: fullName.trim() || profile.fullName,
+      email: email.trim() || profile.email,
+      handle: cleanHandle,
       avatarUrl: avatarUrl || profile.avatarUrl,
       bio,
       grade,
@@ -105,8 +138,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
       enrolledClasses: classes,
       tutoringSubjects,
       skills,
+      isPeerTutorCertified,
       contactMethods: {
         ...profile.contactMethods,
+        email: email.trim() || profile.email,
         discord: discord.trim() || undefined,
         campusLocation: campusLocation.trim() || undefined
       }
@@ -126,11 +161,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="relative w-full max-w-xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
           <div>
             <h3 className="text-base font-bold text-white font-display">Edit Profile &amp; Skills</h3>
-            <p className="text-xs text-slate-400">Keep your academic offerings up to date</p>
+            <p className="text-xs text-slate-400">Update your current academic details, photo, and preferences</p>
           </div>
           <button
             onClick={onClose}
@@ -141,27 +176,60 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
         </div>
 
         <form onSubmit={handleSave} className="p-6 overflow-y-auto space-y-5">
-          {/* Profile Picture Upload */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-2">Profile Picture</label>
-            <div className="flex items-center gap-4">
-              <div className="relative w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden flex-shrink-0">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <Camera className="w-6 h-6 text-slate-500" />
-                )}
-              </div>
-              <div className="flex-1 space-y-1">
-                <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold cursor-pointer transition-colors shadow-sm">
-                  <Upload className="w-3.5 h-3.5" />
-                  Upload New Photo
-                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                </label>
-                <p className="text-[11px] text-slate-400">
-                  Upload a picture from your device (Max 5MB).
-                </p>
-              </div>
+          {/* Identity & Photo Header */}
+          <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-800/50 border border-slate-700/80">
+            <div className="relative w-16 h-16 rounded-2xl bg-slate-800 border-2 border-slate-700 flex items-center justify-center overflow-hidden flex-shrink-0">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <Camera className="w-6 h-6 text-slate-500" />
+              )}
+            </div>
+            <div className="flex-1 space-y-1.5">
+              <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold cursor-pointer transition-colors shadow-sm">
+                <Upload className="w-3.5 h-3.5" />
+                Change Profile Photo
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              </label>
+              <p className="text-[11px] text-slate-400">
+                Upload a custom photo from your computer (Max 5MB).
+              </p>
+            </div>
+          </div>
+
+          {/* Basic Identity Details */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Student Name</label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Full Name"
+                className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">School Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="student@school.edu"
+                className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Directory Handle</label>
+              <input
+                type="text"
+                value={handle}
+                onChange={(e) => setHandle(e.target.value)}
+                placeholder="@handle"
+                className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              />
             </div>
           </div>
 
@@ -224,10 +292,55 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
             />
           </div>
 
+          {/* Enrolled Coursework */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Enrolled or Completed Coursework</label>
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={classesInput}
+                onChange={(e) => setClassesInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddClass();
+                  }
+                }}
+                placeholder="e.g. AP Physics C, Linear Algebra"
+                className="flex-1 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              />
+              <button
+                type="button"
+                onClick={handleAddClass}
+                className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-semibold"
+              >
+                Add Class
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {classes.map((cls) => (
+                <span
+                  key={cls}
+                  className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-1.5"
+                >
+                  <BookOpen className="w-3 h-3 text-indigo-400" />
+                  {cls}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveClass(cls)}
+                    className="text-slate-400 hover:text-white"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+
           {/* Tutoring Subjects */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1">
-              Subjects You Can Tutor / Help With
+              Subjects You Can Tutor / Mentor
             </label>
             <div className="flex gap-2 mb-2">
               <input
@@ -248,7 +361,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
                 onClick={handleAddTutoring}
                 className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold"
               >
-                Add
+                Add Subject
               </button>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -292,7 +405,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
                 onClick={handleAddSkill}
                 className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-xs font-semibold"
               >
-                Add
+                Add Skill
               </button>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -315,10 +428,30 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
             </div>
           </div>
 
+          {/* Peer Tutor Certification Checkbox */}
+          <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/80 flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="editCertTutor"
+              checked={isPeerTutorCertified}
+              onChange={(e) => setIsPeerTutorCertified(e.target.checked)}
+              className="mt-0.5 rounded bg-slate-900 border-slate-600 text-indigo-600 focus:ring-0"
+            />
+            <label htmlFor="editCertTutor" className="text-xs text-slate-300 cursor-pointer">
+              <span className="font-semibold text-white flex items-center gap-1">
+                <Award className="w-3.5 h-3.5 text-emerald-400 inline" />
+                Registered Peer Tutor Status
+              </span>
+              <span className="block text-slate-400 text-[11px] mt-0.5">
+                Display the certified peer tutor badge on your profile and enable tutee session requests.
+              </span>
+            </label>
+          </div>
+
           {/* Contact Details */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Campus Location</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Campus Study Location</label>
               <input
                 type="text"
                 value={campusLocation}
@@ -328,7 +461,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Discord Tag</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Discord / Slack Tag</label>
               <input
                 type="text"
                 value={discord}
@@ -395,7 +528,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
                   className="px-5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md flex items-center gap-1.5"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  Save Profile
+                  Save Changes
                 </button>
               </div>
             </div>
@@ -405,3 +538,4 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
     </div>
   );
 };
+
