@@ -175,7 +175,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       totalSessionsCompleted: 0,
       rating: 5.0,
       joinedDate: new Date().toISOString(),
-      isRealRegistration: true
+      isRealRegistration: true,
+      password: payload.password?.trim() || ''
     };
 
     await saveProfile(newStudentProfile);
@@ -186,60 +187,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { profile: newStudentProfile };
   };
 
-  const signIn = async (email: string, password: string): Promise<{ error?: string }> => {
-    if (isLiveSupabaseActive()) {
-      const client = getSupabase();
-      if (client) {
-        const { data, error } = await client.auth.signInWithPassword({ email, password });
-        if (error) return { error: error.message };
-        if (data.user) {
-          setUser({ id: data.user.id, email: data.user.email || email, role: 'student' });
-        }
-      }
+  const signIn = async (email: string, password?: string): Promise<{ error?: string }> => {
+    const cleanQuery = email.trim().toLowerCase();
+    if (!cleanQuery) {
+      return { error: 'Please enter your student name, handle, or email.' };
+    }
+
+    if (!password || !password.trim()) {
+      return { error: 'Please enter your account password.' };
     }
 
     const profiles = await fetchAllProfiles();
-    const matched = profiles.find((p) => p.email.toLowerCase() === email.toLowerCase());
+    const matched = profiles.find((p) => 
+      p.email.toLowerCase().trim() === cleanQuery ||
+      p.fullName.toLowerCase().trim() === cleanQuery ||
+      p.handle.toLowerCase().trim() === cleanQuery
+    );
+
     if (matched) {
+      if (matched.password && matched.password !== password.trim()) {
+        return { error: `Incorrect password for student account "${matched.fullName}".` };
+      }
+
       setProfile(matched);
       setUser({ id: matched.userId, email: matched.email, role: matched.isPeerTutorCertified ? 'tutor' : 'student' });
       localStorage.setItem(CURRENT_USER_STORAGE_KEY, matched.id);
+
+      if (isLiveSupabaseActive()) {
+        const client = getSupabase();
+        if (client) {
+          try {
+            await client.auth.signInWithPassword({ email: matched.email, password: password.trim() });
+          } catch (e) {
+            console.warn('Supabase auth sign in notice:', e);
+          }
+        }
+      }
       return {};
     }
 
-    if (password.length < 6) {
-      return { error: 'Password must be at least 6 characters' };
+    if (isLiveSupabaseActive()) {
+      const client = getSupabase();
+      if (client) {
+        try {
+          const { data, error } = await client.auth.signInWithPassword({ email: cleanQuery, password: password.trim() });
+          if (!error && data.user) {
+            setUser({ id: data.user.id, email: data.user.email || cleanQuery, role: 'student' });
+            return {};
+          }
+        } catch (e) {}
+      }
     }
 
-    const newProfile: StudentProfile = {
-      id: `prof-${Date.now()}`,
-      userId: `user-${Date.now()}`,
-      fullName: email.split('@')[0].replace('.', ' '),
-      handle: `@${email.split('@')[0]}`,
-      email,
-      avatarUrl: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80`,
-      grade: 'Grade 11',
-      department: 'STEM & Coding',
-      bio: 'New student member of the Talent Network.',
-      gpaHonorRoll: true,
-      isPeerTutorCertified: false,
-      availability: 'Accepting Tutees',
-      enrolledClasses: ['AP Calculus AB', 'Honors English'],
-      skills: [{ id: `s-${Date.now()}`, name: 'Math Fundamentals', category: 'STEM & Coding', endorsementsCount: 1 }],
-      tutoringSubjects: ['Algebra I'],
-      seekingHelpWith: [],
-      contactMethods: { email },
-      totalSessionsCompleted: 0,
-      rating: 5.0,
-      joinedDate: new Date().toISOString(),
-      isRealRegistration: true
-    };
-
-    await saveProfile(newProfile);
-    setProfile(newProfile);
-    setUser({ id: newProfile.userId, email, role: 'student' });
-    localStorage.setItem(CURRENT_USER_STORAGE_KEY, newProfile.id);
-    return {};
+    return { error: `No student profile found matching "${email}". Please register a new profile.` };
   };
 
   const signUp = async (email: string, password: string, fullName: string, grade: any): Promise<{ error?: string }> => {

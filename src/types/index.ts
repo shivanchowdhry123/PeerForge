@@ -77,6 +77,7 @@ export interface StudentProfile {
   rating: number; // 1-5
   joinedDate: string;
   isRealRegistration?: boolean;
+  password?: string;
 }
 
 export type UrgencyLevel = 'Critical (Next 24h)' | 'Urgent (2-3 Days)' | 'Standard (This Week)' | 'Ongoing Project';

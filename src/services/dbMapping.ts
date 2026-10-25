@@ -64,7 +64,8 @@ export function profileToDb(p: StudentProfile): Record<string, any> {
     totalsessionscompleted: p.totalSessionsCompleted || 0,
     rating: Number(p.rating) || 5.0,
     isrealregistration: p.isRealRegistration !== false,
-    joineddate: p.joinedDate || new Date().toISOString()
+    joineddate: p.joinedDate || new Date().toISOString(),
+    password: p.password || ''
   };
 }
 
@@ -90,7 +91,8 @@ export function profileFromDb(row: any): StudentProfile {
     totalSessionsCompleted: Number(row.totalsessionscompleted ?? row.totalSessionsCompleted) || 0,
     rating: Number(row.rating) || 5.0,
     isRealRegistration: row.isrealregistration ?? row.isRealRegistration ?? true,
-    joinedDate: row.joineddate || row.joinedDate || new Date().toISOString()
+    joinedDate: row.joineddate || row.joinedDate || new Date().toISOString(),
+    password: row.password || ''
   };
 }
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Save, Plus, Trash2, Tag, BookOpen, MapPin, AlertTriangle } from 'lucide-react';
+import { X, Save, Plus, Trash2, Tag, BookOpen, MapPin, AlertTriangle, Upload, Camera } from 'lucide-react';
 import { StudentProfile, AvailabilityStatus, Department, GradeLevel, ALL_GRADE_LEVELS } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 
@@ -14,6 +14,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl || '');
   const [bio, setBio] = useState(profile?.bio || '');
   const [grade, setGrade] = useState<GradeLevel>(profile?.grade || 'Class 11');
   const [availability, setAvailability] = useState<AvailabilityStatus>(profile?.availability || 'Available Now');
@@ -32,6 +33,24 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
   const [skills, setSkills] = useState(profile?.skills || []);
 
   if (!isOpen || !profile) return null;
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size must be under 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        setAvatarUrl(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleAddClass = () => {
     if (classesInput.trim() && !classes.includes(classesInput.trim())) {
@@ -78,6 +97,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
     e.preventDefault();
     const updated: StudentProfile = {
       ...profile,
+      avatarUrl: avatarUrl || profile.avatarUrl,
       bio,
       grade,
       availability,
@@ -121,6 +141,30 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
         </div>
 
         <form onSubmit={handleSave} className="p-6 overflow-y-auto space-y-5">
+          {/* Profile Picture Upload */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-2">Profile Picture</label>
+            <div className="flex items-center gap-4">
+              <div className="relative w-14 h-14 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden flex-shrink-0">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <Camera className="w-6 h-6 text-slate-500" />
+                )}
+              </div>
+              <div className="flex-1 space-y-1">
+                <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold cursor-pointer transition-colors shadow-sm">
+                  <Upload className="w-3.5 h-3.5" />
+                  Upload New Photo
+                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                </label>
+                <p className="text-[11px] text-slate-400">
+                  Upload a picture from your device (Max 5MB).
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Grade, Availability & Department */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>

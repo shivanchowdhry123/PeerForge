@@ -13,6 +13,8 @@ import {
   ArrowRight, 
   ArrowLeft,
   Award,
+  Upload,
+  Camera,
   Image as ImageIcon
 } from 'lucide-react';
 import { Department, GradeLevel, StudentProfile, ALL_GRADE_LEVELS } from '../../types';
@@ -45,17 +47,6 @@ const SUGGESTED_CLASSES: Record<Department, string[]> = {
   'Athletics & Wellness': ['Peer Leadership Seminar', 'Sports Nutrition', 'Mindfulness & Study Habits']
 };
 
-const AVATAR_OPTIONS = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80'
-];
-
 export const RegisterStudentModal: React.FC<RegisterStudentModalProps> = ({
   isOpen,
   onClose,
@@ -68,11 +59,11 @@ export const RegisterStudentModal: React.FC<RegisterStudentModalProps> = ({
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [handle, setHandle] = useState('');
   const [grade, setGrade] = useState<GradeLevel>('Class 11');
   const [department, setDepartment] = useState<Department>('STEM & Coding');
-  const [selectedAvatar, setSelectedAvatar] = useState(AVATAR_OPTIONS[0]);
-  const [customAvatar, setCustomAvatar] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
 
   // Academics
   const [classInput, setClassInput] = useState('');
@@ -94,6 +85,25 @@ export const RegisterStudentModal: React.FC<RegisterStudentModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image size must be under 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        setAvatarUrl(reader.result);
+        setError('');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleAddClass = (clsName: string) => {
     if (clsName.trim() && !enrolledClasses.includes(clsName.trim())) {
@@ -129,22 +139,48 @@ export const RegisterStudentModal: React.FC<RegisterStudentModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim() || !email.trim()) {
-      setError('Please provide your name and school email.');
+
+    if (step === 1) {
+      if (!fullName.trim() || !email.trim()) {
+        setError('Please provide your name and school email.');
+        return;
+      }
+
+      if (!password || password.length < 6) {
+        setError('Password is required and must be at least 6 characters long.');
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setError('Passwords do not match. Please re-enter your password.');
+        return;
+      }
+
+      setError('');
+      setStep(2);
       return;
     }
 
+    if (step === 2) {
+      setError('');
+      setStep(3);
+      return;
+    }
+
+    // Step 3 Submission
     setIsSubmitting(true);
     setError('');
+
+    const defaultAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(fullName.trim() || 'student')}`;
 
     const payload: RegisterStudentPayload = {
       fullName: fullName.trim(),
       email: email.trim(),
-      password: password.trim() || 'password123',
+      password: password.trim(),
       handle: handle.trim() || `@${fullName.trim().toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
       grade,
       department,
-      avatarUrl: customAvatar.trim() || selectedAvatar,
+      avatarUrl: avatarUrl || defaultAvatar,
       bio: bio.trim() || `Enthusiastic ${grade} student focusing on ${department}.`,
       enrolledClasses,
       tutoringSubjects: tutoringSubjects.length > 0 ? tutoringSubjects : [department.split(' ')[0]],
@@ -270,6 +306,39 @@ export const RegisterStudentModal: React.FC<RegisterStudentModalProps> = ({
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 rounded-xl bg-slate-800/40 border border-indigo-900/40">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Create Mandatory Password <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Min 6 characters"
+                    className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Confirm Password <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter password"
+                    className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+                <p className="col-span-1 sm:col-span-2 text-[10px] text-indigo-300">
+                  🔒 Password is required to log into your account securely from any device.
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">Class / Grade Level</label>
@@ -311,37 +380,52 @@ export const RegisterStudentModal: React.FC<RegisterStudentModalProps> = ({
                 </div>
               </div>
 
-              {/* Avatar Selection */}
+              {/* Native Profile Picture File Upload */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-2">
-                  Choose Profile Picture
+                  Upload Profile Picture
                 </label>
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  {AVATAR_OPTIONS.map((avatar, idx) => (
-                    <img
-                      key={idx}
-                      src={avatar}
-                      alt={`Avatar option ${idx}`}
-                      onClick={() => {
-                        setSelectedAvatar(avatar);
-                        setCustomAvatar('');
-                      }}
-                      className={`w-11 h-11 rounded-xl object-cover cursor-pointer transition-all ${
-                        selectedAvatar === avatar && !customAvatar
-                          ? 'ring-2 ring-indigo-500 scale-105 shadow-md'
-                          : 'opacity-70 hover:opacity-100'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <div className="mt-2">
-                  <input
-                    type="url"
-                    value={customAvatar}
-                    onChange={(e) => setCustomAvatar(e.target.value)}
-                    placeholder="Or paste an image URL (optional)..."
-                    className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-                  />
+                <div className="flex items-center gap-4">
+                  <div className="relative w-16 h-16 rounded-2xl bg-slate-800 border-2 border-dashed border-slate-700 flex items-center justify-center overflow-hidden flex-shrink-0 group">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt="Profile preview"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-slate-500">
+                        <Camera className="w-6 h-6 mb-1 text-slate-400" />
+                        <span className="text-[9px]">Photo</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 space-y-1.5">
+                    <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold cursor-pointer shadow-sm transition-colors">
+                      <Upload className="w-3.5 h-3.5" />
+                      Choose Image File
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {avatarUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => setAvatarUrl('')}
+                        className="block text-[11px] text-rose-400 hover:text-rose-300"
+                      >
+                        Remove uploaded photo
+                      </button>
+                    ) : (
+                      <p className="text-[11px] text-slate-400">
+                        Upload any photo or image file from your device (Max 5MB).
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -585,7 +669,7 @@ export const RegisterStudentModal: React.FC<RegisterStudentModalProps> = ({
                 <p className="text-[10px] uppercase font-bold text-indigo-400 mb-2">Live Directory Preview:</p>
                 <div className="flex items-center gap-3">
                   <img
-                    src={customAvatar.trim() || selectedAvatar}
+                    src={avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(fullName || 'student')}`}
                     alt="Preview"
                     className="w-10 h-10 rounded-xl object-cover ring-1 ring-indigo-500/50"
                   />
@@ -610,7 +694,10 @@ export const RegisterStudentModal: React.FC<RegisterStudentModalProps> = ({
             {step > 1 ? (
               <button
                 type="button"
-                onClick={() => setStep((s) => (s - 1) as any)}
+                onClick={() => {
+                  setError('');
+                  setStep((s) => (s - 1) as any);
+                }}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white flex items-center gap-1"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -622,15 +709,7 @@ export const RegisterStudentModal: React.FC<RegisterStudentModalProps> = ({
 
             {step < 3 ? (
               <button
-                type="button"
-                onClick={() => {
-                  if (step === 1 && (!fullName.trim() || !email.trim())) {
-                    setError('Please provide your name and school email.');
-                    return;
-                  }
-                  setError('');
-                  setStep((s) => (s + 1) as any);
-                }}
+                type="submit"
                 className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1.5 shadow-md shadow-indigo-600/25"
               >
                 Next Step
@@ -652,3 +731,4 @@ export const RegisterStudentModal: React.FC<RegisterStudentModalProps> = ({
     </div>
   );
 };
+
