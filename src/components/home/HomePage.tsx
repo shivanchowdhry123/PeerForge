@@ -270,9 +270,9 @@ export const HomePage: React.FC<HomePageProps> = ({
                   </p>
 
                   <div className="flex flex-wrap gap-1">
-                    {mentor.skills.slice(0, 2).map((s) => (
+                    {(mentor.skills || []).slice(0, 2).map((s, idx) => (
                       <span
-                        key={s.id}
+                        key={s.id || `${s.name}-${idx}`}
                         className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700"
                       >
                         {s.name}
@@ -284,7 +284,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <div className="pt-3 mt-3 border-t border-slate-800 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1 text-amber-400 font-bold">
                     <Star className="w-3.5 h-3.5 fill-amber-400" />
-                    <span>{mentor.rating ? mentor.rating.toFixed(1) : '5.0'}</span>
+                    <span>{mentor.rating ? Number(mentor.rating).toFixed(1) : '5.0'}</span>
                   </div>
                   <span className="text-[11px] font-semibold text-indigo-400">View Profile →</span>
                 </div>

@@ -25,8 +25,10 @@ import {
   fetchNotifications,
   addNotification,
   markNotificationAsRead,
-  markAllNotificationsAsRead
+  markAllNotificationsAsRead,
+  subscribeDataUpdates
 } from './services/supabaseClient';
+import { SyncStatusBanner } from './components/common/SyncStatusBanner';
 import { CheckCircle2, Sparkles, X } from 'lucide-react';
 
 function MainApp() {
@@ -83,12 +85,16 @@ function MainApp() {
 
   useEffect(() => {
     loadAllData();
+    const unsub = subscribeDataUpdates(() => {
+      loadAllData();
+    });
+    return unsub;
   }, [currentUserProfile]);
 
   useEffect(() => {
     if (currentUserProfile) {
       loadNotificationsForUser();
-      const interval = setInterval(loadNotificationsForUser, 4000);
+      const interval = setInterval(loadNotificationsForUser, 10000);
       return () => clearInterval(interval);
     }
   }, [currentUserProfile]);
@@ -269,6 +275,9 @@ function MainApp() {
         unreadNotificationCount={unreadCount}
         openRequestCount={openRequestCount}
       />
+
+      {/* Cloud Sync Status & Error Warning Banner */}
+      <SyncStatusBanner />
 
       {/* Main Body Routing */}
       <main className="flex-1">

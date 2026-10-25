@@ -320,7 +320,7 @@ export const DirectoryPage: React.FC<DirectoryPageProps> = ({
         /* Grid View */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredProfiles.map((p) => {
-            const totalEndorsements = p.skills.reduce((sum, s) => sum + s.endorsementsCount, 0);
+            const totalEndorsements = (p.skills || []).reduce((sum, s) => sum + (s.endorsementsCount || 0), 0);
 
             return (
               <div
@@ -364,7 +364,7 @@ export const DirectoryPage: React.FC<DirectoryPageProps> = ({
                     </span>
                   </div>
 
-                  {/* Badges: Grade, Department, Certification, Real Registration Badge */}
+                  {/* Badges */}
                   <div className="flex flex-wrap items-center gap-1.5">
                     {p.isRealRegistration && (
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-300 border border-emerald-700/60 flex items-center gap-1">
@@ -386,7 +386,6 @@ export const DirectoryPage: React.FC<DirectoryPageProps> = ({
                     )}
                   </div>
 
-                  {/* Bio snippet */}
                   <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
                     {p.bio}
                   </p>
@@ -394,20 +393,20 @@ export const DirectoryPage: React.FC<DirectoryPageProps> = ({
                   {/* Skills tags */}
                   <div className="space-y-1 pt-1">
                     <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span>Key Skills ({p.skills.length})</span>
+                      <span>Key Skills ({(p.skills || []).length})</span>
                       <span>{totalEndorsements} endorsements</span>
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      {p.skills.slice(0, 3).map((s) => (
+                      {(p.skills || []).slice(0, 3).map((s, idx) => (
                         <span
-                          key={s.id}
+                          key={s.id || `${s.name}-${idx}`}
                           className="text-[10px] px-2 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700/60 flex items-center gap-1"
                         >
                           {s.name}
-                          <span className="text-slate-400 text-[9px]">+{s.endorsementsCount}</span>
+                          <span className="text-slate-400 text-[9px]">+{s.endorsementsCount || 0}</span>
                         </span>
                       ))}
-                      {p.skills.length > 3 && (
+                      {(p.skills || []).length > 3 && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">
                           +{p.skills.length - 3} more
                         </span>
@@ -416,7 +415,7 @@ export const DirectoryPage: React.FC<DirectoryPageProps> = ({
                   </div>
 
                   {/* Coursework snippet */}
-                  {p.enrolledClasses.length > 0 && (
+                  {(p.enrolledClasses || []).length > 0 && (
                     <div className="pt-1">
                       <p className="text-[10px] text-slate-400 uppercase font-medium tracking-wider mb-1">
                         Recent Classes
@@ -428,13 +427,12 @@ export const DirectoryPage: React.FC<DirectoryPageProps> = ({
                   )}
                 </div>
 
-                {/* Bottom Row / Stats & Connect CTA */}
                 <div className="pt-4 mt-3 border-t border-slate-800 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1 font-bold text-amber-400">
                     <Star className="w-3.5 h-3.5 fill-amber-400" />
-                    <span>{p.rating.toFixed(1)}</span>
+                    <span>{p.rating ? Number(p.rating).toFixed(1) : '5.0'}</span>
                     <span className="text-[11px] text-slate-400 font-normal">
-                      ({p.totalSessionsCompleted} sessions)
+                      ({p.totalSessionsCompleted || 0} sessions)
                     </span>
                   </div>
 
@@ -490,9 +488,9 @@ export const DirectoryPage: React.FC<DirectoryPageProps> = ({
 
               <div className="flex items-center gap-4 text-xs w-full md:w-auto justify-between md:justify-end">
                 <div className="flex flex-wrap gap-1 max-w-xs">
-                  {p.skills.slice(0, 2).map((s) => (
+                  {(p.skills || []).slice(0, 2).map((s, idx) => (
                     <span
-                      key={s.id}
+                      key={s.id || `${s.name}-${idx}`}
                       className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700"
                     >
                       {s.name}
@@ -503,9 +501,9 @@ export const DirectoryPage: React.FC<DirectoryPageProps> = ({
                 <div className="text-right">
                   <div className="flex items-center gap-1 text-amber-400 font-bold">
                     <Star className="w-3 h-3 fill-amber-400" />
-                    <span>{p.rating.toFixed(1)}</span>
+                    <span>{p.rating ? Number(p.rating).toFixed(1) : '5.0'}</span>
                   </div>
-                  <span className="text-[10px] text-slate-400">{p.totalSessionsCompleted} sessions</span>
+                  <span className="text-[10px] text-slate-400">{p.totalSessionsCompleted || 0} sessions</span>
                 </div>
 
                 <button className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white">

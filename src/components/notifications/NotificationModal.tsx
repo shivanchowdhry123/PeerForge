@@ -103,9 +103,9 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
               </p>
             </div>
           ) : (
-            notifications.map((notif) => (
+            (notifications || []).map((notif, idx) => (
               <div
-                key={notif.id}
+                key={notif.id || `notif-${idx}`}
                 onClick={() => {
                   onMarkAsRead(notif.id);
                   if (notif.type === 'message' && notif.targetId && onOpenDirectMessage) {
@@ -141,7 +141,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
                   <div className="flex items-center justify-between gap-2">
                     <h4 className="text-xs font-bold text-white truncate">{notif.title}</h4>
                     <span className="text-[10px] text-slate-400 whitespace-nowrap">
-                      {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(notif.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
 

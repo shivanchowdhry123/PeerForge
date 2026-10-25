@@ -200,14 +200,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {profile.skills.map((skill) => (
+              {(profile.skills || []).map((skill, idx) => (
                 <div
-                  key={skill.id}
+                  key={skill.id || `${skill.name}-${idx}`}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 hover:border-slate-600 transition-colors"
                 >
                   <span className="text-xs font-medium text-white">{skill.name}</span>
                   <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-700 text-slate-300">
-                    {skill.endorsementsCount}
+                    {skill.endorsementsCount || 0}
                   </span>
                   <button
                     onClick={() => handleEndorse(skill.id)}
@@ -235,13 +235,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   {profile.email}
                 </a>
               </div>
-              {profile.contactMethods.campusLocation && (
+              {profile.contactMethods && profile.contactMethods.campusLocation && (
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                   <span className="truncate">{profile.contactMethods.campusLocation}</span>
                 </div>
               )}
-              {profile.contactMethods.discord && (
+              {profile.contactMethods && profile.contactMethods.discord && (
                 <div className="flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-sky-400 flex-shrink-0" />
                   <span className="truncate">Discord: {profile.contactMethods.discord}</span>

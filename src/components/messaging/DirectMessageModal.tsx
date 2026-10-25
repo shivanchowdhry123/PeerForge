@@ -156,11 +156,11 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
               </div>
             </div>
           ) : (
-            messages.map((msg) => {
+            (messages || []).map((msg, idx) => {
               const isMine = currentUser && msg.senderId === currentUser.userId;
               return (
                 <div
-                  key={msg.id}
+                  key={msg.id || `msg-${idx}`}
                   className={`flex items-end gap-2 ${isMine ? 'justify-end' : 'justify-start'}`}
                 >
                   {!isMine && (
@@ -183,7 +183,7 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
                         isMine ? 'text-indigo-200' : 'text-slate-400'
                       }`}
                     >
-                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(msg.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                 </div>
@@ -214,7 +214,7 @@ export const DirectMessageModal: React.FC<DirectMessageModalProps> = ({
           </div>
           <div className="flex items-center justify-between text-[10px] text-slate-400 px-1">
             <span>Direct Email: <a href={`mailto:${recipient.email}`} className="text-indigo-300 hover:underline">{recipient.email}</a></span>
-            <span>Campus Location: {recipient.contactMethods.campusLocation || 'Library Commons'}</span>
+            <span>Campus Location: {(recipient.contactMethods && recipient.contactMethods.campusLocation) || 'Library Commons'}</span>
           </div>
         </form>
       </div>

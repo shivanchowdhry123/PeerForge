@@ -4,6 +4,16 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import {
+  profileToDb,
+  profileFromDb,
+  requestToDb,
+  requestFromDb,
+  notificationToDb,
+  notificationFromDb,
+  messageToDb,
+  messageFromDb
+} from './src/services/dbMapping';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -59,7 +69,7 @@ function saveDatabase() {
   }
 }
 
-// Optional Supabase integration on backend
+// Supabase integration on backend
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://hgwmksnszoeqztqvvzkg.supabase.co';
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhnd21rc25zem9lcXp0cXZ2emtnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3NzA0NDcsImV4cCI6MjEwODM0NjQ0N30.y8W3h71MAVl5kSSA_z-W9MMbevgXdrdHG4m0eFNZ1bw';
 
@@ -69,7 +79,6 @@ let supabaseConnected = false;
 if (SUPABASE_URL && SUPABASE_KEY) {
   try {
     supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-    // Test if profiles table exists in Supabase
     (async () => {
       try {
         const { error } = await supabase!.from('profiles').select('id').limit(1);
@@ -92,7 +101,7 @@ async function syncToSupabase(fn: () => Promise<any>) {
       supabaseConnected = true;
     }
   } catch (e) {
-    // silently catch errors if tables do not exist in Supabase yet
+    // catch non-blocking sync issues
   }
 }
 
@@ -138,14 +147,20 @@ async function startServer() {
 
   // PROFILES API
   app.get('/api/profiles', async (_req: Request, res: Response) => {
-    // If live Supabase table is ready, try to sync from it
     if (supabase && supabaseConnected) {
       try {
-        const { data, error } = await supabase.from('profiles').select('*').order('joinedDate', { ascending: false });
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('joineddate', { ascending: false });
+
         if (!error && Array.isArray(data) && data.length > 0) {
-          // Merge with local db
-          for (const item of data) {
-            if (!db.profiles.some(p => p.id === item.id)) {
+          const mapped = data.map(profileFromDb);
+          for (const item of mapped) {
+            const idx = db.profiles.findIndex(p => p.id === item.id);
+            if (idx >= 0) {
+              db.profiles[idx] = item;
+            } else {
               db.profiles.push(item);
             }
           }
@@ -172,9 +187,10 @@ async function startServer() {
     }
     saveDatabase();
 
-    // Also mirror to Supabase if available
+    // Mirror to Supabase with proper lowercase mapping
     syncToSupabase(async () => {
-      await supabase!.from('profiles').upsert(profile, { onConflict: 'id' });
+      const row = profileToDb(profile);
+      await supabase!.from('profiles').upsert(row, { onConflict: 'id' });
     });
 
     res.json(profile);
@@ -212,7 +228,8 @@ async function startServer() {
     saveDatabase();
 
     syncToSupabase(async () => {
-      await supabase!.from('profiles').upsert(target, { onConflict: 'id' });
+      const row = profileToDb(target);
+      await supabase!.from('profiles').upsert(row, { onConflict: 'id' });
     });
 
     res.json(target);
@@ -222,10 +239,18 @@ async function startServer() {
   app.get('/api/requests', async (_req: Request, res: Response) => {
     if (supabase && supabaseConnected) {
       try {
-        const { data, error } = await supabase.from('requests').select('*').order('createdAt', { ascending: false });
+        const { data, error } = await supabase
+          .from('requests')
+          .select('*')
+          .order('createdat', { ascending: false });
+
         if (!error && Array.isArray(data) && data.length > 0) {
-          for (const item of data) {
-            if (!db.requests.some(r => r.id === item.id)) {
+          const mapped = data.map(requestFromDb);
+          for (const item of mapped) {
+            const idx = db.requests.findIndex(r => r.id === item.id);
+            if (idx >= 0) {
+              db.requests[idx] = item;
+            } else {
               db.requests.push(item);
             }
           }
@@ -253,7 +278,8 @@ async function startServer() {
     saveDatabase();
 
     syncToSupabase(async () => {
-      await supabase!.from('requests').insert([ticket]);
+      const row = requestToDb(ticket);
+      await supabase!.from('requests').upsert(row, { onConflict: 'id' });
     });
 
     res.json(ticket);
@@ -280,7 +306,8 @@ async function startServer() {
     saveDatabase();
 
     syncToSupabase(async () => {
-      await supabase!.from('requests').update(target).eq('id', id);
+      const row = requestToDb(target);
+      await supabase!.from('requests').upsert(row, { onConflict: 'id' });
     });
 
     res.json(target);
@@ -319,6 +346,12 @@ async function startServer() {
     const notif = req.body;
     db.notifications.unshift(notif);
     saveDatabase();
+
+    syncToSupabase(async () => {
+      const row = notificationToDb(notif);
+      await supabase!.from('notifications').upsert(row, { onConflict: 'id' });
+    });
+
     res.json(notif);
   });
 
@@ -326,6 +359,11 @@ async function startServer() {
     const { id } = req.params;
     db.notifications = db.notifications.map(n => n.id === id ? { ...n, read: true } : n);
     saveDatabase();
+
+    syncToSupabase(async () => {
+      await supabase!.from('notifications').update({ read: true }).eq('id', id);
+    });
+
     res.json({ success: true });
   });
 
@@ -335,6 +373,14 @@ async function startServer() {
       (n.recipientId === recipientId || n.recipientId === 'all') ? { ...n, read: true } : n
     );
     saveDatabase();
+
+    syncToSupabase(async () => {
+      await supabase!
+        .from('notifications')
+        .update({ read: true })
+        .or(`recipientid.eq.${recipientId},recipientid.eq.all`);
+    });
+
     res.json({ success: true });
   });
 
@@ -376,6 +422,14 @@ async function startServer() {
     db.notifications.unshift(notif);
 
     saveDatabase();
+
+    syncToSupabase(async () => {
+      const rowMsg = messageToDb(msg);
+      await supabase!.from('direct_messages').upsert(rowMsg, { onConflict: 'id' });
+      const rowNotif = notificationToDb(notif as any);
+      await supabase!.from('notifications').upsert(rowNotif, { onConflict: 'id' });
+    });
+
     res.json(msg);
   });
 

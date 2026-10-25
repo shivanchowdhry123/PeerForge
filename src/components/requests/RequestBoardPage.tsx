@@ -275,9 +275,9 @@ export const RequestBoardPage: React.FC<RequestBoardPageProps> = ({
                             {ticket.preferredLocation}
                           </span>
                         )}
-                        {ticket.tags.map((tg) => (
+                        {(ticket.tags || []).map((tg, idx) => (
                           <span
-                            key={tg}
+                            key={`${tg}-${idx}`}
                             className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-400 border border-slate-700/50"
                           >
                             #{tg}
@@ -357,9 +357,9 @@ export const RequestBoardPage: React.FC<RequestBoardPageProps> = ({
                       <span className="text-[10px] text-slate-500 font-medium">Click offer to view full details &amp; contact</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {ticket.offers.map((offer) => (
+                      {(ticket.offers || []).map((offer, idx) => (
                         <div
-                          key={offer.id}
+                          key={offer.id || `offer-${idx}`}
                           onClick={() => setSelectedOfferModal({
                             offer,
                             ticketTitle: ticket.title,
