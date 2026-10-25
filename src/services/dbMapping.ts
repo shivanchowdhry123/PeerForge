@@ -64,8 +64,7 @@ export function profileToDb(p: StudentProfile): Record<string, any> {
     totalsessionscompleted: p.totalSessionsCompleted || 0,
     rating: Number(p.rating) || 5.0,
     isrealregistration: p.isRealRegistration !== false,
-    joineddate: p.joinedDate || new Date().toISOString(),
-    password: p.password || ''
+    joineddate: p.joinedDate || new Date().toISOString()
   };
 }
 
