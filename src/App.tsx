@@ -107,6 +107,12 @@ function MainApp() {
   };
 
   const handleOpenDirectMessageWithUser = (recipient: StudentProfile | string) => {
+    if (!currentUserProfile) {
+      setIsAuthOpen(true);
+      showToast('Please sign in or register to message peers.');
+      return;
+    }
+
     if (typeof recipient === 'string') {
       const matched = profiles.find((p) => p.id === recipient || p.userId === recipient);
       if (matched) {
@@ -155,13 +161,19 @@ function MainApp() {
     preferredLocation: string;
     tags: string[];
   }) => {
-    const creator = currentUserProfile || profiles[0];
+    if (!currentUserProfile) {
+      setIsNewRequestOpen(false);
+      setIsAuthOpen(true);
+      showToast('Please sign in to publish a help request.');
+      return;
+    }
+
     const newTicket = await createRequestTicket({
       ...ticketData,
-      creatorId: creator ? creator.userId : 'guest',
-      creatorName: creator ? creator.fullName : 'Guest Student',
-      creatorAvatar: creator ? creator.avatarUrl : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
-      creatorGrade: creator ? creator.grade : 'Class 11',
+      creatorId: currentUserProfile.userId,
+      creatorName: currentUserProfile.fullName,
+      creatorAvatar: currentUserProfile.avatarUrl,
+      creatorGrade: currentUserProfile.grade,
       status: 'Open'
     });
 
@@ -170,9 +182,13 @@ function MainApp() {
   };
 
   const handleOfferHelp = async (requestId: string, offerMessage: string) => {
-    const helper = currentUserProfile || profiles[0];
-    if (!helper) return;
+    if (!currentUserProfile) {
+      setIsAuthOpen(true);
+      showToast('Please sign in or register to offer help.');
+      return;
+    }
 
+    const helper = currentUserProfile;
     const targetTicket = requests.find((r) => r.id === requestId);
 
     const updated = await addOfferToRequest(requestId, {
@@ -213,21 +229,25 @@ function MainApp() {
   };
 
   const handleRequestSession = async (mentor: StudentProfile, subject: string, message: string) => {
+    if (!currentUserProfile) {
+      setIsAuthOpen(true);
+      showToast('Please sign in to request a study session.');
+      return;
+    }
+
     showToast(`Session request dispatched to ${mentor.fullName} for ${subject}!`);
 
-    if (currentUserProfile) {
-      await addNotification({
-        recipientId: mentor.userId,
-        senderId: currentUserProfile.userId,
-        senderName: currentUserProfile.fullName,
-        senderAvatar: currentUserProfile.avatarUrl,
-        title: `Study Session Request for ${subject}`,
-        message: `${currentUserProfile.fullName} requested a study session: ${message || 'Check your school email for free period timing.'}`,
-        type: 'session',
-        linkTab: 'directory',
-        targetId: mentor.id
-      });
-    }
+    await addNotification({
+      recipientId: mentor.userId,
+      senderId: currentUserProfile.userId,
+      senderName: currentUserProfile.fullName,
+      senderAvatar: currentUserProfile.avatarUrl,
+      title: `Study Session Request for ${subject}`,
+      message: `${currentUserProfile.fullName} requested a study session: ${message || 'Check your school email for free period timing.'}`,
+      type: 'session',
+      linkTab: 'directory',
+      targetId: mentor.id
+    });
   };
 
   const handleMarkNotifRead = async (id: string) => {
@@ -310,6 +330,7 @@ function MainApp() {
             onOfferHelp={handleOfferHelp}
             onUpdateStatus={handleUpdateStatus}
             onOpenDirectMessage={handleOpenDirectMessageWithUser}
+            onOpenAuth={() => setIsAuthOpen(true)}
           />
         )}
 
@@ -328,6 +349,7 @@ function MainApp() {
         onEndorseSkill={handleEndorseSkill}
         onRequestSession={handleRequestSession}
         onOpenDirectMessage={handleOpenDirectMessageWithUser}
+        onOpenAuth={() => setIsAuthOpen(true)}
       />
 
       <MatchingWizardModal

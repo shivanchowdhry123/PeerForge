@@ -22,6 +22,7 @@ interface ProfileModalProps {
   onEndorseSkill: (profileId: string, skillId: string) => Promise<void>;
   onRequestSession: (profile: StudentProfile, subject: string, message: string) => void;
   onOpenDirectMessage?: (profile: StudentProfile) => void;
+  onOpenAuth?: () => void;
 }
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({
@@ -29,7 +30,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   onClose,
   onEndorseSkill,
   onRequestSession,
-  onOpenDirectMessage
+  onOpenDirectMessage,
+  onOpenAuth
 }) => {
   const { profile: currentUserProfile } = useAuth();
   const [selectedSubject, setSelectedSubject] = useState('');
@@ -47,6 +49,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const handleSendSession = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentUserProfile) {
+      onClose();
+      if (onOpenAuth) onOpenAuth();
+      return;
+    }
     const subjectToSend = selectedSubject || profile.tutoringSubjects[0] || 'General Academic Coaching';
     onRequestSession(profile, subjectToSend, sessionMessage);
     setSessionSent(true);
@@ -64,8 +71,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           {onOpenDirectMessage && (
             <button
               onClick={() => {
-                onClose();
-                onOpenDirectMessage(profile);
+                if (!currentUserProfile) {
+                  onClose();
+                  if (onOpenAuth) onOpenAuth();
+                } else {
+                  onClose();
+                  onOpenDirectMessage(profile);
+                }
               }}
               className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md flex items-center gap-1.5 transition-colors"
             >
@@ -267,6 +279,21 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   </p>
                 </div>
               </div>
+            ) : !currentUserProfile ? (
+              <div className="p-4 rounded-xl bg-slate-800/60 border border-slate-700/70 text-center space-y-2.5">
+                <p className="text-xs text-slate-300">
+                  Sign in or register your student account to request a 1-on-1 peer study session with {profile.fullName.split(' ')[0]}.
+                </p>
+                <button
+                  onClick={() => {
+                    onClose();
+                    if (onOpenAuth) onOpenAuth();
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md transition-colors"
+                >
+                  Sign In / Register to Request Session
+                </button>
+              </div>
             ) : (
               <form onSubmit={handleSendSession} className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -291,7 +318,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     <input
                       type="text"
                       disabled
-                      value={`${currentUserProfile?.fullName || 'Logged-in Student'} (${currentUserProfile?.email || 'student@school.edu'})`}
+                      value={`${currentUserProfile.fullName} (${currentUserProfile.email})`}
                       className="w-full px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50 text-xs text-slate-400"
                     />
                   </div>

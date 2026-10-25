@@ -58,22 +58,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const profiles = await fetchAllProfiles();
       const savedProfileId = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
       
-      // If user saved a profile ID, load it; otherwise if any real registration exists, prefer it
-      let existing: StudentProfile | undefined;
+      // ONLY restore session if this specific device has an active saved profile ID in its localStorage
       if (savedProfileId) {
-        existing = profiles.find((p) => p.id === savedProfileId);
-      }
-      if (!existing) {
-        existing = profiles.find((p) => p.isRealRegistration) || profiles[0];
-      }
-
-      if (existing) {
-        setProfile(existing);
-        setUser({
-          id: existing.userId,
-          email: existing.email,
-          role: existing.isPeerTutorCertified ? 'tutor' : 'student'
-        });
+        const existing = profiles.find((p) => p.id === savedProfileId);
+        if (existing) {
+          setProfile(existing);
+          setUser({
+            id: existing.userId,
+            email: existing.email,
+            role: existing.isPeerTutorCertified ? 'tutor' : 'student'
+          });
+        } else {
+          // Stored ID was deleted or invalid on this device
+          localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
+          setProfile(null);
+          setUser(null);
+        }
+      } else {
+        // No session stored on this device - user is a guest!
+        setProfile(null);
+        setUser(null);
       }
       setIsLoading(false);
     }
@@ -106,11 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (p) => p.email.toLowerCase() === payload.email.trim().toLowerCase()
     );
     if (duplicate) {
-      // Log in as existing
-      setProfile(duplicate);
-      setUser({ id: duplicate.userId, email: duplicate.email, role: duplicate.isPeerTutorCertified ? 'tutor' : 'student' });
-      localStorage.setItem(CURRENT_USER_STORAGE_KEY, duplicate.id);
-      return { profile: duplicate };
+      return { error: 'An account with this email already exists. Please sign in with your password.' };
     }
 
     // If live Supabase, register in auth

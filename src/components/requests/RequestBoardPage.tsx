@@ -27,6 +27,7 @@ interface RequestBoardPageProps {
   onOfferHelp: (requestId: string, offerMessage: string) => Promise<void>;
   onUpdateStatus: (requestId: string, status: RequestStatus) => Promise<void>;
   onOpenDirectMessage?: (recipientId: string, recipientName: string) => void;
+  onOpenAuth?: () => void;
 }
 
 const DEPARTMENTS: (Department | 'All Departments')[] = [
@@ -46,7 +47,8 @@ export const RequestBoardPage: React.FC<RequestBoardPageProps> = ({
   onOpenQuestionnaire,
   onOfferHelp,
   onUpdateStatus,
-  onOpenDirectMessage
+  onOpenDirectMessage,
+  onOpenAuth
 }) => {
   const { profile } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
@@ -319,7 +321,13 @@ export const RequestBoardPage: React.FC<RequestBoardPageProps> = ({
                       {!isResolved ? (
                         <>
                           <button
-                            onClick={() => setSelectedTicketForOffer(ticket)}
+                            onClick={() => {
+                              if (!profile) {
+                                if (onOpenAuth) onOpenAuth();
+                              } else {
+                                setSelectedTicketForOffer(ticket);
+                              }
+                            }}
                             className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm flex items-center gap-1.5"
                           >
                             <UserCheck className="w-3.5 h-3.5" />
