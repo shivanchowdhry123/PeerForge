@@ -95,6 +95,7 @@ export interface QueuedSyncItem {
     | 'profile_upsert'
     | 'profile_delete'
     | 'request_upsert'
+    | 'request_delete'
     | 'notification_insert'
     | 'message_insert';
   payload: any;
@@ -263,6 +264,9 @@ export async function processSyncQueueAndRefresh(): Promise<void> {
           } else if (item.type === 'request_upsert') {
             const row = requestToDb(item.payload);
             const { error } = await client.from('requests').upsert(row, { onConflict: 'id' });
+            if (error) throw new Error(error.message);
+          } else if (item.type === 'request_delete') {
+            const { error } = await client.from('requests').delete().eq('id', item.payload.id);
             if (error) throw new Error(error.message);
           } else if (item.type === 'notification_insert') {
             const row = notificationToDb(item.payload);
@@ -788,6 +792,81 @@ export async function updateRequestStatus(
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status })
+  }).catch(() => {});
+
+  notifyDataUpdates();
+  return updatedTicket;
+}
+
+export async function deleteRequestTicket(requestId: string): Promise<boolean> {
+  // 1. Optimistic local cache removal
+  const stored = localStorage.getItem(STORAGE_KEY_REQUESTS);
+  if (stored) {
+    try {
+      const parsed: RequestTicket[] = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        const filtered = parsed.filter((r) => r && r.id !== requestId);
+        localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(filtered));
+      }
+    } catch {}
+  }
+
+  // 2. Direct Supabase delete
+  const client = getSupabase();
+  if (client) {
+    try {
+      const { error } = await client.from('requests').delete().eq('id', requestId);
+      if (error) {
+        queueForSync('request_delete', { id: requestId }, error.message);
+      }
+    } catch (err: any) {
+      queueForSync('request_delete', { id: requestId }, err?.message || 'Delete request failed');
+    }
+  } else {
+    queueForSync('request_delete', { id: requestId }, 'Supabase offline');
+  }
+
+  // 3. Mirror to server API
+  fetch(`/api/requests/${encodeURIComponent(requestId)}`, {
+    method: 'DELETE'
+  }).catch(() => {});
+
+  notifyDataUpdates();
+  return true;
+}
+
+export async function deleteRequestOffer(
+  requestId: string,
+  offerId: string
+): Promise<RequestTicket | null> {
+  const requests = await fetchAllRequests();
+  const target = requests.find((r) => r.id === requestId);
+  if (!target) return null;
+
+  const updatedOffers = (target.offers || []).filter((o) => o.id !== offerId);
+  const updatedTicket: RequestTicket = {
+    ...target,
+    offers: updatedOffers
+  };
+
+  const updatedList = requests.map((r) => (r.id === requestId ? updatedTicket : r));
+  localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(updatedList));
+
+  const client = getSupabase();
+  if (client) {
+    try {
+      const row = requestToDb(updatedTicket);
+      const { error } = await client.from('requests').upsert(row, { onConflict: 'id' });
+      if (error) {
+        queueForSync('request_upsert', updatedTicket, error.message);
+      }
+    } catch (err: any) {
+      queueForSync('request_upsert', updatedTicket, err?.message);
+    }
+  }
+
+  fetch(`/api/requests/${encodeURIComponent(requestId)}/offers/${encodeURIComponent(offerId)}`, {
+    method: 'DELETE'
   }).catch(() => {});
 
   notifyDataUpdates();

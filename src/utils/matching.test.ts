@@ -110,7 +110,18 @@ test('filterRequests properly filters by status and urgency', () => {
       status: 'Open',
       preferredLocation: 'Chemistry Lab Hall',
       createdAt: '2026-10-23T08:00:00Z',
-      offers: [],
+      offers: [
+        {
+          id: 'off1',
+          helperId: 'u1',
+          helperName: 'Elena Rostova',
+          helperAvatar: '',
+          helperGrade: 'Grade 12',
+          message: 'I can help during 4th period study hall!',
+          contactEmail: 'elena@school.edu',
+          createdAt: '2026-10-23T09:00:00Z'
+        }
+      ],
       tags: ['Chemistry', 'Equilibrium']
     },
     {
@@ -139,4 +150,38 @@ test('filterRequests properly filters by status and urgency', () => {
   const criticalOnly = filterRequests(mockTickets, '', 'All Departments', 'Critical (Next 24h)', 'All Statuses');
   assert.equal(criticalOnly.length, 1);
   assert.equal(criticalOnly[0].id, 'req1');
+
+  // Test Request Search Option (e.g. topic/subject/description)
+  const reqSearch = filterRequests(mockTickets, 'equilibrium');
+  assert.equal(reqSearch.length, 1);
+  assert.equal(reqSearch[0].id, 'req1');
+
+  // Test Student Name Search Option for creator
+  const studentSearchCreator = filterRequests(mockTickets, '', 'All Departments', 'All Urgencies', 'All Statuses', 'Leo Morales');
+  assert.equal(studentSearchCreator.length, 1);
+  assert.equal(studentSearchCreator[0].id, 'req2');
+
+  // Test Student Name Search Option for helper
+  const studentSearchHelper = filterRequests(mockTickets, '', 'All Departments', 'All Urgencies', 'All Statuses', 'Elena');
+  assert.equal(studentSearchHelper.length, 1);
+  assert.equal(studentSearchHelper[0].id, 'req1');
+
+  // Test Grade filter
+  const grade9Only = filterRequests(mockTickets, '', 'All Departments', 'All Urgencies', 'All Statuses', '', 'Grade 9');
+  assert.equal(grade9Only.length, 1);
+  assert.equal(grade9Only[0].id, 'req2');
+
+  // Test Offer Status filter
+  const needsOffers = filterRequests(mockTickets, '', 'All Departments', 'All Urgencies', 'All Statuses', '', 'All Grades', 'Needs Helpers');
+  assert.equal(needsOffers.length, 1);
+  assert.equal(needsOffers[0].id, 'req2');
+
+  const hasOffers = filterRequests(mockTickets, '', 'All Departments', 'All Urgencies', 'All Statuses', '', 'All Grades', 'Has Active Offers');
+  assert.equal(hasOffers.length, 1);
+  assert.equal(hasOffers[0].id, 'req1');
+
+  // Test Sorting by urgency
+  const sortedByUrgency = filterRequests(mockTickets, '', 'All Departments', 'All Urgencies', 'All Statuses', '', 'All Grades', 'All', 'urgency');
+  assert.equal(sortedByUrgency[0].id, 'req1');
 });
+

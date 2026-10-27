@@ -1,6 +1,77 @@
 {
-  "profiles": [],
-  "requests": [],
-  "notifications": [],
+  "profiles": [
+    {
+      "id": "student-1792951507813-xy9i",
+      "userId": "user-student-1792951507813-xy9i",
+      "fullName": "Rohan Mehta",
+      "handle": "@rohan_mehta",
+      "email": "rohan.mehta@school.edu",
+      "avatarUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+      "grade": "Class 11",
+      "department": "STEM & Coding",
+      "bio": "Newly registered student.",
+      "gpaHonorRoll": true,
+      "isPeerTutorCertified": false,
+      "availability": "Available Now",
+      "enrolledClasses": [],
+      "skills": [
+        {
+          "id": "sk-student-1792951507813-xy9i-0",
+          "name": "General Academics",
+          "category": "STEM & Coding",
+          "endorsementsCount": 1
+        }
+      ],
+      "tutoringSubjects": [],
+      "seekingHelpWith": [],
+      "contactMethods": {
+        "email": "rohan.mehta@school.edu",
+        "campusLocation": "Library Study Commons"
+      },
+      "totalSessionsCompleted": 0,
+      "rating": 5,
+      "joinedDate": "2026-10-25T18:05:07.814Z",
+      "isRealRegistration": true,
+      "password": "peerforge123"
+    }
+  ],
+  "requests": [
+    {
+      "title": "Python Recursion & Binary Trees",
+      "subject": "CS 102 Data Structures",
+      "department": "STEM & Coding",
+      "urgency": "Urgent (2-3 Days)",
+      "preferredLocation": "School Library (2nd Floor)",
+      "description": "Need an explanation on depth-first search tree traversal before the midterm exam.",
+      "tags": [
+        "Exam Prep",
+        "Homework Help"
+      ],
+      "creatorId": "user-student-1792951507813-xy9i",
+      "creatorName": "Rohan Mehta",
+      "creatorAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+      "creatorGrade": "Class 11",
+      "status": "In Progress",
+      "id": "req-1792951545530-sg0o",
+      "createdAt": "2026-10-25T18:05:45.530Z",
+      "offers": []
+    }
+  ],
+  "notifications": [
+    {
+      "recipientId": "user-student-1792951507813-xy9i",
+      "senderId": "user-student-1792951507813-xy9i",
+      "senderName": "Rohan Mehta",
+      "senderAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+      "title": "New Help Offer on \"Python Recursion & Binary Trees\"",
+      "message": "Rohan Mehta (Class 11) offered to help: \"I can help review pre-order, in-order, and post-order traversal today after school!\"",
+      "type": "offer",
+      "linkTab": "requests",
+      "targetId": "req-1792951545530-sg0o",
+      "id": "notif-1792951582992-2ayj",
+      "read": false,
+      "createdAt": "2026-10-25T18:06:22.992Z"
+    }
+  ],
   "messages": []
 }

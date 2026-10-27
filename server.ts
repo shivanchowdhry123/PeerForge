@@ -333,6 +333,37 @@ async function startServer() {
     res.json(target);
   });
 
+  app.delete('/api/requests/:id', (req: Request, res: Response) => {
+    const { id } = req.params;
+    db.requests = db.requests.filter(r => r.id !== id);
+    saveDatabase();
+
+    syncToSupabase(async () => {
+      await supabase!.from('requests').delete().eq('id', id);
+    });
+
+    res.json({ success: true });
+  });
+
+  app.delete('/api/requests/:id/offers/:offerId', (req: Request, res: Response) => {
+    const { id, offerId } = req.params;
+    const target = db.requests.find(r => r.id === id);
+    if (!target) {
+      res.status(404).json({ error: 'Request not found' });
+      return;
+    }
+
+    target.offers = (target.offers || []).filter((o: any) => o.id !== offerId);
+    saveDatabase();
+
+    syncToSupabase(async () => {
+      const row = requestToDb(target);
+      await supabase!.from('requests').upsert(row, { onConflict: 'id' });
+    });
+
+    res.json(target);
+  });
+
   // NOTIFICATIONS API
   app.get('/api/notifications/:recipientId', (req: Request, res: Response) => {
     const { recipientId } = req.params;

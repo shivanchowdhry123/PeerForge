@@ -158,42 +158,123 @@ export function filterProfiles(
 }
 
 /**
- * Filter request tickets for the Request Board.
+ * Filter and sort request tickets for the School Request Board.
+ * Supports:
+ * - requestQuery: topic, subject, class, description, tags, location
+ * - studentQuery: student creator name or helper names in offers
+ * - departmentFilter: academic department
+ * - urgencyFilter: urgency level
+ * - statusFilter: 'Open', 'In Progress', 'Resolved'
+ * - gradeFilter: Class/Grade level of creator
+ * - offerStatusFilter: 'All', 'Needs Helpers', 'Has Active Offers'
+ * - sortBy: 'newest', 'oldest', 'urgency', 'offers'
  */
 export function filterRequests(
   requests: RequestTicket[],
-  query: string,
-  departmentFilter: string,
-  urgencyFilter: string,
-  statusFilter: string
+  requestQuery: string = '',
+  departmentFilter: string = 'All Departments',
+  urgencyFilter: string = 'All Urgencies',
+  statusFilter: string = 'All Statuses',
+  studentQuery: string = '',
+  gradeFilter: string = 'All Grades',
+  offerStatusFilter: string = 'All',
+  sortBy: string = 'newest'
 ): RequestTicket[] {
-  const cleanQuery = query.trim().toLowerCase();
+  const cleanReqQuery = requestQuery.trim().toLowerCase();
+  const cleanStudentQuery = studentQuery.trim().toLowerCase();
 
-  return requests.filter((req) => {
-    if (cleanQuery) {
-      const titleMatch = req.title.toLowerCase().includes(cleanQuery);
-      const descMatch = req.description.toLowerCase().includes(cleanQuery);
-      const subjMatch = req.subject.toLowerCase().includes(cleanQuery);
-      const tagMatch = req.tags.some((t) => t.toLowerCase().includes(cleanQuery));
-      const creatorMatch = req.creatorName.toLowerCase().includes(cleanQuery);
+  const filtered = requests.filter((req) => {
+    // 1. Request details search: subject, title, description, location, tags
+    if (cleanReqQuery) {
+      const titleMatch = req.title.toLowerCase().includes(cleanReqQuery);
+      const descMatch = req.description.toLowerCase().includes(cleanReqQuery);
+      const subjMatch = req.subject.toLowerCase().includes(cleanReqQuery);
+      const locMatch = req.preferredLocation ? req.preferredLocation.toLowerCase().includes(cleanReqQuery) : false;
+      const deptMatch = req.department.toLowerCase().includes(cleanReqQuery);
+      const tagMatch = (req.tags || []).some((t) => t.toLowerCase().includes(cleanReqQuery));
 
-      if (!titleMatch && !descMatch && !subjMatch && !tagMatch && !creatorMatch) {
+      if (!titleMatch && !descMatch && !subjMatch && !locMatch && !deptMatch && !tagMatch) {
         return false;
       }
     }
 
+    // 2. Dedicated student name search: creator name or helper names in offers
+    if (cleanStudentQuery) {
+      const creatorMatch = req.creatorName.toLowerCase().includes(cleanStudentQuery);
+      const helperMatch = (req.offers || []).some((o) =>
+        o.helperName.toLowerCase().includes(cleanStudentQuery)
+      );
+
+      if (!creatorMatch && !helperMatch) {
+        return false;
+      }
+    }
+
+    // 3. Department filter
     if (departmentFilter && departmentFilter !== 'All Departments' && req.department !== departmentFilter) {
       return false;
     }
 
-    if (urgencyFilter && urgencyFilter !== 'All Urgencies' && req.urgency !== urgencyFilter) {
-      return false;
+    // 4. Urgency filter
+    if (urgencyFilter && urgencyFilter !== 'All Urgencies') {
+      if (urgencyFilter === 'Critical' || urgencyFilter.includes('Critical')) {
+        if (!req.urgency.includes('Critical')) return false;
+      } else if (req.urgency !== urgencyFilter) {
+        return false;
+      }
     }
 
+    // 5. Status filter
     if (statusFilter && statusFilter !== 'All Statuses' && req.status !== statusFilter) {
       return false;
     }
 
+    // 6. Grade filter
+    if (gradeFilter && gradeFilter !== 'All Grades') {
+      const gradeLower = gradeFilter.toLowerCase();
+      const creatorGradeLower = (req.creatorGrade || '').toLowerCase();
+      if (!creatorGradeLower.includes(gradeLower) && creatorGradeLower !== gradeLower) {
+        return false;
+      }
+    }
+
+    // 7. Offer status filter ('Needs Helpers' vs 'Has Active Offers')
+    if (offerStatusFilter && offerStatusFilter !== 'All' && offerStatusFilter !== 'All Offers') {
+      const offersCount = (req.offers || []).length;
+      if (offerStatusFilter === 'Needs Helpers' || offerStatusFilter === 'needs-helpers' || offerStatusFilter === 'No Offers') {
+        if (offersCount > 0) return false;
+      } else if (offerStatusFilter === 'Has Active Offers' || offerStatusFilter === 'has-offers') {
+        if (offersCount === 0) return false;
+      }
+    }
+
     return true;
+  });
+
+  // Urgency weight map for sorting
+  const urgencyWeight = (urgency: string): number => {
+    if (urgency.includes('Critical')) return 4;
+    if (urgency.includes('Urgent')) return 3;
+    if (urgency.includes('Standard')) return 2;
+    return 1;
+  };
+
+  // 8. Sorting
+  return filtered.sort((a, b) => {
+    if (sortBy === 'oldest') {
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    }
+    if (sortBy === 'urgency') {
+      const weightDiff = urgencyWeight(b.urgency) - urgencyWeight(a.urgency);
+      if (weightDiff !== 0) return weightDiff;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+    if (sortBy === 'offers') {
+      const offersDiff = (b.offers?.length || 0) - (a.offers?.length || 0);
+      if (offersDiff !== 0) return offersDiff;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+    // Default: 'newest'
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 }

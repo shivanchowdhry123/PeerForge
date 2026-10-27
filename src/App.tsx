@@ -22,6 +22,8 @@ import {
   createRequestTicket, 
   addOfferToRequest, 
   updateRequestStatus,
+  deleteRequestTicket,
+  deleteRequestOffer,
   fetchNotifications,
   addNotification,
   markNotificationAsRead,
@@ -51,6 +53,7 @@ function MainApp() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [newlyCreatedRequestId, setNewlyCreatedRequestId] = useState<string | null>(null);
 
   // Notification Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -178,6 +181,7 @@ function MainApp() {
     });
 
     setRequests((prev) => [newTicket, ...prev]);
+    setNewlyCreatedRequestId(newTicket.id);
     showToast('Your help request has been published to the Request Board!');
   };
 
@@ -225,6 +229,30 @@ function MainApp() {
     if (updated) {
       setRequests((prev) => prev.map((r) => (r.id === requestId ? updated : r)));
       showToast(`Request marked as ${status}.`);
+    }
+  };
+
+  const handleDeleteRequest = async (requestId: string) => {
+    try {
+      await deleteRequestTicket(requestId);
+      setRequests((prev) => prev.filter((r) => r.id !== requestId));
+      showToast('Help request deleted from the Request Board.');
+    } catch (err) {
+      console.error('Failed to delete request ticket:', err);
+      showToast('Failed to delete request. Please try again.');
+    }
+  };
+
+  const handleDeleteOffer = async (requestId: string, offerId: string) => {
+    try {
+      const updated = await deleteRequestOffer(requestId, offerId);
+      if (updated) {
+        setRequests((prev) => prev.map((r) => (r.id === requestId ? updated : r)));
+        showToast('Help offer message removed.');
+      }
+    } catch (err) {
+      console.error('Failed to remove help offer:', err);
+      showToast('Failed to remove help offer.');
     }
   };
 
@@ -329,8 +357,11 @@ function MainApp() {
             onOpenQuestionnaire={() => setIsQuestionnaireOpen(true)}
             onOfferHelp={handleOfferHelp}
             onUpdateStatus={handleUpdateStatus}
+            onDeleteRequest={handleDeleteRequest}
+            onDeleteOffer={handleDeleteOffer}
             onOpenDirectMessage={handleOpenDirectMessageWithUser}
             onOpenAuth={() => setIsAuthOpen(true)}
+            newlyCreatedRequestId={newlyCreatedRequestId}
           />
         )}
 
