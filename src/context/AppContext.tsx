@@ -29,6 +29,7 @@ import {
   INITIAL_CONTACT_INQUIRIES,
   INITIAL_UPLOADED_FILES
 } from '../data/initialData';
+import { supabase, isSupabaseConfigured, saveSupabaseStudent } from '../services/supabaseClient';
 
 interface AppContextType {
   currentUser: StudentProfile;
@@ -190,6 +191,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Sync state with backend database API on mount
   useEffect(() => {
+    // Check for existing Supabase session
+    if (isSupabaseConfigured) {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          fetch(`/api/students/${session.user.id}`)
+            .then(r => r.json())
+            .then(student => {
+              if (student && !student.error) {
+                setCurrentUser(student);
+                setIsAuthenticated(true);
+              }
+            })
+            .catch(() => {
+              // If profile fetch fails but auth exists, we might need to create it or just stay as guest
+            });
+        }
+      });
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (session?.user) {
+          setIsAuthenticated(true);
+          // Optionally fetch profile here too
+        } else {
+          setIsAuthenticated(false);
+          setCurrentUser({
+            id: 'guest',
+            name: 'Visitor',
+            email: 'visitor@opgworldschool.com',
+            avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Guest',
+            grade: 'N/A',
+            section: 'N/A',
+            role: 'student',
+            bio: 'Welcome to PeerForge. Please sign in to explore.',
+            skills: [],
+            interests: [],
+            academicStrengths: [],
+            projects: [],
+            achievements: [],
+            availability: 'Focusing on Studies / Busy',
+            privacySettings: {
+              showGradeToAll: false,
+              allowDirectMessages: 'verified_only',
+              showAchievements: false
+            },
+            completeness: 0,
+            isVerified: false,
+            isApproved: false,
+            joinedDate: 'N/A'
+          });
+        }
+      });
+
+      return () => subscription.unsubscribe();
+    }
+
     Promise.all([
       fetch('/api/students').then(r => r.json()).catch(() => null),
       fetch('/api/projects').then(r => r.json()).catch(() => null),
@@ -201,9 +257,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ]).then(([studentsRes, projectsRes, questionsRes, communitiesRes, eventsRes, convRes, msgRes]) => {
       if (Array.isArray(studentsRes) && studentsRes.length > 0) {
         setAllStudents(studentsRes);
-        const savedId = localStorage.getItem('opg_current_user_id');
-        const found = studentsRes.find((s: StudentProfile) => s.id === savedId);
-        if (found) setCurrentUser(found);
+        if (!isSupabaseConfigured) {
+          const savedId = localStorage.getItem('opg_current_user_id');
+          const found = studentsRes.find((s: StudentProfile) => s.id === savedId);
+          if (found) setCurrentUser(found);
+        }
       }
       if (Array.isArray(projectsRes)) setProjects(projectsRes);
       if (Array.isArray(questionsRes)) setQuestions(questionsRes);
@@ -1088,6 +1146,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'Please enter your Gmail ID.' };
     }
 
+    if (isSupabaseConfigured && password) {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: password
+      });
+
+      if (error) {
+        return { success: false, message: error.message };
+      }
+
+      if (data.user) {
+        // Fetch profile from our API/DB
+        const res = await fetch(`/api/students/${data.user.id}`);
+        const student = await res.json();
+        if (student && !student.error) {
+          setCurrentUser(student);
+          setIsAuthenticated(true);
+          return { success: true, message: `Welcome back, ${student.name}!`, user: student };
+        }
+      }
+    }
+
+    // Fallback to local memory (for demo or if Supabase not yet setup)
     const matched = allStudents.find(
       s =>
         s.email.toLowerCase().trim() === cleanEmail ||
@@ -1109,21 +1190,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     setCurrentUser(matched);
+    setIsAuthenticated(true);
     setIsAuthModalOpen(false);
-
-    setNotifications(prev => [
-      {
-        id: `notif-${Date.now()}`,
-        userId: matched.id,
-        type: 'system',
-        title: `Welcome back, ${matched.name}!`,
-        description: `Signed in as ${matched.role === 'teacher' ? 'Faculty Mentor' : matched.role === 'developer' ? 'App Developer' : 'Student'}.`,
-        read: false,
-        timestamp: 'Just now',
-        actionTab: 'home'
-      },
-      ...prev
-    ]);
 
     return { success: true, message: `Welcome back, ${matched.name}!`, user: matched };
   };
@@ -1149,16 +1217,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'Please provide a valid Gmail address.' };
     }
 
-    const exists = allStudents.some(
-      s =>
-        s.email.toLowerCase() === cleanEmail ||
-        s.gmailAccount?.toLowerCase() === cleanEmail
-    );
-    if (exists) {
-      return {
-        success: false,
-        message: 'One student/teacher, one account: An account with this Gmail ID already exists. Please log in directly.'
-      };
+    let authUserId = `${data.role}-${Date.now()}`;
+
+    if (isSupabaseConfigured && data.password) {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password: data.password,
+        options: {
+          data: {
+            full_name: cleanName,
+            role: data.role
+          }
+        }
+      });
+
+      if (authError) {
+        return { success: false, message: authError.message };
+      }
+      if (authData.user) {
+        authUserId = authData.user.id;
+      }
+    } else {
+      // Local check if not using Supabase
+      const exists = allStudents.some(
+        s =>
+          s.email.toLowerCase() === cleanEmail ||
+          s.gmailAccount?.toLowerCase() === cleanEmail
+      );
+      if (exists) {
+        return {
+          success: false,
+          message: 'One student/teacher, one account: An account with this Gmail ID already exists. Please log in directly.'
+        };
+      }
     }
 
     const initialSkills: Skill[] = (data.skills && data.skills.length > 0)
@@ -1179,7 +1270,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         ];
 
     const newProfile: StudentProfile = {
-      id: `${data.role}-${Date.now()}`,
+      id: authUserId,
       name: cleanName,
       email: cleanEmail,
       gmailAccount: cleanEmail,
@@ -1213,41 +1304,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       joinedDate: new Date().toISOString().split('T')[0]
     };
 
+    // Save to allStudents state
     setAllStudents(prev => [...prev, newProfile]);
-    setCurrentUser(newProfile);
-    setIsAuthModalOpen(false);
+    
+    // Save to Supabase DB if configured
+    if (isSupabaseConfigured) {
+      await saveSupabaseStudent(newProfile);
+    }
 
+    // Save to local backend
     fetch('/api/students', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newProfile)
-    }).catch(e => console.warn('Student sync error:', e));
+    }).catch(e => console.warn('Student profile sync error', e));
 
-    setNotifications(prev => [
-      {
-        id: `notif-${Date.now()}`,
-        userId: newProfile.id,
-        type: 'system',
-        title: `Welcome to PeerForge, ${cleanName}!`,
-        description: `Your ${data.role === 'teacher' ? 'Teacher / Faculty' : 'Student'} profile has been verified and registered with ${cleanEmail}.`,
-        read: false,
-        timestamp: 'Just now',
-        actionTab: 'profile'
-      },
-      ...prev
-    ]);
+    setCurrentUser(newProfile);
+    setIsAuthenticated(true);
+    setIsAuthModalOpen(false);
 
-    return {
-      success: true,
-      message: `Account created successfully! Welcome, ${cleanName}.`,
-      user: newProfile
-    };
+    return { success: true, message: `Account created successfully! Welcome to PeerForge, ${cleanName}.`, user: newProfile };
   };
 
-  const logout = () => {
+  const logout = async () => {
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut();
+    }
     setIsAuthenticated(false);
-    localStorage.removeItem('opg_is_authenticated');
+    setCurrentUser({
+      id: 'guest',
+      name: 'Visitor',
+      email: 'visitor@opgworldschool.com',
+      avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Guest',
+      grade: 'N/A',
+      section: 'N/A',
+      role: 'student',
+      bio: 'Welcome to PeerForge. Please sign in to explore.',
+      skills: [],
+      interests: [],
+      academicStrengths: [],
+      projects: [],
+      achievements: [],
+      availability: 'Focusing on Studies / Busy',
+      privacySettings: {
+        showGradeToAll: false,
+        allowDirectMessages: 'verified_only',
+        showAchievements: false
+      },
+      completeness: 0,
+      isVerified: false,
+      isApproved: false,
+      joinedDate: 'N/A'
+    });
     localStorage.removeItem('opg_current_user_id');
+    localStorage.removeItem('opg_is_authenticated');
   };
 
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>(INITIAL_UPLOADED_FILES);
@@ -1315,8 +1425,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  const unreadNotifsCount = notifications.filter(n => !n.read && (n.userId === currentUser.id || n.userId === 'all')).length;
-  const unreadMessagesCount = 2;
+  const unreadNotifsCount = isAuthenticated && currentUser 
+    ? notifications.filter(n => !n.read && (n.userId === currentUser.id || n.userId === 'all')).length 
+    : 0;
+  // Assuming messages have a 'read' property or similar mechanism; adjusting to look for messages not from current user
+  const unreadMessagesCount = messages.filter(m => m.senderId !== currentUser.id && !m.readBy?.includes(currentUser.id)).length;
 
   return (
     <AppContext.Provider

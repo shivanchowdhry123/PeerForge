@@ -14,20 +14,21 @@ import {
   UploadedFile
 } from '../types';
 
-// Supabase configuration from environment or window config
-const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
-const SUPABASE_ANON_KEY = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder';
+// Supabase configuration
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder';
 
 export const isSupabaseConfigured = Boolean(
-  (import.meta as any).env?.VITE_SUPABASE_URL &&
-  (import.meta as any).env?.VITE_SUPABASE_ANON_KEY &&
-  !(import.meta as any).env?.VITE_SUPABASE_URL.includes('placeholder')
+  import.meta.env.VITE_SUPABASE_URL &&
+  import.meta.env.VITE_SUPABASE_ANON_KEY &&
+  !import.meta.env.VITE_SUPABASE_URL.includes('placeholder')
 );
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
-    autoRefreshToken: true
+    autoRefreshToken: true,
+    detectSessionInUrl: true
   }
 });
 

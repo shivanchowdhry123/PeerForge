@@ -259,8 +259,15 @@ app.get('/api/students/:id', (req: Request, res: Response) => {
 });
 
 app.post('/api/students', (req: Request, res: Response) => {
+  const existingIdx = db.students.findIndex(s => s.id === req.body.id || s.email === req.body.email);
+  if (existingIdx > -1) {
+    // Update existing instead of creating new if it already exists (e.g. from Supabase sync)
+    db.students[existingIdx] = { ...db.students[existingIdx], ...req.body };
+    return res.json(db.students[existingIdx]);
+  }
+
   const newStudent: StudentProfile = {
-    id: `user-${Date.now()}`,
+    id: req.body.id || `user-${Date.now()}`,
     name: req.body.name || 'Student Member',
     email: req.body.email || `student.${Date.now()}@opgworldschool.com`,
     avatar: req.body.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(req.body.name || 'OPG')}`,
@@ -272,18 +279,18 @@ app.post('/api/students', (req: Request, res: Response) => {
     skills: req.body.skills || [],
     interests: req.body.interests || [],
     academicStrengths: req.body.academicStrengths || [],
-    projects: [],
-    achievements: [],
+    projects: req.body.projects || [],
+    achievements: req.body.achievements || [],
     availability: req.body.availability || 'Active & Seeking Projects',
-    privacySettings: {
+    privacySettings: req.body.privacySettings || {
       showGradeToAll: true,
       allowDirectMessages: 'anyone',
       showAchievements: true
     },
-    completeness: 80,
-    isVerified: true,
-    isApproved: true,
-    joinedDate: new Date().toISOString().split('T')[0]
+    completeness: req.body.completeness || 80,
+    isVerified: req.body.isVerified !== undefined ? req.body.isVerified : true,
+    isApproved: req.body.isApproved !== undefined ? req.body.isApproved : true,
+    joinedDate: req.body.joinedDate || new Date().toISOString().split('T')[0]
   };
 
   db.students.unshift(newStudent);

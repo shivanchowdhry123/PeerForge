@@ -47,7 +47,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     { id: 'qa', label: 'Questions & Answers', icon: HelpCircle },
     { id: 'projects', label: 'Projects & Team', icon: FolderKanban },
     { id: 'communities', label: 'Societies & Clubs', icon: Users },
-    { id: 'uploads', label: 'Files & Uploads Hub', icon: HardDriveUpload, badge: uploadedFiles.length },
     { id: 'events', label: 'Events & Notices', icon: Calendar },
     { id: 'notifications', label: 'Notifications', icon: Bell, badge: unreadNotifsCount },
     { id: 'profile', label: 'My Profile', icon: User },
@@ -102,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
                   />
                   <span className="truncate">{item.label}</span>
                 </div>
-                {item.badge && item.badge > 0 ? (
+                {item.badge !== undefined && item.badge > 0 ? (
                   <span
                     className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
                       item.accent
