@@ -1,448 +1,211 @@
-import React, { useState, useEffect } from 'react';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { Navbar } from './components/layout/Navbar';
-import { Footer } from './components/layout/Footer';
-import { HomePage } from './components/home/HomePage';
-import { DirectoryPage } from './components/directory/DirectoryPage';
-import { RequestBoardPage } from './components/requests/RequestBoardPage';
-import { AboutUsPage } from './components/about/AboutUsPage';
-import { ProfileModal } from './components/directory/ProfileModal';
-import { MatchingWizardModal } from './components/questionnaire/MatchingWizardModal';
-import { NewRequestModal } from './components/requests/NewRequestModal';
-import { AuthModal } from './components/auth/AuthModal';
-import { EditProfileModal } from './components/profile/EditProfileModal';
-import { RegisterStudentModal } from './components/auth/RegisterStudentModal';
-import { NotificationModal } from './components/notifications/NotificationModal';
-import { DirectMessageModal } from './components/messaging/DirectMessageModal';
-import { StudentProfile, RequestTicket, Department, UrgencyLevel, RequestStatus, AppNotification } from './types';
-import { 
-  fetchAllProfiles, 
-  fetchAllRequests, 
-  endorseSkill, 
-  createRequestTicket, 
-  addOfferToRequest, 
-  updateRequestStatus,
-  deleteRequestTicket,
-  deleteRequestOffer,
-  fetchNotifications,
-  addNotification,
-  markNotificationAsRead,
-  markAllNotificationsAsRead,
-  subscribeDataUpdates
-} from './services/supabaseClient';
-import { SyncStatusBanner } from './components/common/SyncStatusBanner';
-import { CheckCircle2, Sparkles, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { AppProvider, useApp } from './context/AppContext';
+import { Navbar } from './components/Navbar';
+import { Sidebar } from './components/Sidebar';
+import { HomeView } from './views/HomeView';
+import { DiscoverStudentsView } from './views/DiscoverStudentsView';
+import { AISkillFinderView } from './views/AISkillFinderView';
+import { MessagesView } from './views/MessagesView';
+import { QAView } from './views/QAView';
+import { ProjectsView } from './views/ProjectsView';
+import { EventsView } from './views/EventsView';
+import { NotificationsView } from './views/NotificationsView';
+import { ProfileView } from './views/ProfileView';
+import { SettingsView } from './views/SettingsView';
+import { AdminView } from './views/AdminView';
+import { AboutUsView } from './views/AboutUsView';
+import { ContactUsView } from './views/ContactUsView';
+import { CommunitiesView } from './views/CommunitiesView';
+import { UploadsView } from './views/UploadsView';
+import { OnboardingModal } from './components/OnboardingModal';
+import { InviteToProjectModal } from './components/InviteToProjectModal';
+import { AuthModal } from './components/AuthModal';
+import {
+  Home,
+  Compass,
+  Sparkles,
+  MessageSquare,
+  HelpCircle,
+  Menu,
+  X,
+  HardDriveUpload
+} from 'lucide-react';
 
-function MainApp() {
-  const { profile: currentUserProfile } = useAuth();
-  const [currentTab, setCurrentTab] = useState<'home' | 'directory' | 'requests' | 'about'>('home');
-  const [profiles, setProfiles] = useState<StudentProfile[]>([]);
-  const [requests, setRequests] = useState<RequestTicket[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+const MainLayout: React.FC = () => {
+  const { activeTab, setActiveTab, unreadMessagesCount, currentUser, reactivateOwnAccount } = useApp();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Notifications & Direct Messages State
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [isDirectMessageOpen, setIsDirectMessageOpen] = useState(false);
-  const [directMessageRecipient, setDirectMessageRecipient] = useState<StudentProfile | null>(null);
-
-  // Modals state
-  const [selectedProfile, setSelectedProfile] = useState<StudentProfile | null>(null);
-  const [isQuestionnaireOpen, setIsQuestionnaireOpen] = useState(false);
-  const [isNewRequestOpen, setIsNewRequestOpen] = useState(false);
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [newlyCreatedRequestId, setNewlyCreatedRequestId] = useState<string | null>(null);
-
-  // Notification Toast
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 3500);
-  };
-
-  const loadAllData = async () => {
-    try {
-      const [profs, reqs] = await Promise.all([
-        fetchAllProfiles(),
-        fetchAllRequests()
-      ]);
-      setProfiles(profs);
-      setRequests(reqs);
-    } catch (err) {
-      console.error('Failed to load application data:', err);
-    } finally {
-      setIsLoading(false);
+  const renderActiveView = () => {
+    switch (activeTab) {
+      case 'home':
+        return <HomeView />;
+      case 'discover':
+        return <DiscoverStudentsView />;
+      case 'ai-finder':
+        return <AISkillFinderView />;
+      case 'messages':
+        return <MessagesView />;
+      case 'qa':
+        return <QAView />;
+      case 'projects':
+        return <ProjectsView />;
+      case 'communities':
+        return <CommunitiesView />;
+      case 'uploads':
+        return <UploadsView />;
+      case 'events':
+        return <EventsView />;
+      case 'notifications':
+        return <NotificationsView />;
+      case 'profile':
+        return <ProfileView />;
+      case 'settings':
+        return <SettingsView />;
+      case 'about':
+        return <AboutUsView />;
+      case 'contact':
+        return <ContactUsView />;
+      case 'admin':
+        return <AdminView />;
+      default:
+        return <HomeView />;
     }
   };
-
-  const loadNotificationsForUser = async () => {
-    if (!currentUserProfile) return;
-    const notifs = await fetchNotifications(currentUserProfile.userId);
-    setNotifications(notifs);
-  };
-
-  useEffect(() => {
-    loadAllData();
-    const unsub = subscribeDataUpdates(() => {
-      loadAllData();
-    });
-    return unsub;
-  }, [currentUserProfile]);
-
-  useEffect(() => {
-    if (currentUserProfile) {
-      loadNotificationsForUser();
-      const interval = setInterval(loadNotificationsForUser, 10000);
-      return () => clearInterval(interval);
-    }
-  }, [currentUserProfile]);
-
-  // Handlers
-  const handleStudentRegistered = (newProfile: StudentProfile) => {
-    setProfiles((prev) => [newProfile, ...prev.filter((p) => p.id !== newProfile.id)]);
-    showToast(`Welcome ${newProfile.fullName}! Your profile has been added to the school directory.`);
-    setCurrentTab('directory');
-  };
-
-  const handleOpenDirectMessageWithUser = (recipient: StudentProfile | string) => {
-    if (!currentUserProfile) {
-      setIsAuthOpen(true);
-      showToast('Please sign in or register to message peers.');
-      return;
-    }
-
-    if (typeof recipient === 'string') {
-      const matched = profiles.find((p) => p.id === recipient || p.userId === recipient);
-      if (matched) {
-        setDirectMessageRecipient(matched);
-        setIsDirectMessageOpen(true);
-      } else {
-        showToast('Student profile not found in directory');
-      }
-    } else {
-      setDirectMessageRecipient(recipient);
-      setIsDirectMessageOpen(true);
-    }
-  };
-
-  const handleEndorseSkill = async (profileId: string, skillId: string) => {
-    const updated = await endorseSkill(profileId, skillId);
-    if (updated) {
-      setProfiles((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      if (selectedProfile && selectedProfile.id === updated.id) {
-        setSelectedProfile(updated);
-      }
-      showToast(`Endorsement recorded for ${updated.fullName}!`);
-
-      if (currentUserProfile && currentUserProfile.id !== profileId) {
-        await addNotification({
-          recipientId: updated.userId,
-          senderId: currentUserProfile.userId,
-          senderName: currentUserProfile.fullName,
-          senderAvatar: currentUserProfile.avatarUrl,
-          title: `Skill Endorsement Received`,
-          message: `${currentUserProfile.fullName} endorsed your skills on PeerForge!`,
-          type: 'endorsement',
-          linkTab: 'directory',
-          targetId: updated.id
-        });
-      }
-    }
-  };
-
-  const handleCreateRequest = async (ticketData: {
-    title: string;
-    description: string;
-    subject: string;
-    department: Department;
-    urgency: UrgencyLevel;
-    preferredLocation: string;
-    tags: string[];
-  }) => {
-    if (!currentUserProfile) {
-      setIsNewRequestOpen(false);
-      setIsAuthOpen(true);
-      showToast('Please sign in to publish a help request.');
-      return;
-    }
-
-    const newTicket = await createRequestTicket({
-      ...ticketData,
-      creatorId: currentUserProfile.userId,
-      creatorName: currentUserProfile.fullName,
-      creatorAvatar: currentUserProfile.avatarUrl,
-      creatorGrade: currentUserProfile.grade,
-      status: 'Open'
-    });
-
-    setRequests((prev) => [newTicket, ...prev]);
-    setNewlyCreatedRequestId(newTicket.id);
-    showToast('Your help request has been published to the Request Board!');
-  };
-
-  const handleOfferHelp = async (requestId: string, offerMessage: string) => {
-    if (!currentUserProfile) {
-      setIsAuthOpen(true);
-      showToast('Please sign in or register to offer help.');
-      return;
-    }
-
-    const helper = currentUserProfile;
-    const targetTicket = requests.find((r) => r.id === requestId);
-
-    const updated = await addOfferToRequest(requestId, {
-      helperId: helper.userId,
-      helperName: helper.fullName,
-      helperAvatar: helper.avatarUrl,
-      helperGrade: helper.grade,
-      message: offerMessage,
-      contactEmail: helper.email
-    });
-
-    if (updated) {
-      setRequests((prev) => prev.map((r) => (r.id === requestId ? updated : r)));
-      showToast('Offer submitted to student! They received a direct notification.');
-
-      if (targetTicket) {
-        await addNotification({
-          recipientId: targetTicket.creatorId,
-          senderId: helper.userId,
-          senderName: helper.fullName,
-          senderAvatar: helper.avatarUrl,
-          title: `New Help Offer on "${targetTicket.title}"`,
-          message: `${helper.fullName} (${helper.grade}) offered to help: "${offerMessage}"`,
-          type: 'offer',
-          linkTab: 'requests',
-          targetId: requestId
-        });
-      }
-    }
-  };
-
-  const handleUpdateStatus = async (requestId: string, status: RequestStatus) => {
-    const updated = await updateRequestStatus(requestId, status);
-    if (updated) {
-      setRequests((prev) => prev.map((r) => (r.id === requestId ? updated : r)));
-      showToast(`Request marked as ${status}.`);
-    }
-  };
-
-  const handleDeleteRequest = async (requestId: string) => {
-    try {
-      await deleteRequestTicket(requestId);
-      setRequests((prev) => prev.filter((r) => r.id !== requestId));
-      showToast('Help request deleted from the Request Board.');
-    } catch (err) {
-      console.error('Failed to delete request ticket:', err);
-      showToast('Failed to delete request. Please try again.');
-    }
-  };
-
-  const handleDeleteOffer = async (requestId: string, offerId: string) => {
-    try {
-      const updated = await deleteRequestOffer(requestId, offerId);
-      if (updated) {
-        setRequests((prev) => prev.map((r) => (r.id === requestId ? updated : r)));
-        showToast('Help offer message removed.');
-      }
-    } catch (err) {
-      console.error('Failed to remove help offer:', err);
-      showToast('Failed to remove help offer.');
-    }
-  };
-
-  const handleRequestSession = async (mentor: StudentProfile, subject: string, message: string) => {
-    if (!currentUserProfile) {
-      setIsAuthOpen(true);
-      showToast('Please sign in to request a study session.');
-      return;
-    }
-
-    showToast(`Session request dispatched to ${mentor.fullName} for ${subject}!`);
-
-    await addNotification({
-      recipientId: mentor.userId,
-      senderId: currentUserProfile.userId,
-      senderName: currentUserProfile.fullName,
-      senderAvatar: currentUserProfile.avatarUrl,
-      title: `Study Session Request for ${subject}`,
-      message: `${currentUserProfile.fullName} requested a study session: ${message || 'Check your school email for free period timing.'}`,
-      type: 'session',
-      linkTab: 'directory',
-      targetId: mentor.id
-    });
-  };
-
-  const handleMarkNotifRead = async (id: string) => {
-    await markNotificationAsRead(id);
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-  };
-
-  const handleMarkAllNotifsRead = async () => {
-    if (!currentUserProfile) return;
-    await markAllNotificationsAsRead(currentUserProfile.userId);
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
-  const openRequestCount = requests.filter((r) => r.status === 'Open').length;
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-900 text-slate-100">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-200">
-          <div className="px-4 py-3 rounded-2xl bg-indigo-950 border border-indigo-700/80 shadow-2xl text-white text-xs flex items-center gap-3">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-            <span className="font-medium">{toastMessage}</span>
-            <button
-              onClick={() => setToastMessage(null)}
-              className="text-slate-400 hover:text-white ml-2"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
-
+    <div className="min-h-screen bg-ivory-page text-[var(--text-primary)] flex flex-col transition-colors selection:bg-blue-100 selection:text-blue-900">
       {/* Top Navbar */}
-      <Navbar
-        currentTab={currentTab}
-        onNavigate={setCurrentTab}
-        onOpenQuestionnaire={() => setIsQuestionnaireOpen(true)}
-        onOpenNewRequest={() => setIsNewRequestOpen(true)}
-        onOpenAuth={() => setIsAuthOpen(true)}
-        onOpenEditProfile={() => setIsEditProfileOpen(true)}
-        onOpenRegister={() => setIsRegisterOpen(true)}
-        onOpenNotifications={() => setIsNotificationsOpen(true)}
-        unreadNotificationCount={unreadCount}
-        openRequestCount={openRequestCount}
-      />
+      <Navbar />
 
-      {/* Cloud Sync Status & Error Warning Banner */}
-      <SyncStatusBanner />
+      <div className="flex-1 flex max-w-7xl w-full mx-auto">
+        {/* Desktop Left Sidebar */}
+        <div className="hidden md:block">
+          <Sidebar />
+        </div>
 
-      {/* Main Body Routing */}
-      <main className="flex-1">
-        {currentTab === 'home' && (
-          <HomePage
-            profiles={profiles}
-            requests={requests}
-            onNavigate={setCurrentTab}
-            onOpenQuestionnaire={() => setIsQuestionnaireOpen(true)}
-            onSelectProfile={setSelectedProfile}
-            onOpenRegister={() => setIsRegisterOpen(true)}
-          />
+        {/* Mobile Drawer Menu */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 z-50 md:hidden bg-black/40 backdrop-blur-xs flex">
+            <div className="w-72 bg-[var(--bg-surface)] h-full p-4 overflow-y-auto animate-in slide-in-from-left">
+              <div className="flex items-center justify-between pb-3 border-b border-[var(--border-color)] mb-2">
+                <span className="font-bold text-sm text-[var(--text-primary)]">Navigation Menu</span>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <Sidebar onCloseMobile={() => setMobileMenuOpen(false)} />
+            </div>
+            <div className="flex-1" onClick={() => setMobileMenuOpen(false)} />
+          </div>
         )}
 
-        {currentTab === 'directory' && (
-          <DirectoryPage
-            profiles={profiles}
-            onSelectProfile={setSelectedProfile}
-            onEndorseSkill={handleEndorseSkill}
-            onOpenQuestionnaire={() => setIsQuestionnaireOpen(true)}
-            onOpenRegister={() => setIsRegisterOpen(true)}
-          />
-        )}
+        {/* Central Content Viewport */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+          {/* Mobile Top Bar Toggler */}
+          <div className="md:hidden flex items-center justify-between pb-4 mb-2 border-b border-[var(--border-color)]">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--bg-subtle)] text-xs font-semibold text-[var(--text-primary)] border border-[var(--border-color)]"
+            >
+              <Menu className="w-4 h-4" />
+              <span>Menu</span>
+            </button>
+            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+              {activeTab.replace('-', ' ')}
+            </span>
+          </div>
 
-        {currentTab === 'requests' && (
-          <RequestBoardPage
-            requests={requests}
-            onOpenNewRequest={() => setIsNewRequestOpen(true)}
-            onOpenQuestionnaire={() => setIsQuestionnaireOpen(true)}
-            onOfferHelp={handleOfferHelp}
-            onUpdateStatus={handleUpdateStatus}
-            onDeleteRequest={handleDeleteRequest}
-            onDeleteOffer={handleDeleteOffer}
-            onOpenDirectMessage={handleOpenDirectMessageWithUser}
-            onOpenAuth={() => setIsAuthOpen(true)}
-            newlyCreatedRequestId={newlyCreatedRequestId}
-          />
-        )}
+          {/* Deactivation Status Alert */}
+          {currentUser.isDeactivated && (
+            <div className="mb-4 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200 animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                <span>Your account is currently deactivated and hidden from fellow student directories.</span>
+              </div>
+              <button
+                onClick={reactivateOwnAccount}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors shrink-0 shadow-2xs"
+              >
+                Reactivate Account Now
+              </button>
+            </div>
+          )}
 
-        {currentTab === 'about' && <AboutUsPage />}
-      </main>
+          {renderActiveView()}
+        </main>
+      </div>
 
-      {/* Footer */}
-      <Footer
-        onNavigate={setCurrentTab}
-      />
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="md:hidden sticky bottom-0 z-40 w-full border-t border-[var(--border-color)] bg-[var(--bg-surface)]/95 backdrop-blur-md px-3 py-2 flex items-center justify-around">
+        <button
+          onClick={() => setActiveTab('home')}
+          className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors ${
+            activeTab === 'home' ? 'text-blue-600 font-bold' : 'text-[var(--text-muted)]'
+          }`}
+        >
+          <Home className="w-4 h-4" />
+          <span>Home</span>
+        </button>
 
-      {/* Modals */}
-      <ProfileModal
-        profile={selectedProfile}
-        onClose={() => setSelectedProfile(null)}
-        onEndorseSkill={handleEndorseSkill}
-        onRequestSession={handleRequestSession}
-        onOpenDirectMessage={handleOpenDirectMessageWithUser}
-        onOpenAuth={() => setIsAuthOpen(true)}
-      />
+        <button
+          onClick={() => setActiveTab('discover')}
+          className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors ${
+            activeTab === 'discover' ? 'text-blue-600 font-bold' : 'text-[var(--text-muted)]'
+          }`}
+        >
+          <Compass className="w-4 h-4" />
+          <span>Discover</span>
+        </button>
 
-      <MatchingWizardModal
-        isOpen={isQuestionnaireOpen}
-        onClose={() => setIsQuestionnaireOpen(false)}
-        profiles={profiles}
-        onSelectProfile={setSelectedProfile}
-        onCreateRequestTicket={handleCreateRequest}
-      />
+        <button
+          onClick={() => setActiveTab('ai-finder')}
+          className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors ${
+            activeTab === 'ai-finder' ? 'text-purple-600 font-bold' : 'text-purple-500'
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>AI Finder</span>
+        </button>
 
-      <NewRequestModal
-        isOpen={isNewRequestOpen}
-        onClose={() => setIsNewRequestOpen(false)}
-        onSubmit={handleCreateRequest}
-      />
+        <button
+          onClick={() => setActiveTab('messages')}
+          className={`relative flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors ${
+            activeTab === 'messages' ? 'text-blue-600 font-bold' : 'text-[var(--text-muted)]'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" />
+          <span>Chat</span>
+          {unreadMessagesCount > 0 && (
+            <span className="absolute -top-1 right-2 w-2 h-2 rounded-full bg-blue-600" />
+          )}
+        </button>
 
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-      />
+        <button
+          onClick={() => setActiveTab('qa')}
+          className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors ${
+            activeTab === 'qa' ? 'text-blue-600 font-bold' : 'text-[var(--text-muted)]'
+          }`}
+        >
+          <HelpCircle className="w-4 h-4" />
+          <span>Q&A</span>
+        </button>
+      </nav>
 
-      <EditProfileModal
-        isOpen={isEditProfileOpen}
-        onClose={() => setIsEditProfileOpen(false)}
-      />
-
-      <RegisterStudentModal
-        isOpen={isRegisterOpen}
-        onClose={() => setIsRegisterOpen(false)}
-        onSuccess={handleStudentRegistered}
-      />
-
-      <NotificationModal
-        isOpen={isNotificationsOpen}
-        onClose={() => setIsNotificationsOpen(false)}
-        notifications={notifications}
-        onMarkAsRead={handleMarkNotifRead}
-        onMarkAllAsRead={handleMarkAllNotifsRead}
-        onOpenDirectMessage={(userId) => {
-          setIsNotificationsOpen(false);
-          handleOpenDirectMessageWithUser(userId);
-        }}
-        onNavigateTab={(tab) => {
-          setIsNotificationsOpen(false);
-          setCurrentTab(tab);
-        }}
-      />
-
-      <DirectMessageModal
-        isOpen={isDirectMessageOpen}
-        onClose={() => setIsDirectMessageOpen(false)}
-        recipient={directMessageRecipient}
-      />
+      {/* Global Modals */}
+      <OnboardingModal />
+      <InviteToProjectModal />
+      <AuthModal />
     </div>
   );
-}
+};
 
 export default function App() {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <AppProvider>
+      <MainLayout />
+    </AppProvider>
   );
 }
-
