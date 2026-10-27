@@ -64,6 +64,7 @@ interface AppContextType {
   removeSkillFromCurrent: (skillName: string) => void;
   sendMessage: (convId: string, text: string, replyTo?: Message['replyTo']) => void;
   openDirectMessageWith: (student: StudentProfile) => void;
+  createGroupConversation: (name: string, participantIds: string[], topic?: string) => string;
   reactToMessage: (messageId: string, emoji: string) => void;
   createProject: (newProject: Partial<Project>) => void;
   applyToProject: (projectId: string, roleId: string, roleTitle: string, note: string) => void;
@@ -141,10 +142,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [allStudents, setAllStudents] = useState<StudentProfile[]>(() => {
     try {
       const version = localStorage.getItem('opg_profiles_version');
-      if (version !== 'v5_clean_one_account') {
-        localStorage.setItem('opg_profiles_version', 'v5_clean_one_account');
+      if (version !== 'v6_clean_auth') {
+        localStorage.setItem('opg_profiles_version', 'v6_clean_auth');
         localStorage.setItem('opg_students', JSON.stringify(INITIAL_STUDENTS));
-        localStorage.setItem('opg_current_user_id', INITIAL_STUDENTS[0].id);
+        localStorage.removeItem('opg_current_user_id');
+        localStorage.removeItem('opg_is_authenticated');
         localStorage.removeItem('opg_contact_inquiries');
         return INITIAL_STUDENTS;
       }
@@ -161,10 +163,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_STUDENTS;
   });
   const [currentUser, setCurrentUser] = useState<StudentProfile>(() => {
-    const savedId = localStorage.getItem('opg_current_user_id');
-    const found = allStudents.find(s => s.id === savedId);
-    return found || allStudents[0] || INITIAL_STUDENTS[0];
+    return INITIAL_STUDENTS[0];
   });
+
+  // Sync state with backend database API on mount
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/students').then(r => r.json()).catch(() => null),
+      fetch('/api/projects').then(r => r.json()).catch(() => null),
+      fetch('/api/questions').then(r => r.json()).catch(() => null),
+      fetch('/api/communities').then(r => r.json()).catch(() => null),
+      fetch('/api/events').then(r => r.json()).catch(() => null),
+      fetch('/api/conversations').then(r => r.json()).catch(() => null),
+      fetch('/api/messages').then(r => r.json()).catch(() => null),
+    ]).then(([studentsRes, projectsRes, questionsRes, communitiesRes, eventsRes, convRes, msgRes]) => {
+      if (Array.isArray(studentsRes) && studentsRes.length > 0) {
+        setAllStudents(studentsRes);
+        const savedId = localStorage.getItem('opg_current_user_id');
+        const found = studentsRes.find((s: StudentProfile) => s.id === savedId);
+        if (found) setCurrentUser(found);
+      }
+      if (Array.isArray(projectsRes)) setProjects(projectsRes);
+      if (Array.isArray(questionsRes)) setQuestions(questionsRes);
+      if (Array.isArray(communitiesRes)) setCommunities(communitiesRes);
+      if (Array.isArray(eventsRes)) setEvents(eventsRes);
+      if (Array.isArray(convRes)) setConversations(convRes);
+      if (Array.isArray(msgRes)) setMessages(msgRes);
+    }).catch(e => console.warn('Backend sync failed:', e));
+  }, []);
 
   const [activeTab, setActiveTab] = useState<string>('home');
   const [selectedStudentForProfile, setSelectedStudentForProfile] = useState<StudentProfile | null>(null);
@@ -200,7 +226,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isDeveloperMode, setIsDeveloperMode] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     const saved = localStorage.getItem('opg_is_authenticated');
-    return saved !== 'false';
+    return saved === 'true';
   });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
@@ -380,6 +406,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setActiveConversationId(conv.id);
     setActiveTab('messages');
+  };
+
+  const createGroupConversation = (name: string, participantIds: string[], topic?: string): string => {
+    const allParticipants = Array.from(new Set([currentUser.id, ...participantIds]));
+    const newGroup: Conversation = {
+      id: `conv-group-${Date.now()}`,
+      name,
+      isGroup: true,
+      participantIds: allParticipants,
+      updatedAt: new Date().toISOString(),
+      lastMessage: {
+        text: `Group "${name}" created by ${currentUser.name}${topic ? ` (${topic})` : ''}`,
+        senderId: currentUser.id,
+        timestamp: 'Just now'
+      }
+    };
+
+    setConversations(prev => [newGroup, ...prev]);
+    setActiveConversationId(newGroup.id);
+    setActiveTab('messages');
+
+    // Send initial system message
+    const initialMsg: Message = {
+      id: `msg-init-${Date.now()}`,
+      conversationId: newGroup.id,
+      senderId: currentUser.id,
+      senderName: currentUser.name,
+      senderAvatar: currentUser.avatar,
+      text: `Created group channel "${name}". Welcome team!`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      reactions: {},
+      readBy: [currentUser.id]
+    };
+    setMessages(prev => [...prev, initialMsg]);
+
+    return newGroup.id;
   };
 
   const reactToMessage = (messageId: string, emoji: string) => {
@@ -1006,8 +1068,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const matched = allStudents.find(
       s =>
-        s.email.toLowerCase() === cleanEmail ||
-        s.gmailAccount?.toLowerCase() === cleanEmail
+        s.email.toLowerCase().trim() === cleanEmail ||
+        (s.gmailAccount && s.gmailAccount.toLowerCase().trim() === cleanEmail)
     );
 
     if (!matched) {
@@ -1139,6 +1201,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('opg_is_authenticated', 'true');
     setIsAuthModalOpen(false);
 
+    fetch('/api/students', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newProfile)
+    }).catch(e => console.warn('Student sync error:', e));
+
     setNotifications(prev => [
       {
         id: `notif-${Date.now()}`,
@@ -1162,7 +1230,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logout = () => {
     setIsAuthenticated(false);
-    localStorage.setItem('opg_is_authenticated', 'false');
+    localStorage.removeItem('opg_is_authenticated');
+    localStorage.removeItem('opg_current_user_id');
   };
 
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>(INITIAL_UPLOADED_FILES);
@@ -1269,6 +1338,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         removeSkillFromCurrent,
         sendMessage,
         openDirectMessageWith,
+        createGroupConversation,
         reactToMessage,
         createProject,
         applyToProject,

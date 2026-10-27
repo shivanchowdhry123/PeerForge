@@ -501,10 +501,10 @@ export const ProfileView: React.FC = () => {
                   </div>
                   <div>
                     <h2 className="text-sm font-bold text-[var(--text-primary)]">
-                      Gmail Account
+                      School Email Account
                     </h2>
                     <p className="text-[10px] text-[var(--text-muted)]">
-                      Linked Google Workspace & Email
+                      Verified Primary Email
                     </p>
                   </div>
                 </div>

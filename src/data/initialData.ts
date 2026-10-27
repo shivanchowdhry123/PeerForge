@@ -25,8 +25,8 @@ export const INITIAL_STUDENTS: StudentProfile[] = [
     grade: 'Grade 11',
     section: 'A',
     house: 'Agni',
-    role: 'developer',
-    bio: 'Class 11 Student & Lead App Developer of PeerForge at OPG World School. Passionate about software architecture, collaborative peer networks, algorithms, and STEM innovation.',
+    role: 'student',
+    bio: 'Class 11 Student & Tech Lead of PeerForge at OPG World School. Passionate about software architecture, collaborative peer networks, algorithms, and STEM innovation.',
     skills: [
       { name: 'Full-Stack Web Development', category: 'Technical', level: 'Advanced', verified: true },
       { name: 'React & TypeScript', category: 'Technical', level: 'Advanced', verified: true },

@@ -219,7 +219,7 @@ export const SettingsView: React.FC = () => {
             <div className="flex items-center gap-2">
               <Mail className="w-4 h-4 text-red-500" />
               <div>
-                <span className="text-xs font-bold text-[var(--text-primary)] block">Google / Gmail Account</span>
+                <span className="text-xs font-bold text-[var(--text-primary)] block">School Account Email</span>
                 <span className="text-[11px] text-[var(--text-muted)]">Verified email for peer notifications and login</span>
               </div>
             </div>

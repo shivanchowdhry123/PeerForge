@@ -42,7 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'discover', label: 'Discover Students', icon: Compass },
-    { id: 'ai-finder', label: 'AI Skill Finder', icon: Sparkles, accent: true },
+    { id: 'ai-finder', label: 'Match Finder', icon: Sparkles, accent: true },
     { id: 'messages', label: 'Messages', icon: MessageSquare, badge: unreadMessagesCount },
     { id: 'qa', label: 'Questions & Answers', icon: HelpCircle },
     { id: 'projects', label: 'Projects & Team', icon: FolderKanban },
@@ -56,8 +56,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     { id: 'contact', label: 'Contact Us', icon: Mail }
   ];
 
-  if (currentUser.role === 'admin' || currentUser.role === 'moderator' || currentUser.role === 'developer' || currentUser.role === 'teacher') {
-    navItems.push({ id: 'admin', label: 'Staff Console', icon: ShieldCheck, accent: false });
+  if (currentUser.role === 'teacher') {
+    navItems.push({ id: 'admin', label: 'Staff Console', icon: ShieldCheck });
   }
 
   const handleNavClick = (id: string) => {

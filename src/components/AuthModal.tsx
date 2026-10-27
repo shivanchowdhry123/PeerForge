@@ -46,31 +46,6 @@ export const AuthModal: React.FC = () => {
     setFeedback(null);
   };
 
-  const handleOneClickGoogle = async (customEmail?: string) => {
-    setIsLoading(true);
-    setFeedback(null);
-    try {
-      const defaultEmail = authRole === 'teacher' ? 'teacher.opgworldschool@gmail.com' : 'aakriti.narayan955@gmail.com';
-      const targetEmail = customEmail || email.trim() || defaultEmail;
-      const result = await loginWithGmail(targetEmail);
-      if (result.success) {
-        setFeedback({ type: 'success', message: result.message });
-        setTimeout(() => closeAuthModal(), 1200);
-      } else {
-        // If not found, switch to signup with this email pre-filled
-        setEmail(targetEmail);
-        setAuthModalMode('signup');
-        setFeedback({
-          type: 'error',
-          message: `${result.message} Please complete quick signup below.`
-        });
-      }
-    } catch {
-      setFeedback({ type: 'error', message: 'Authentication failed. Please try again.' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,12 +111,12 @@ export const AuthModal: React.FC = () => {
             <span>OPG World School · PeerForge</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-[var(--text-primary)] tracking-tight">
-            {authModalMode === 'login' ? 'Sign In with Gmail' : 'Create Account with Gmail'}
+            {authModalMode === 'login' ? 'Sign In to PeerForge' : 'Create Account'}
           </h2>
           <p className="text-xs text-[var(--text-muted)] max-w-sm mx-auto">
             {authModalMode === 'login'
               ? 'Access student projects, research collaboration, and faculty mentorship.'
-              : 'Join PeerForge as a Student or Teacher using your Gmail ID.'}
+              : 'Join PeerForge as a Student or Teacher with your school email.'}
           </p>
         </div>
 
@@ -213,77 +188,6 @@ export const AuthModal: React.FC = () => {
               </p>
             </button>
           </div>
-        </div>
-
-        {/* One-Click Google / Gmail Button */}
-        <button
-          type="button"
-          onClick={() => handleOneClickGoogle()}
-          disabled={isLoading}
-          className="w-full py-2.5 px-4 rounded-2xl bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700/80 border border-slate-300 dark:border-slate-700 text-[var(--text-primary)] text-xs font-semibold flex items-center justify-center gap-2.5 shadow-2xs transition-all mb-4"
-        >
-          {/* Google G SVG */}
-          <svg className="w-4 h-4" viewBox="0 0 24 24">
-            <path
-              fill="#4285F4"
-              d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
-            />
-            <path
-              fill="#34A853"
-              d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-            />
-            <path
-              fill="#EA4335"
-              d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-            />
-          </svg>
-          <span>Continue with Google (Gmail)</span>
-        </button>
-
-        {/* 1 Student / 1 Teacher Example Quick Buttons */}
-        <div className="p-3 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] mb-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
-              Example Accounts (One Student, One Teacher)
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setAuthRole('student');
-                setEmail('aakriti.narayan955@gmail.com');
-                handleOneClickGoogle('aakriti.narayan955@gmail.com');
-              }}
-              className="p-2 rounded-xl bg-[var(--bg-surface)] hover:bg-blue-50 dark:hover:bg-blue-950/40 border border-[var(--border-color)] hover:border-blue-300 text-left transition-all"
-            >
-              <div className="text-[11px] font-bold text-[var(--text-primary)] truncate">Aakriti Narayan</div>
-              <div className="text-[10px] text-blue-600 dark:text-blue-400">Student / Developer</div>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setAuthRole('teacher');
-                setEmail('teacher.opgworldschool@gmail.com');
-                handleOneClickGoogle('teacher.opgworldschool@gmail.com');
-              }}
-              className="p-2 rounded-xl bg-[var(--bg-surface)] hover:bg-indigo-50 dark:hover:bg-indigo-950/40 border border-[var(--border-color)] hover:border-indigo-300 text-left transition-all"
-            >
-              <div className="text-[11px] font-bold text-[var(--text-primary)] truncate">Mr. Rajesh Sharma</div>
-              <div className="text-[10px] text-indigo-600 dark:text-indigo-400">Faculty Mentor</div>
-            </button>
-          </div>
-        </div>
-
-        <div className="relative flex items-center justify-center my-4">
-          <div className="border-t border-[var(--border-color)] w-full" />
-          <span className="bg-[var(--bg-surface)] px-3 text-[11px] text-[var(--text-muted)] absolute">
-            or with custom credentials
-          </span>
         </div>
 
         {/* Feedback Alert */}

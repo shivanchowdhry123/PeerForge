@@ -82,7 +82,7 @@ export const Navbar: React.FC = () => {
 
         {/* Actions Zone */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Quick AI Skill Finder button */}
+          {/* Quick Match Finder button */}
           <button
             onClick={() => setActiveTab('ai-finder')}
             className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
@@ -92,7 +92,7 @@ export const Navbar: React.FC = () => {
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-purple-500" />
-            <span>AI Skill Finder</span>
+            <span>Match Finder</span>
           </button>
 
           {/* Theme Toggle */}
@@ -165,7 +165,7 @@ export const Navbar: React.FC = () => {
             )}
           </div>
 
-          {/* Developer Desk Action */}
+          {/* Help Desk Action */}
           <button
             onClick={() => setActiveTab('contact')}
             className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
@@ -173,10 +173,10 @@ export const Navbar: React.FC = () => {
                 ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
                 : 'bg-[var(--bg-subtle)] hover:bg-[var(--border-color)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)] border-[var(--border-color)]'
             }`}
-            title="Developer Routing & Submissions Desk"
+            title="School Support & Contact Desk"
           >
             <Shield className="w-3.5 h-3.5 text-blue-500" />
-            <span>Developer Desk</span>
+            <span>Help Desk</span>
           </button>
 
           {/* Auth Actions Zone */}
@@ -194,7 +194,7 @@ export const Navbar: React.FC = () => {
                 className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-all flex items-center gap-1.5"
               >
                 <UserPlus className="w-3.5 h-3.5" />
-                <span>Sign Up with Gmail</span>
+                <span>Sign Up</span>
               </button>
             </div>
           ) : (
@@ -215,18 +215,18 @@ export const Navbar: React.FC = () => {
                     <span className="text-xs font-semibold text-[var(--text-primary)] leading-none truncate max-w-[110px]">
                       {currentUser.name}
                     </span>
-                    {currentUser.role === 'developer' ? (
-                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold">
-                        Dev
-                      </span>
-                    ) : currentUser.role === 'teacher' ? (
+                    {currentUser.role === 'teacher' ? (
                       <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold">
-                        Faculty
+                        Teacher
                       </span>
-                    ) : null}
+                    ) : (
+                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold">
+                        Student
+                      </span>
+                    )}
                   </div>
                   <span className="text-[10px] text-[var(--text-muted)] leading-tight block truncate max-w-[120px]">
-                    {currentUser.gmailAccount || currentUser.email}
+                    {currentUser.email}
                   </span>
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-[var(--text-muted)]" />

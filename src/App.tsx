@@ -167,7 +167,7 @@ const MainLayout: React.FC = () => {
           }`}
         >
           <Sparkles className="w-4 h-4" />
-          <span>AI Finder</span>
+          <span>Match Finder</span>
         </button>
 
         <button
