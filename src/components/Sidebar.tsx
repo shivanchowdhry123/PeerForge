@@ -124,7 +124,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
               <span className="text-xs font-bold text-blue-900 dark:text-blue-200">
-                Sign in with Gmail
+                Sign In Required
               </span>
             </div>
             <p className="text-[11px] text-blue-800/80 dark:text-blue-300/80 leading-relaxed">
@@ -136,7 +136,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
                 className="w-full py-1.5 px-3 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-2xs text-center flex items-center justify-center gap-1.5"
               >
                 <LogIn className="w-3.5 h-3.5" />
-                <span>Sign In with Gmail</span>
+                <span>Sign In</span>
               </button>
               <button
                 onClick={() => openAuthModal('signup')}

@@ -162,8 +162,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return INITIAL_STUDENTS;
   });
-  const [currentUser, setCurrentUser] = useState<StudentProfile>(() => {
-    return INITIAL_STUDENTS[0];
+  const [currentUser, setCurrentUser] = useState<StudentProfile>({
+    id: 'guest',
+    name: 'Visitor',
+    email: 'visitor@opgworldschool.com',
+    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Guest',
+    grade: 'N/A',
+    section: 'N/A',
+    role: 'student',
+    bio: 'Welcome to PeerForge. Please sign in to explore.',
+    skills: [],
+    interests: [],
+    academicStrengths: [],
+    projects: [],
+    achievements: [],
+    availability: 'Focusing on Studies / Busy',
+    privacySettings: {
+      showGradeToAll: false,
+      allowDirectMessages: 'verified_only',
+      showAchievements: false
+    },
+    completeness: 0,
+    isVerified: false,
+    isApproved: false,
+    joinedDate: 'N/A'
   });
 
   // Sync state with backend database API on mount
@@ -1087,9 +1109,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     setCurrentUser(matched);
-    setIsAuthenticated(true);
-    localStorage.setItem('opg_current_user_id', matched.id);
-    localStorage.setItem('opg_is_authenticated', 'true');
     setIsAuthModalOpen(false);
 
     setNotifications(prev => [
@@ -1196,9 +1215,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setAllStudents(prev => [...prev, newProfile]);
     setCurrentUser(newProfile);
-    setIsAuthenticated(true);
-    localStorage.setItem('opg_current_user_id', newProfile.id);
-    localStorage.setItem('opg_is_authenticated', 'true');
     setIsAuthModalOpen(false);
 
     fetch('/api/students', {

@@ -240,7 +240,7 @@ export const SettingsView: React.FC = () => {
                 }}
                 className="px-3 py-1 text-xs font-medium text-blue-600 hover:underline"
               >
-                Change Gmail
+                Change Email
               </button>
             </div>
           ) : (

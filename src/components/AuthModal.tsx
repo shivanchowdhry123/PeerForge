@@ -231,13 +231,13 @@ export const AuthModal: React.FC = () => {
 
           <div>
             <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
-              Gmail ID:
+              Email Address:
             </label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
               <input
                 type="email"
-                placeholder="e.g. username@gmail.com"
+                placeholder="e.g. username@opgworldschool.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 className="w-full pl-9 pr-3.5 py-2 text-xs sm:text-sm rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-blue-400"
@@ -369,7 +369,7 @@ export const AuthModal: React.FC = () => {
                 onClick={() => handleModeSwitch('signup')}
                 className="font-bold text-blue-600 dark:text-blue-400 hover:underline"
               >
-                Sign up with Gmail ID
+                Sign up
               </button>
             </p>
           ) : (
@@ -379,7 +379,7 @@ export const AuthModal: React.FC = () => {
                 onClick={() => handleModeSwitch('login')}
                 className="font-bold text-blue-600 dark:text-blue-400 hover:underline"
               >
-                Sign in with Gmail ID
+                Sign in
               </button>
             </p>
           )}

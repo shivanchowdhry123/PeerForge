@@ -1,13 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Message, Conversation, StudentProfile, UploadedFile } from '../types';
+import { Message, Conversation, StudentProfile } from '../types';
 import {
   Send,
   Search,
   Users,
   User,
   Plus,
-  Paperclip,
   Smile,
   Reply,
   MoreVertical,
@@ -16,10 +15,6 @@ import {
   Check,
   CheckCheck,
   ShieldAlert,
-  Download,
-  FileText,
-  Image as ImageIcon,
-  FileCode,
   Sparkles,
   Info,
   Lock,
@@ -40,8 +35,7 @@ export const MessagesView: React.FC = () => {
     sendMessage,
     reactToMessage,
     openDirectMessageWith,
-    createGroupConversation,
-    uploadedFiles
+    createGroupConversation
   } = useApp();
 
   const [inputText, setInputText] = useState('');
@@ -60,14 +54,101 @@ export const MessagesView: React.FC = () => {
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [modalSearch, setModalSearch] = useState('');
 
-  // Attachment modal
-  const [isAttachModalOpen, setIsAttachModalOpen] = useState(false);
-  const [selectedAttachment, setSelectedAttachment] = useState<UploadedFile | null>(null);
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // AUTHENTICATION GATE: Prevent unauthenticated users from seeing or sending private messages
-  if (!isAuthenticated) {
+  // PRIVACY RULE: Logged-in user ONLY sees conversations where they are a participant
+  const userConversations = isAuthenticated && conversations && currentUser
+    ? conversations.filter(c => c.participantIds && c.participantIds.includes(currentUser.id))
+    : [];
+
+  const activeConv = userConversations.find(c => c.id === activeConversationId) || userConversations[0];
+  const activeMessages = activeConv && messages ? messages.filter(m => m.conversationId === activeConv.id) : [];
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [activeMessages.length, activeConversationId]);
+
+  const handleSelectConversation = (id: string) => {
+    setActiveConversationId(id);
+    setMobileViewActive(true);
+  };
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputText.trim() || !activeConv) return;
+
+    sendMessage(activeConv.id, inputText.trim(), replyTarget || undefined);
+    setInputText('');
+    setReplyTarget(null);
+  };
+
+  // Helper to format conversation header info
+  const getConvDetails = (conv: Conversation | undefined) => {
+    if (!conv) return { name: 'Chat', subtitle: 'Select a conversation', avatar: '', isGroup: false };
+    if (conv.isGroup) {
+      return {
+        name: conv.name || 'Group Channel',
+        subtitle: `${conv.participantIds.length} members`,
+        avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(conv.name || 'group')}`,
+        isGroup: true
+      };
+    }
+    if (!currentUser) return { name: 'Chat', subtitle: '', avatar: '', isGroup: false };
+    const otherId = conv.participantIds.find(id => id !== currentUser.id) || conv.participantIds[0];
+    const otherStudent = allStudents.find(s => s.id === otherId);
+    return {
+      name: otherStudent ? otherStudent.name : 'OPG Student',
+      subtitle: otherStudent ? `${otherStudent.grade} • ${otherStudent.role === 'teacher' ? 'Faculty Mentor' : 'Student'}` : 'Student',
+      avatar: otherStudent ? otherStudent.avatar : 'https://api.dicebear.com/7.x/adventurer/svg?seed=Peer',
+      isGroup: false,
+      otherStudent
+    };
+  };
+
+  const currentDetails = getConvDetails(activeConv);
+
+  // Filter conversations for active search and tabs
+  const filteredConversations = userConversations.filter(c => {
+    const details = getConvDetails(c);
+    const matchesSearch =
+      details.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
+      (details.subtitle && details.subtitle.toLowerCase().includes(searchFilter.toLowerCase()));
+
+    if (filterType === 'direct') return matchesSearch && !c.isGroup;
+    if (filterType === 'groups') return matchesSearch && c.isGroup;
+    return matchesSearch;
+  });
+
+  // Handle New Group Submit
+  const handleCreateGroup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!groupName.trim() || selectedStudentIds.length === 0) return;
+
+    createGroupConversation(groupName.trim(), selectedStudentIds, groupTopic.trim() || undefined);
+    setIsNewChatModalOpen(false);
+    setGroupName('');
+    setGroupTopic('');
+    setSelectedStudentIds([]);
+    setMobileViewActive(true);
+  };
+
+  // Toggle student selection for group creation
+  const toggleStudentSelection = (id: string) => {
+    setSelectedStudentIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleStartDirectChat = (student: StudentProfile) => {
+    openDirectMessageWith(student);
+    setIsNewChatModalOpen(false);
+    setMobileViewActive(true);
+  };
+
+  const availableEmojis = ['👍', '❤️', '💡', '🚀', '👏'];
+
+  // AUTHENTICATION GATE RENDER
+  if (!isAuthenticated || !currentUser) {
     return (
       <div className="max-w-md mx-auto my-12 p-8 text-center rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-xl space-y-6 animate-in fade-in">
         <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto shadow-xs">
@@ -104,103 +185,6 @@ export const MessagesView: React.FC = () => {
     );
   }
 
-  // PRIVACY RULE: Logged-in user ONLY sees conversations where they are a participant
-  const userConversations = conversations.filter(
-    c => c.participantIds && c.participantIds.includes(currentUser.id)
-  );
-
-  const activeConv = userConversations.find(c => c.id === activeConversationId) || userConversations[0];
-  const activeMessages = activeConv ? messages.filter(m => m.conversationId === activeConv.id) : [];
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [activeMessages.length, activeConversationId]);
-
-  const handleSelectConversation = (id: string) => {
-    setActiveConversationId(id);
-    setMobileViewActive(true);
-  };
-
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if ((!inputText.trim() && !selectedAttachment) || !activeConv) return;
-
-    let finalMessage = inputText.trim();
-    if (selectedAttachment) {
-      finalMessage += `\n\n📎 [Attachment: ${selectedAttachment.originalName}](${selectedAttachment.url})`;
-    }
-
-    sendMessage(activeConv.id, finalMessage, replyTarget || undefined);
-    setInputText('');
-    setReplyTarget(null);
-    setSelectedAttachment(null);
-    setIsAttachModalOpen(false);
-  };
-
-  // Helper to format conversation header info
-  const getConvDetails = (conv: Conversation | undefined) => {
-    if (!conv) return { name: 'Chat', subtitle: 'Select a conversation', avatar: '', isGroup: false };
-    if (conv.isGroup) {
-      return {
-        name: conv.name || 'Group Channel',
-        subtitle: `${conv.participantIds.length} members`,
-        avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(conv.name || 'group')}`,
-        isGroup: true
-      };
-    }
-    const otherId = conv.participantIds.find(id => id !== currentUser.id) || conv.participantIds[0];
-    const otherStudent = allStudents.find(s => s.id === otherId);
-    return {
-      name: otherStudent ? otherStudent.name : 'OPG Student',
-      subtitle: otherStudent ? `${otherStudent.grade} • ${otherStudent.role === 'teacher' ? 'Faculty Mentor' : 'Student'}` : 'Student',
-      avatar: otherStudent ? otherStudent.avatar : 'https://api.dicebear.com/7.x/adventurer/svg?seed=Peer',
-      isGroup: false,
-      otherStudent
-    };
-  };
-
-  const currentDetails = getConvDetails(activeConv);
-
-  // Filter conversations for active search and tabs
-  const filteredConversations = userConversations.filter(c => {
-    const details = getConvDetails(c);
-    const matchesSearch =
-      details.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
-      (details.subtitle && details.subtitle.toLowerCase().includes(searchFilter.toLowerCase()));
-
-    if (filterType === 'direct') return matchesSearch && !c.isGroup;
-    if (filterType === 'groups') return matchesSearch && c.isGroup;
-    return matchesSearch;
-  });
-
-  // Handle New Group Submit
-  const handleCreateGroup = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!groupName.trim() || selectedStudentIds.length === 0) return;
-
-    const newGroupId = createGroupConversation(groupName.trim(), selectedStudentIds, groupTopic.trim() || undefined);
-    setIsNewChatModalOpen(false);
-    setGroupName('');
-    setGroupTopic('');
-    setSelectedStudentIds([]);
-    setMobileViewActive(true);
-  };
-
-  // Toggle student selection for group creation
-  const toggleStudentSelection = (id: string) => {
-    setSelectedStudentIds(prev =>
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    );
-  };
-
-  const handleStartDirectChat = (student: StudentProfile) => {
-    openDirectMessageWith(student);
-    setIsNewChatModalOpen(false);
-    setMobileViewActive(true);
-  };
-
-  const availableEmojis = ['👍', '❤️', '💡', '🚀', '👏'];
-
   return (
     <div className="space-y-4 max-w-6xl mx-auto pb-12 animate-in fade-in duration-300">
       {/* Top Messaging Control Header */}
@@ -214,7 +198,7 @@ export const MessagesView: React.FC = () => {
               Peer & Team Messaging Hub
             </h1>
             <p className="text-xs text-[var(--text-muted)]">
-              Logged in as <span className="font-semibold text-blue-600 dark:text-blue-400">{currentUser.name}</span> ({currentUser.role === 'teacher' ? 'Faculty Mentor' : 'Student'})
+              Logged in as <span className="font-semibold text-blue-600 dark:text-blue-400">{currentUser.name}</span> ({currentUser.role === 'teacher' ? 'Teacher' : 'Student'})
             </p>
           </div>
         </div>
@@ -228,7 +212,7 @@ export const MessagesView: React.FC = () => {
         </button>
       </div>
 
-      {/* Main WhatsApp / Slack Style 2-Column Messaging Window */}
+      {/* Main Messaging Window */}
       <div className="h-[620px] rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-color)] overflow-hidden flex shadow-xs relative">
         
         {/* LEFT COLUMN: Conversation List */}
@@ -389,16 +373,6 @@ export const MessagesView: React.FC = () => {
                     </p>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => setIsAttachModalOpen(true)}
-                    className="p-2 rounded-xl text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 hover:bg-blue-100 text-xs font-semibold flex items-center gap-1.5"
-                  >
-                    <Paperclip className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Attach File</span>
-                  </button>
-                </div>
               </div>
 
               {/* Chat Messages Stream */}
@@ -415,7 +389,7 @@ export const MessagesView: React.FC = () => {
                   </div>
                 ) : (
                   activeMessages.map(msg => {
-                    const isOwn = msg.senderId === currentUser.id;
+                    const isOwn = msg.senderId === currentUser!.id;
 
                     return (
                       <div
@@ -538,47 +512,20 @@ export const MessagesView: React.FC = () => {
                   </div>
                 )}
 
-                {/* Selected Attachment Banner */}
-                {selectedAttachment && (
-                  <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Paperclip className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-300 truncate">
-                        Attached: {selectedAttachment.originalName}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => setSelectedAttachment(null)}
-                      className="p-1 text-[var(--text-muted)] hover:text-rose-600"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                )}
-
                 <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsAttachModalOpen(true)}
-                    className="p-2 rounded-xl bg-[var(--bg-subtle)] hover:bg-[var(--border-color)] text-[var(--text-secondary)] transition-colors shrink-0"
-                    title="Attach file from repository"
-                  >
-                    <Paperclip className="w-4 h-4" />
-                  </button>
-
                   <input
                     type="text"
                     value={inputText}
                     onChange={e => setInputText(e.target.value)}
                     placeholder={`Message ${currentDetails.name}...`}
-                    className="flex-1 px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-[var(--border-color)] bg-[var(--bg-subtle)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-[var(--border-color)] bg-[var(--bg-subtle)] text-[var(--text-primary)] placeholder-[var(--border-color)] focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                   />
 
                   <button
                     type="submit"
-                    disabled={!inputText.trim() && !selectedAttachment}
+                    disabled={!inputText.trim()}
                     className={`px-4 py-2 rounded-xl text-white font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5 shrink-0 ${
-                      !inputText.trim() && !selectedAttachment
+                      !inputText.trim()
                         ? 'bg-slate-400 dark:bg-slate-700 cursor-not-allowed opacity-60'
                         : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.98]'
                     }`}
@@ -680,7 +627,7 @@ export const MessagesView: React.FC = () => {
                     Select Participants ({selectedStudentIds.length} chosen)
                   </label>
                   <div className="max-h-44 overflow-y-auto space-y-1 rounded-2xl border border-[var(--border-color)] p-2 bg-[var(--bg-subtle)]/50">
-                    {allStudents.filter(s => s.id !== currentUser.id).map(student => {
+                    {allStudents.filter(s => s.id !== currentUser!.id).map(student => {
                       const isSelected = selectedStudentIds.includes(student.id);
 
                       return (
@@ -736,7 +683,7 @@ export const MessagesView: React.FC = () => {
 
                 <div className="max-h-64 overflow-y-auto space-y-1.5 pt-1">
                   {allStudents
-                    .filter(s => s.id !== currentUser.id && s.name.toLowerCase().includes(modalSearch.toLowerCase()))
+                    .filter(s => s.id !== currentUser!.id && s.name.toLowerCase().includes(modalSearch.toLowerCase()))
                     .map(student => (
                       <div
                         key={student.id}
@@ -759,73 +706,6 @@ export const MessagesView: React.FC = () => {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: Attach File from Repository */}
-      {isAttachModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-[var(--bg-surface)] w-full max-w-lg rounded-3xl border border-[var(--border-color)] shadow-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-[var(--border-color)]">
-              <div className="flex items-center gap-2">
-                <Paperclip className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                <h3 className="text-base font-bold text-[var(--text-primary)]">
-                  Attach File from /uploads
-                </h3>
-              </div>
-              <button
-                onClick={() => setIsAttachModalOpen(false)}
-                className="p-1.5 rounded-xl hover:bg-[var(--bg-subtle)] text-[var(--text-muted)]"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <p className="text-xs text-[var(--text-muted)]">
-              Select a shared document, pitch deck, or research rubric from the root <code className="font-mono bg-black/10 dark:bg-white/10 px-1 py-0.5 rounded text-[10px]">/uploads</code> directory to send into chat.
-            </p>
-
-            <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
-              {uploadedFiles.length === 0 ? (
-                <div className="p-6 text-center text-xs text-[var(--text-muted)]">
-                  No files in /uploads yet. Go to Files & Uploads Hub to upload a file first.
-                </div>
-              ) : (
-                uploadedFiles.map(file => (
-                  <div
-                    key={file.id}
-                    onClick={() => {
-                      setSelectedAttachment(file);
-                      setIsAttachModalOpen(false);
-                    }}
-                    className={`p-3 rounded-2xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${
-                      selectedAttachment?.id === file.id
-                        ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/40'
-                        : 'border-[var(--border-color)] bg-[var(--bg-subtle)] hover:border-blue-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-[var(--border-color)] shrink-0">
-                        <FileText className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <div className="min-w-0">
-                        <h4 className="text-xs font-bold text-[var(--text-primary)] truncate">
-                          {file.originalName}
-                        </h4>
-                        <p className="text-[10px] text-[var(--text-muted)]">
-                          {(file.size / 1024).toFixed(1)} KB • {file.category}
-                        </p>
-                      </div>
-                    </div>
-
-                    <button className="px-3 py-1 rounded-xl bg-blue-600 text-white text-[11px] font-semibold shrink-0">
-                      Attach
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
           </div>
         </div>
       )}

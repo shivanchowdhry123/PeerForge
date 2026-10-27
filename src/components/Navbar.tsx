@@ -264,7 +264,7 @@ export const Navbar: React.FC = () => {
                       className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] rounded-lg transition-colors text-left"
                     >
                       <UserPlus className="w-3.5 h-3.5" />
-                      <span>Register Another Gmail</span>
+                      <span>Register Another Account</span>
                     </button>
                     <button
                       onClick={() => {
@@ -274,7 +274,7 @@ export const Navbar: React.FC = () => {
                       className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] rounded-lg transition-colors text-left"
                     >
                       <LogIn className="w-3.5 h-3.5" />
-                      <span>Switch Gmail Account</span>
+                      <span>Switch Account</span>
                     </button>
                   </div>
                   <div className="pt-1 border-t border-[var(--border-color)]">
