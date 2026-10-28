@@ -112,7 +112,15 @@ const db = {
   ]
 };
 
-// --- FILE UPLOADS & REPOSITORY ENDPOINTS ---
+// List all messages (Admin/Dev view or sync)
+app.get('/api/messages', (_req: Request, res: Response) => {
+  res.json(db.messages);
+});
+
+app.get('/api/conversations/:id/messages', (req: Request, res: Response) => {
+  const convMessages = db.messages.filter(m => m.conversationId === req.params.id);
+  res.json(convMessages);
+});
 
 // List all files in /uploads
 app.get('/api/uploads', (_req: Request, res: Response) => {
@@ -1067,7 +1075,7 @@ app.post('/api/events/:id/rsvp', (req: Request, res: Response) => {
 app.get('/api/notifications', (req: Request, res: Response) => {
   const userId = req.query.userId as string;
   let list = db.notifications;
-  if (userId) {
+  if (userId && userId !== 'undefined') {
     list = list.filter(n => n.userId === userId || n.userId === 'all');
   }
   res.json(list);
@@ -1180,6 +1188,11 @@ app.get('/api/students/:id/export-data', (req: Request, res: Response) => {
     },
     privacyDeclaration: 'Data generated strictly within the PeerForge firewall under OPG World School Student Data Protection policies.'
   });
+});
+
+// --- API 404 HANDLER ---
+app.all('/api/*', (_req: Request, res: Response) => {
+  res.status(404).json({ error: 'Endpoint not found in PeerForge API' });
 });
 
 // --- DEV SERVER (VITE) & PRODUCTION STATIC HOSTING ---

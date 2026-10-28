@@ -42,8 +42,8 @@ export const HomeView: React.FC = () => {
   const canAddEvents = currentUser.role === 'developer' || currentUser.role === 'teacher' || currentUser.role === 'admin';
 
   // Peers with complementary skills
-  const suggestedPeers = allStudents
-    .filter(s => s.id !== currentUser.id && !s.isDeactivated)
+  const suggestedPeers = (allStudents || [])
+    .filter(s => s && s.id !== currentUser.id && !s.isDeactivated)
     .slice(0, 3);
 
   // Active projects recruiting

@@ -68,7 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   };
 
   return (
-    <aside className="w-64 shrink-0 flex flex-col justify-between h-[calc(100vh-61px)] sticky top-[61px] border-r border-[var(--border-color)] bg-[var(--bg-surface)] p-3 overflow-y-auto">
+    <aside className="w-64 shrink-0 flex flex-col justify-between h-[calc(100vh-61px)] sticky top-[61px] border-r border-[var(--border-color)] bg-[var(--bg-surface)] dark:glass-dark p-3 overflow-y-auto">
       <div className="space-y-6">
         {/* Navigation list */}
         <div className="space-y-1">

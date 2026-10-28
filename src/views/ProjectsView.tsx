@@ -40,9 +40,9 @@ export const ProjectsView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Collect all pending applications across all projects for Developer review
-  const allPendingApplications = projects.flatMap(p =>
-    p.applications
-      .filter(a => a.status === 'pending')
+  const allPendingApplications = (projects || []).flatMap(p =>
+    (p.applications || [])
+      .filter(a => a && a.status === 'pending')
       .map(a => ({ app: a, project: p }))
   );
 
@@ -141,7 +141,7 @@ export const ProjectsView: React.FC = () => {
     alert('Your application has been sent to the project lead!');
   };
 
-  const filteredProjects = projects.filter(p => {
+  const filteredProjects = (projects || []).filter(p => {
     if (statusFilter !== 'All' && p.status !== statusFilter) return false;
     if (categoryFilter !== 'All' && p.category !== categoryFilter) return false;
     if (searchQuery.trim()) {

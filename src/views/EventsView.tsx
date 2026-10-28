@@ -69,7 +69,8 @@ export const EventsView: React.FC = () => {
     setTimeout(() => setSuccessBanner(null), 4000);
   };
 
-  const filteredEvents = events.filter(e => {
+  const filteredEvents = (events || []).filter(e => {
+    if (!e) return false;
     if (filterCategory !== 'All' && e.category !== filterCategory) return false;
     return true;
   });

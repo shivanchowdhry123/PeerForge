@@ -51,12 +51,13 @@ export const CommunitiesView: React.FC = () => {
     'Arts & Media'
   ];
 
-  const filteredCommunities = communities.filter(c => {
+  const filteredCommunities = (communities || []).filter(c => {
+    if (!c) return false;
     if (activeCategory !== 'All' && c.category !== activeCategory) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchName = c.name.toLowerCase().includes(q);
-      const matchDesc = c.description.toLowerCase().includes(q);
+      const matchName = c.name?.toLowerCase().includes(q);
+      const matchDesc = c.description?.toLowerCase().includes(q);
       if (!matchName && !matchDesc) return false;
     }
     return true;

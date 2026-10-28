@@ -29,7 +29,22 @@ import {
   INITIAL_CONTACT_INQUIRIES,
   INITIAL_UPLOADED_FILES
 } from '../data/initialData';
-import { supabase, isSupabaseConfigured, saveSupabaseStudent } from '../services/supabaseClient';
+import {
+  supabase,
+  isSupabaseConfigured,
+  saveSupabaseStudent,
+  saveSupabaseProject,
+  saveSupabaseQuestion,
+  saveSupabaseAnswer,
+  saveSupabaseMessage,
+  saveSupabaseConversation,
+  fetchSupabaseStudents,
+  fetchSupabaseProjects,
+  fetchSupabaseQuestions,
+  fetchSupabaseAnswers,
+  fetchSupabaseConversations,
+  fetchSupabaseMessages
+} from '../services/supabaseClient';
 
 interface AppContextType {
   currentUser: StudentProfile;
@@ -246,30 +261,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return () => subscription.unsubscribe();
     }
 
-    Promise.all([
-      fetch('/api/students').then(r => r.json()).catch(() => null),
-      fetch('/api/projects').then(r => r.json()).catch(() => null),
-      fetch('/api/questions').then(r => r.json()).catch(() => null),
-      fetch('/api/communities').then(r => r.json()).catch(() => null),
-      fetch('/api/events').then(r => r.json()).catch(() => null),
-      fetch('/api/conversations').then(r => r.json()).catch(() => null),
-      fetch('/api/messages').then(r => r.json()).catch(() => null),
-    ]).then(([studentsRes, projectsRes, questionsRes, communitiesRes, eventsRes, convRes, msgRes]) => {
-      if (Array.isArray(studentsRes) && studentsRes.length > 0) {
-        setAllStudents(studentsRes);
-        if (!isSupabaseConfigured) {
+    if (isSupabaseConfigured) {
+      Promise.all([
+        fetchSupabaseStudents(),
+        fetchSupabaseProjects(),
+        fetchSupabaseQuestions(),
+        fetchSupabaseAnswers(),
+        // Conversations and messages are usually fetched per-user/per-conv,
+        // but we can fetch them here for initial state if small,
+        // or just let the individual views handle it.
+        // For now, let's just fetch everything for the demo feel.
+        fetch('/api/communities').then(r => r.json()).catch(() => []),
+        fetch('/api/events').then(r => r.json()).catch(() => []),
+        fetch('/api/notifications').then(r => r.json()).catch(() => []),
+      ]).then(([students, projects, questions, answers, communities, events, notifications]) => {
+        if (students) setAllStudents(students);
+        if (projects) setProjects(projects);
+        if (questions) setQuestions(questions);
+        if (answers) setAnswers(answers);
+        if (Array.isArray(communities)) setCommunities(communities);
+        if (Array.isArray(events)) setEvents(events);
+        if (Array.isArray(notifications)) setNotifications(notifications);
+      });
+    } else {
+      Promise.all([
+        fetch('/api/students').then(r => r.json()).catch(() => []),
+        fetch('/api/projects').then(r => r.json()).catch(() => []),
+        fetch('/api/questions').then(r => r.json()).catch(() => []),
+        fetch('/api/communities').then(r => r.json()).catch(() => []),
+        fetch('/api/events').then(r => r.json()).catch(() => []),
+        fetch('/api/conversations').then(r => r.json()).catch(() => []),
+        fetch('/api/messages').then(r => r.json()).catch(() => []),
+        fetch('/api/notifications').then(r => r.json()).catch(() => []),
+      ]).then(([studentsRes, projectsRes, questionsRes, communitiesRes, eventsRes, convRes, msgRes, notifRes]) => {
+        if (Array.isArray(studentsRes)) {
+          setAllStudents(studentsRes);
           const savedId = localStorage.getItem('opg_current_user_id');
           const found = studentsRes.find((s: StudentProfile) => s.id === savedId);
           if (found) setCurrentUser(found);
         }
-      }
-      if (Array.isArray(projectsRes)) setProjects(projectsRes);
-      if (Array.isArray(questionsRes)) setQuestions(questionsRes);
-      if (Array.isArray(communitiesRes)) setCommunities(communitiesRes);
-      if (Array.isArray(eventsRes)) setEvents(eventsRes);
-      if (Array.isArray(convRes)) setConversations(convRes);
-      if (Array.isArray(msgRes)) setMessages(msgRes);
-    }).catch(e => console.warn('Backend sync failed:', e));
+        if (Array.isArray(projectsRes)) setProjects(projectsRes);
+        if (Array.isArray(questionsRes)) setQuestions(questionsRes);
+        if (Array.isArray(communitiesRes)) setCommunities(communitiesRes);
+        if (Array.isArray(eventsRes)) setEvents(eventsRes);
+        if (Array.isArray(convRes)) setConversations(convRes);
+        if (Array.isArray(msgRes)) setMessages(msgRes);
+        if (Array.isArray(notifRes)) setNotifications(notifRes);
+      }).catch(e => console.warn('Backend sync failed:', e));
+    }
   }, []);
 
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -377,6 +416,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedUser)
     }).catch(e => console.warn('Server sync error', e));
+
+    if (isSupabaseConfigured) {
+      saveSupabaseStudent(updatedUser);
+    }
   };
 
   const addSkillToCurrent = (skill: Skill) => {
@@ -410,23 +453,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setMessages(prev => [...prev, newMsg]);
 
-    setConversations(prev =>
-      prev.map(c => {
-        if (c.id === convId) {
-          return {
-            ...c,
-            lastMessage: {
-              text: newMsg.text,
-              senderId: currentUser.id,
-              timestamp: newMsg.timestamp
-            },
-            updatedAt: new Date().toISOString()
-          };
-        }
-        return c;
-      })
-    );
-
     // Call server endpoint
     fetch(`/api/conversations/${convId}/messages`, {
       method: 'POST',
@@ -439,6 +465,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         replyTo
       })
     }).catch(e => console.warn('Message sync error', e));
+
+    if (isSupabaseConfigured) {
+      saveSupabaseMessage(newMsg);
+      saveSupabaseConversation({
+        ...conversations.find(c => c.id === convId)!,
+        lastMessage: {
+          text: newMsg.text,
+          senderId: currentUser.id,
+          timestamp: newMsg.timestamp
+        },
+        updatedAt: new Date().toISOString()
+      });
+    }
 
     // Simulated peer reply in demo if chatting 1-on-1 with another student
     const conv = conversations.find(c => c.id === convId);
@@ -596,6 +635,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(project)
     }).catch(e => console.warn('Project sync error', e));
+
+    if (isSupabaseConfigured) {
+      saveSupabaseProject(project);
+      saveSupabaseConversation(groupConv);
+    }
   };
 
   const applyToProject = (projectId: string, roleId: string, roleTitle: string, note: string) => {
@@ -798,6 +842,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       body: JSON.stringify(q)
     }).catch(e => console.warn('Question sync error', e));
 
+    if (isSupabaseConfigured) {
+      saveSupabaseQuestion(q);
+    }
+
     return q;
   };
 
@@ -840,6 +888,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         body: body.trim()
       })
     }).catch(e => console.warn('Answer sync error', e));
+
+    if (isSupabaseConfigured) {
+      saveSupabaseAnswer(newAns);
+    }
   };
 
   const upvoteAnswer = (answerId: string) => {

@@ -107,7 +107,8 @@ export const QAView: React.FC = () => {
   };
 
   // Filtered & sorted questions
-  const filteredQuestions = questions.filter(q => {
+  const filteredQuestions = (questions || []).filter(q => {
+    if (!q) return false;
     if (activeTopic !== 'All' && q.topic !== activeTopic) return false;
     if (searchQuery.trim()) {
       const s = searchQuery.toLowerCase();
@@ -125,8 +126,8 @@ export const QAView: React.FC = () => {
   }
 
   // Active question answers
-  const currentAnswers = selectedQuestionForDetail
-    ? answers.filter(a => a.questionId === selectedQuestionForDetail.id)
+  const currentAnswers = (selectedQuestionForDetail && (answers || []).length > 0)
+    ? (answers || []).filter(a => a && a.questionId === selectedQuestionForDetail.id)
     : [];
 
   return (

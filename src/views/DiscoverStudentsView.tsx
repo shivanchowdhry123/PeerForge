@@ -33,8 +33,8 @@ export const DiscoverStudentsView: React.FC = () => {
 
   // Filter students
   const filteredStudents = useMemo(() => {
-    return allStudents.filter(student => {
-      if (student.isDeactivated) return false;
+    return (allStudents || []).filter(student => {
+      if (!student || student.isDeactivated) return false;
       // Role check: display students and mentors
       if (activeSearchQuery.trim()) {
         const q = activeSearchQuery.toLowerCase();
@@ -70,7 +70,7 @@ export const DiscoverStudentsView: React.FC = () => {
 
   const allAvailableSkills = useMemo(() => {
     const set = new Set<string>();
-    allStudents.forEach(s => s.skills.forEach(sk => set.add(sk.name)));
+    (allStudents || []).forEach(s => (s.skills || []).forEach(sk => sk.name && set.add(sk.name)));
     return Array.from(set).slice(0, 10);
   }, [allStudents]);
 
@@ -268,11 +268,11 @@ export const DiscoverStudentsView: React.FC = () => {
               <div className="mt-3 pt-3 border-t border-[var(--border-color)]/60 text-[11px] text-[var(--text-muted)] space-y-1">
                 <div>
                   <span className="font-semibold text-[var(--text-secondary)]">Interests: </span>
-                  <span>{student.interests.slice(0, 3).join(', ')}</span>
+                  <span>{(student.interests || []).slice(0, 3).join(', ')}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-[var(--text-secondary)]">Strengths: </span>
-                  <span>{student.academicStrengths.slice(0, 3).join(', ')}</span>
+                  <span>{(student.academicStrengths || []).slice(0, 3).join(', ')}</span>
                 </div>
               </div>
             </div>

@@ -97,6 +97,101 @@ export async function fetchSupabaseQuestions(): Promise<Question[] | null> {
   }
 }
 
+export async function saveSupabaseQuestion(question: Question): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const { error } = await supabase.from('questions').upsert(question);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase save question error:', err);
+    return false;
+  }
+}
+
+export async function fetchSupabaseAnswers(questionId?: string): Promise<Answer[] | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    let query = supabase.from('answers').select('*');
+    if (questionId) {
+      query = query.eq('questionId', questionId);
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    return data as Answer[];
+  } catch (err) {
+    console.warn('Supabase fetch answers error:', err);
+    return null;
+  }
+}
+
+export async function saveSupabaseAnswer(answer: Answer): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const { error } = await supabase.from('answers').upsert(answer);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase save answer error:', err);
+    return false;
+  }
+}
+
+export async function fetchSupabaseConversations(userId: string): Promise<Conversation[] | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const { data, error } = await supabase
+      .from('conversations')
+      .select('*')
+      .contains('participantIds', [userId]);
+    if (error) throw error;
+    return data as Conversation[];
+  } catch (err) {
+    console.warn('Supabase fetch conversations error:', err);
+    return null;
+  }
+}
+
+export async function saveSupabaseConversation(conversation: Conversation): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const { error } = await supabase.from('conversations').upsert(conversation);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase save conversation error:', err);
+    return false;
+  }
+}
+
+export async function fetchSupabaseMessages(conversationId: string): Promise<Message[] | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('conversationId', conversationId)
+      .order('timestamp', { ascending: true });
+    if (error) throw error;
+    return data as Message[];
+  } catch (err) {
+    console.warn('Supabase fetch messages error:', err);
+    return null;
+  }
+}
+
+export async function saveSupabaseMessage(message: Message): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const { error } = await supabase.from('messages').upsert(message);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase save message error:', err);
+    return false;
+  }
+}
+
 export async function fetchSupabaseUploads(): Promise<UploadedFile[] | null> {
   if (!isSupabaseConfigured) return null;
   try {

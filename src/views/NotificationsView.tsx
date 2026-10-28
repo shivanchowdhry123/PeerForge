@@ -21,8 +21,8 @@ export const NotificationsView: React.FC = () => {
 
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
-  const userNotifications = notifications.filter(
-    n => n.userId === currentUser.id || n.userId === 'all'
+  const userNotifications = (notifications || []).filter(
+    n => n && (n.userId === currentUser?.id || n.userId === 'all')
   );
 
   const filtered = userNotifications.filter(n => {

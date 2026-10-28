@@ -62,7 +62,7 @@ export const MessagesView: React.FC = () => {
     : [];
 
   const activeConv = userConversations.find(c => c.id === activeConversationId) || userConversations[0];
-  const activeMessages = activeConv && messages ? messages.filter(m => m.conversationId === activeConv.id) : [];
+  const activeMessages = activeConv && messages ? (messages || []).filter(m => m && m.conversationId === activeConv.id) : [];
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

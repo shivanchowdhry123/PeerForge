@@ -338,7 +338,7 @@ export const ProfileView: React.FC = () => {
 
             {/* Categorized Skills display */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {student.skills.map((skill, idx) => (
+              {(student.skills || []).map((skill, idx) => (
                 <div
                   key={idx}
                   className="p-3 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex items-center justify-between gap-3 group"
@@ -435,7 +435,7 @@ export const ProfileView: React.FC = () => {
             </div>
 
             <div className="space-y-3">
-              {student.achievements.map((ach, idx) => (
+              {(student.achievements || []).map((ach, idx) => (
                 <div
                   key={idx}
                   className="p-3 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] space-y-1"
@@ -463,7 +463,7 @@ export const ProfileView: React.FC = () => {
               Academic Strengths
             </h2>
             <div className="flex flex-wrap gap-1.5">
-              {student.academicStrengths.map((sub, idx) => (
+              {(student.academicStrengths || []).map((sub, idx) => (
                 <span
                   key={idx}
                   className="px-2.5 py-1 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 text-xs font-medium border border-blue-200 dark:border-blue-800"
@@ -480,7 +480,7 @@ export const ProfileView: React.FC = () => {
               Interests & Hobbies
             </h2>
             <div className="flex flex-wrap gap-1.5">
-              {student.interests.map((int, idx) => (
+              {(student.interests || []).map((int, idx) => (
                 <span
                   key={idx}
                   className="px-2.5 py-1 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 text-xs font-medium border border-purple-200 dark:border-purple-800"

@@ -42,7 +42,7 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-[var(--border-color)] bg-[var(--bg-surface)]/95 backdrop-blur-md px-4 sm:px-6 py-3 transition-colors">
+    <header className="sticky top-0 z-40 w-full border-b border-[var(--border-color)] bg-[var(--bg-surface)]/95 dark:glass-dark backdrop-blur-md px-4 sm:px-6 py-3 transition-colors">
       <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
         {/* Brand Zone */}
         <div className="flex items-center gap-3 shrink-0">

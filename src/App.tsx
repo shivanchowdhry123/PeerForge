@@ -73,7 +73,7 @@ const MainLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ivory-page text-[var(--text-primary)] flex flex-col transition-colors selection:bg-blue-100 selection:text-blue-900">
+    <div className="min-h-screen bg-ivory-page dark:bg-[var(--bg-ivory)] text-[var(--text-primary)] flex flex-col transition-colors selection:bg-blue-100 selection:text-blue-900">
       {/* Top Navbar */}
       <Navbar />
 
