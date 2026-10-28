@@ -113,38 +113,6 @@ export interface Answer {
   isAccepted: boolean;
 }
 
-export interface Community {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  coverImage?: string;
-  membersCount: number;
-  isJoined: boolean;
-  isOfficial: boolean;
-  leaderName: string;
-  topics: string[];
-  createdDate: string;
-}
-
-export interface CommunityPost {
-  id: string;
-  communityId: string;
-  authorId: string;
-  authorName: string;
-  authorGrade: string;
-  authorAvatar: string;
-  content: string;
-  createdAt: string;
-  likes: number;
-  likedBy: string[];
-  commentsCount: number;
-  poll?: {
-    question: string;
-    options: { text: string; votes: number; voters: string[] }[];
-  };
-}
-
 export interface ProjectRole {
   id: string;
   title: string;
@@ -235,7 +203,7 @@ export interface SchoolEvent {
 export interface AppNotification {
   id: string;
   userId: string;
-  type: 'message' | 'invite' | 'answer' | 'community' | 'system';
+  type: 'message' | 'invite' | 'answer' | 'system';
   title: string;
   description: string;
   read: boolean;

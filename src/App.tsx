@@ -15,7 +15,6 @@ import { SettingsView } from './views/SettingsView';
 import { AdminView } from './views/AdminView';
 import { AboutUsView } from './views/AboutUsView';
 import { ContactUsView } from './views/ContactUsView';
-import { CommunitiesView } from './views/CommunitiesView';
 import { UploadsView } from './views/UploadsView';
 import { OnboardingModal } from './components/OnboardingModal';
 import { InviteToProjectModal } from './components/InviteToProjectModal';
@@ -49,8 +48,6 @@ const MainLayout: React.FC = () => {
         return <QAView />;
       case 'projects':
         return <ProjectsView />;
-      case 'communities':
-        return <CommunitiesView />;
       case 'uploads':
         return <UploadsView />;
       case 'events':

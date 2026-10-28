@@ -119,7 +119,7 @@ export const HomeView: React.FC = () => {
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 text-[10px] font-bold border border-amber-300 dark:border-amber-800">
-                  Visitor Mode
+                  Guest View
                 </span>
               )}
             </div>

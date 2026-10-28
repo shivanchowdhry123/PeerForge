@@ -5,8 +5,6 @@ import {
   Question,
   Answer,
   Project,
-  Community,
-  CommunityPost,
   SchoolEvent,
   AppNotification,
   Conversation,
@@ -17,7 +15,6 @@ import {
 } from '../types';
 import {
   INITIAL_STUDENTS,
-  INITIAL_COMMUNITIES,
   INITIAL_PROJECTS,
   INITIAL_QUESTIONS,
   INITIAL_ANSWERS,
@@ -49,7 +46,6 @@ import {
 interface AppContextType {
   currentUser: StudentProfile | null;
   allStudents: StudentProfile[];
-  communities: Community[];
   projects: Project[];
   questions: Question[];
   answers: Answer[];
@@ -68,8 +64,6 @@ interface AppContextType {
   setSelectedQuestionForDetail: (q: Question | null) => void;
   selectedProjectForDetail: Project | null;
   setSelectedProjectForDetail: (p: Project | null) => void;
-  selectedCommunityForDetail: Community | null;
-  setSelectedCommunityForDetail: (c: Community | null) => void;
   activeConversationId: string | null;
   setActiveConversationId: (id: string | null) => void;
   theme: 'light' | 'dark';
@@ -90,10 +84,6 @@ interface AppContextType {
   postAnswer: (questionId: string, body: string) => void;
   upvoteAnswer: (answerId: string) => void;
   acceptAnswer: (questionId: string, answerId: string) => void;
-  toggleJoinCommunity: (communityId: string) => void;
-  createCommunityPost: (communityId: string, content: string, pollQuestion?: string, pollOptions?: string[]) => void;
-  likeCommunityPost: (postId: string) => void;
-  votePoll: (postId: string, optionIndex: number) => void;
   toggleEventRsvp: (eventId: string) => void;
   submitContentReport: (report: Partial<ContentReport>) => void;
   resolveReport: (reportId: string, action: 'dismiss' | 'action_taken', note?: string) => void;
@@ -178,39 +168,100 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return INITIAL_STUDENTS;
   });
-  const [currentUser, setCurrentUser] = useState<StudentProfile | null>(null);
+
+  const [currentUser, setCurrentUser] = useState<StudentProfile | null>(() => {
+    try {
+      const savedUser = localStorage.getItem('opg_current_user');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed && parsed.id && parsed.name) {
+          return parsed;
+        }
+      }
+      const savedId = localStorage.getItem('opg_current_user_id');
+      if (savedId) {
+        const found = INITIAL_STUDENTS.find(s => s.id === savedId);
+        if (found) return found;
+      }
+    } catch (e) {
+      console.warn('Initial currentUser restore error:', e);
+    }
+    return null;
+  });
+
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    try {
+      if (localStorage.getItem('opg_is_authenticated') === 'true') return true;
+      const savedUser = localStorage.getItem('opg_current_user');
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        return Boolean(parsed && parsed.id);
+      }
+    } catch {
+      // ignore
+    }
+    return false;
+  });
 
   // Sync state with backend database API on mount
   useEffect(() => {
-    // Check for existing Supabase session
+    let unsubscribeAuth: (() => void) | undefined;
+
+    // Check for existing Supabase session if configured
     if (isSupabaseConfigured) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
         if (session?.user) {
-          fetch(`/api/students/${session.user.id}`)
-            .then(r => r.json())
-            .then(student => {
-              if (student && !student.error) {
-                setCurrentUser(student);
-                setIsAuthenticated(true);
-              }
-            })
-            .catch(() => {
-              // If profile fetch fails but auth exists, we might need to create it or just stay as guest
-            });
+          try {
+            const { data: sbStudent } = await supabase
+              .from('students')
+              .select('*')
+              .or(`id.eq.${session.user.id},email.eq.${session.user.email}`)
+              .maybeSingle();
+
+            if (sbStudent) {
+              setCurrentUser(sbStudent as StudentProfile);
+              setIsAuthenticated(true);
+            }
+          } catch {
+            fetch(`/api/students/${session.user.id}`)
+              .then(r => r.json())
+              .then(student => {
+                if (student && !student.error) {
+                  setCurrentUser(student);
+                  setIsAuthenticated(true);
+                }
+              })
+              .catch(() => {});
+          }
         }
       });
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session?.user) {
-          setIsAuthenticated(true);
-          // Optionally fetch profile here too
-        } else {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_OUT') {
           setIsAuthenticated(false);
           setCurrentUser(null);
+          localStorage.removeItem('opg_current_user_id');
+          localStorage.removeItem('opg_current_user');
+          localStorage.removeItem('opg_is_authenticated');
+        } else if (session?.user) {
+          try {
+            const { data: sbStudent } = await supabase
+              .from('students')
+              .select('*')
+              .or(`id.eq.${session.user.id},email.eq.${session.user.email}`)
+              .maybeSingle();
+
+            if (sbStudent) {
+              setCurrentUser(sbStudent as StudentProfile);
+              setIsAuthenticated(true);
+            }
+          } catch {
+            // ignore
+          }
         }
       });
 
-      return () => subscription.unsubscribe();
+      unsubscribeAuth = () => subscription.unsubscribe();
     }
 
     if (isSupabaseConfigured) {
@@ -219,19 +270,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fetchSupabaseProjects(),
         fetchSupabaseQuestions(),
         fetchSupabaseAnswers(),
-        // Conversations and messages are usually fetched per-user/per-conv,
-        // but we can fetch them here for initial state if small,
-        // or just let the individual views handle it.
-        // For now, let's just fetch everything for the demo feel.
-        fetch('/api/communities').then(r => r.json()).catch(() => []),
         fetch('/api/events').then(r => r.json()).catch(() => []),
         fetch('/api/notifications').then(r => r.json()).catch(() => []),
-      ]).then(([students, projects, questions, answers, communities, events, notifications]) => {
-        if (students) setAllStudents(students);
-        if (projects) setProjects(projects);
-        if (questions) setQuestions(questions);
-        if (answers) setAnswers(answers);
-        if (Array.isArray(communities)) setCommunities(communities);
+      ]).then(([students, projects, questions, answers, events, notifications]) => {
+        if (students && Array.isArray(students) && students.length > 0) setAllStudents(students);
+        if (projects && Array.isArray(projects)) setProjects(projects);
+        if (questions && Array.isArray(questions)) setQuestions(questions);
+        if (answers && Array.isArray(answers)) setAnswers(answers);
         if (Array.isArray(events)) setEvents(events);
         if (Array.isArray(notifications)) setNotifications(notifications);
       });
@@ -240,32 +285,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fetch('/api/students').then(r => r.json()).catch(() => []),
         fetch('/api/projects').then(r => r.json()).catch(() => []),
         fetch('/api/questions').then(r => r.json()).catch(() => []),
-        fetch('/api/communities').then(r => r.json()).catch(() => []),
         fetch('/api/events').then(r => r.json()).catch(() => []),
         fetch('/api/conversations').then(r => r.json()).catch(() => []),
         fetch('/api/messages').then(r => r.json()).catch(() => []),
         fetch('/api/notifications').then(r => r.json()).catch(() => []),
-      ]).then(([studentsRes, projectsRes, questionsRes, communitiesRes, eventsRes, convRes, msgRes, notifRes]) => {
-        if (Array.isArray(studentsRes)) {
+      ]).then(([studentsRes, projectsRes, questionsRes, eventsRes, convRes, msgRes, notifRes]) => {
+        if (Array.isArray(studentsRes) && studentsRes.length > 0) {
           setAllStudents(studentsRes);
-          // Do not auto-assign a user if not authenticated
         }
         if (Array.isArray(projectsRes)) setProjects(projectsRes);
         if (Array.isArray(questionsRes)) setQuestions(questionsRes);
-        if (Array.isArray(communitiesRes)) setCommunities(communitiesRes);
         if (Array.isArray(eventsRes)) setEvents(eventsRes);
         if (Array.isArray(convRes)) setConversations(convRes);
         if (Array.isArray(msgRes)) setMessages(msgRes);
         if (Array.isArray(notifRes)) setNotifications(notifRes);
       }).catch(e => console.warn('Backend sync failed:', e));
     }
+
+    return () => {
+      if (unsubscribeAuth) unsubscribeAuth();
+    };
   }, []);
 
   const [activeTab, setActiveTab] = useState<string>('home');
   const [selectedStudentForProfile, setSelectedStudentForProfile] = useState<StudentProfile | null>(null);
   const [selectedQuestionForDetail, setSelectedQuestionForDetail] = useState<Question | null>(null);
   const [selectedProjectForDetail, setSelectedProjectForDetail] = useState<Project | null>(null);
-  const [selectedCommunityForDetail, setSelectedCommunityForDetail] = useState<Community | null>(null);
   const [activeConversationId, setActiveConversationId] = useState<string | null>('conv-1');
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
   const [activeSearchQuery, setActiveSearchQuery] = useState<string>('');
@@ -274,7 +319,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     student: null
   });
 
-  const [communities, setCommunities] = useState<Community[]>(INITIAL_COMMUNITIES);
   const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
   const [questions, setQuestions] = useState<Question[]>(INITIAL_QUESTIONS);
   const [answers, setAnswers] = useState<Answer[]>(INITIAL_ANSWERS);
@@ -293,7 +337,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_CONTACT_INQUIRIES;
   });
   const [isDeveloperMode, setIsDeveloperMode] = useState<boolean>(true);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const [authRole, setAuthRole] = useState<'student' | 'teacher'>('student');
@@ -324,8 +367,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('opg_current_user_id', currentUser.id);
+      localStorage.setItem('opg_current_user', JSON.stringify(currentUser));
+      localStorage.setItem('opg_is_authenticated', 'true');
     } else {
       localStorage.removeItem('opg_current_user_id');
+      localStorage.removeItem('opg_current_user');
+      localStorage.removeItem('opg_is_authenticated');
     }
   }, [currentUser]);
 
@@ -884,60 +931,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  const toggleJoinCommunity = (communityId: string) => {
-    setCommunities(prev =>
-      prev.map(c => {
-        if (c.id === communityId) {
-          const isJoined = !c.isJoined;
-          return {
-            ...c,
-            isJoined,
-            membersCount: c.membersCount + (isJoined ? 1 : -1)
-          };
-        }
-        return c;
-      })
-    );
-  };
-
-  const createCommunityPost = (communityId: string, content: string, pollQuestion?: string, pollOptions?: string[]) => {
-    if (!currentUser) return;
-    // Implement post creation
-    fetch(`/api/communities/${communityId}/posts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        authorId: currentUser.id,
-        authorName: currentUser.name,
-        authorGrade: currentUser.grade,
-        authorAvatar: currentUser.avatar,
-        content,
-        poll: pollQuestion && pollOptions ? {
-          question: pollQuestion,
-          options: pollOptions.map(t => ({ text: t, votes: 0, voters: [] }))
-        } : undefined
-      })
-    }).catch(e => console.warn('Post sync error', e));
-  };
-
-  const likeCommunityPost = (postId: string) => {
-    if (!currentUser) return;
-    fetch(`/api/posts/${postId}/like`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUser.id })
-    }).catch(e => console.warn('Like sync error', e));
-  };
-
-  const votePoll = (postId: string, optionIndex: number) => {
-    if (!currentUser) return;
-    fetch(`/api/posts/${postId}/poll-vote`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ optionIndex, userId: currentUser.id })
-    }).catch(e => console.warn('Poll vote error', e));
-  };
-
   const toggleEventRsvp = (eventId: string) => {
     setEvents(prev =>
       prev.map(e => {
@@ -1154,57 +1147,172 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ): Promise<{ success: boolean; message: string; user?: StudentProfile }> => {
     const cleanEmail = gmail.trim().toLowerCase();
     if (!cleanEmail) {
-      return { success: false, message: 'Please enter your Gmail ID.' };
+      return { success: false, message: 'Please enter your school or Gmail ID.' };
     }
 
+    let profileToLogin: StudentProfile | null = null;
+
+    // 1. Try Supabase Auth if configured
     if (isSupabaseConfigured && password) {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password: password
-      });
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: password
+        });
 
-      if (error) {
-        return { success: false, message: error.message };
-      }
+        if (error) {
+          console.warn('Supabase sign-in note:', error.message);
+        } else if (data?.user) {
+          // Check if profile exists in Supabase DB
+          try {
+            const { data: sbProfile } = await supabase
+              .from('students')
+              .select('*')
+              .or(`id.eq.${data.user.id},email.eq.${cleanEmail}`)
+              .maybeSingle();
 
-      if (data.user) {
-        // Fetch profile from our API/DB
-        const res = await fetch(`/api/students/${data.user.id}`);
-        const student = await res.json();
-        if (student && !student.error) {
-          setCurrentUser(student);
-          setIsAuthenticated(true);
-          return { success: true, message: `Welcome back, ${student.name}!`, user: student };
+            if (sbProfile) {
+              profileToLogin = sbProfile as StudentProfile;
+            }
+          } catch (sbErr) {
+            console.warn('Supabase profile query note:', sbErr);
+          }
+
+          // If not in Supabase DB, check local API
+          if (!profileToLogin) {
+            try {
+              const res = await fetch(`/api/students/${data.user.id}`);
+              const student = await res.json();
+              if (student && !student.error) {
+                profileToLogin = student;
+              }
+            } catch {
+              // ignore
+            }
+          }
+
+          // If still not found, construct profile from Supabase user metadata
+          if (!profileToLogin) {
+            const meta = data.user.user_metadata || {};
+            profileToLogin = {
+              id: data.user.id,
+              name: meta.full_name || meta.name || cleanEmail.split('@')[0],
+              email: cleanEmail,
+              gmailAccount: cleanEmail,
+              password: password,
+              avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(cleanEmail.split('@')[0])}`,
+              grade: meta.role === 'teacher' ? (meta.department || 'Senior Faculty') : (meta.grade || 'Grade 11'),
+              section: meta.role === 'teacher' ? 'Faculty' : (meta.section || 'A'),
+              role: (meta.role as 'student' | 'teacher') || 'student',
+              bio: `OPG World School ${meta.role === 'teacher' ? 'Faculty Mentor' : 'Student'} member.`,
+              skills: [
+                { name: 'Collaboration', category: 'Leadership & Sports', level: 'Intermediate', verified: true },
+                { name: 'Academic Problem Solving', category: 'Academic', level: 'Intermediate', verified: true }
+              ],
+              interests: ['Peer Collaboration', 'Academics'],
+              academicStrengths: ['STEM'],
+              projects: [],
+              achievements: [
+                {
+                  title: 'Verified School Member',
+                  issuer: 'OPG World School',
+                  date: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+                  verified: true
+                }
+              ],
+              availability: 'Active & Seeking Projects',
+              privacySettings: {
+                showGradeToAll: true,
+                allowDirectMessages: 'anyone',
+                showAchievements: true
+              },
+              completeness: 85,
+              isVerified: true,
+              isApproved: true,
+              joinedDate: new Date().toISOString().split('T')[0]
+            };
+            saveSupabaseStudent(profileToLogin);
+            fetch('/api/students', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(profileToLogin)
+            }).catch(() => {});
+          }
         }
+      } catch (e) {
+        console.warn('Supabase auth exception:', e);
       }
     }
 
-    // Fallback to local memory (for demo or if Supabase not yet setup)
-    const matched = allStudents.find(
-      s =>
-        s.email.toLowerCase().trim() === cleanEmail ||
-        (s.gmailAccount && s.gmailAccount.toLowerCase().trim() === cleanEmail)
-    );
+    // 2. Check local allStudents by email
+    if (!profileToLogin) {
+      const matched = allStudents.find(
+        s =>
+          s.email.toLowerCase().trim() === cleanEmail ||
+          (s.gmailAccount && s.gmailAccount.toLowerCase().trim() === cleanEmail)
+      );
 
-    if (!matched) {
+      if (matched) {
+        if (password && matched.password && matched.password !== password) {
+          return {
+            success: false,
+            message: 'Incorrect password for this account. Please verify credentials.'
+          };
+        }
+        profileToLogin = matched;
+      }
+    }
+
+    // 3. Fallback: Check server database directly
+    if (!profileToLogin) {
+      try {
+        const res = await fetch('/api/students');
+        const list: StudentProfile[] = await res.json();
+        if (Array.isArray(list)) {
+          const found = list.find(
+            s =>
+              s.email.toLowerCase().trim() === cleanEmail ||
+              (s.gmailAccount && s.gmailAccount.toLowerCase().trim() === cleanEmail)
+          );
+          if (found) {
+            if (password && found.password && found.password !== password) {
+              return {
+                success: false,
+                message: 'Incorrect password for this account. Please verify credentials.'
+              };
+            }
+            profileToLogin = found;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    if (!profileToLogin) {
       return {
         success: false,
-        message: 'No registered student or teacher account found with this Gmail ID. Please sign up below!'
+        message: 'No registered student or teacher account found with this email. Please click "Sign Up" to register your account!'
       };
     }
 
-    if (password && matched.password && matched.password !== password) {
-      return {
-        success: false,
-        message: 'Incorrect password for this Gmail account. Please verify credentials.'
-      };
-    }
-
-    setCurrentUser(matched);
+    // Update state synchronously
+    setCurrentUser(profileToLogin);
     setIsAuthenticated(true);
-    setIsAuthModalOpen(false);
+    setAllStudents(prev => {
+      const exists = prev.some(s => s.id === profileToLogin!.id);
+      return exists ? prev.map(s => s.id === profileToLogin!.id ? profileToLogin! : s) : [profileToLogin!, ...prev];
+    });
 
-    return { success: true, message: `Welcome back, ${matched.name}!`, user: matched };
+    localStorage.setItem('opg_current_user_id', profileToLogin.id);
+    localStorage.setItem('opg_current_user', JSON.stringify(profileToLogin));
+    localStorage.setItem('opg_is_authenticated', 'true');
+
+    return {
+      success: true,
+      message: `Welcome back, ${profileToLogin.name}!`,
+      user: profileToLogin
+    };
   };
 
   const signUpWithGmail = async (data: {
@@ -1225,7 +1333,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, message: 'Please provide your full name.' };
     }
     if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-      return { success: false, message: 'Please provide a valid Gmail address.' };
+      return { success: false, message: 'Please provide a valid Gmail or school address.' };
     }
 
     let authUserId = `${data.role}-${Date.now()}`;
@@ -1249,7 +1357,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         authUserId = authData.user.id;
       }
     } else {
-      // Local check if not using Supabase
       const exists = allStudents.some(
         s =>
           s.email.toLowerCase() === cleanEmail ||
@@ -1258,7 +1365,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (exists) {
         return {
           success: false,
-          message: 'One student/teacher, one account: An account with this Gmail ID already exists. Please log in directly.'
+          message: 'An account with this email address already exists. Please sign in directly.'
         };
       }
     }
@@ -1315,15 +1422,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       joinedDate: new Date().toISOString().split('T')[0]
     };
 
-    // Save to allStudents state
-    setAllStudents(prev => [...prev, newProfile]);
+    setAllStudents(prev => [newProfile, ...prev]);
     
-    // Save to Supabase DB if configured
     if (isSupabaseConfigured) {
       await saveSupabaseStudent(newProfile);
     }
 
-    // Save to local backend
     fetch('/api/students', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1332,18 +1436,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setCurrentUser(newProfile);
     setIsAuthenticated(true);
-    setIsAuthModalOpen(false);
+
+    localStorage.setItem('opg_current_user_id', newProfile.id);
+    localStorage.setItem('opg_current_user', JSON.stringify(newProfile));
+    localStorage.setItem('opg_is_authenticated', 'true');
 
     return { success: true, message: `Account created successfully! Welcome to PeerForge, ${cleanName}.`, user: newProfile };
   };
 
   const logout = async () => {
     if (isSupabaseConfigured) {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut().catch(() => {});
     }
     setIsAuthenticated(false);
     setCurrentUser(null);
     localStorage.removeItem('opg_current_user_id');
+    localStorage.removeItem('opg_current_user');
     localStorage.removeItem('opg_is_authenticated');
   };
 
@@ -1425,7 +1533,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         currentUser,
         allStudents,
-        communities,
         projects,
         questions,
         answers,
@@ -1444,8 +1551,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedQuestionForDetail,
         selectedProjectForDetail,
         setSelectedProjectForDetail,
-        selectedCommunityForDetail,
-        setSelectedCommunityForDetail,
         activeConversationId,
         setActiveConversationId,
         theme,
@@ -1467,10 +1572,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         postAnswer,
         upvoteAnswer,
         acceptAnswer,
-        toggleJoinCommunity,
-        createCommunityPost,
-        likeCommunityPost,
-        votePoll,
         toggleEventRsvp,
         submitContentReport,
         resolveReport,

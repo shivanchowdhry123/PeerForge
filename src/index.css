@@ -28,13 +28,13 @@
   }
 
   .dark {
-    --bg-ivory: #0B0E14;
-    --bg-surface: #11141D;
-    --bg-subtle: #191E29;
-    --border-color: #242B3A;
-    --text-primary: #F9FAFB;
-    --text-secondary: #D1D5DB;
-    --text-muted: #9CA3AF;
+    --bg-ivory: #0F1117;
+    --bg-surface: #161922;
+    --bg-subtle: #1E232E;
+    --border-color: #2D3445;
+    --text-primary: #F3F4F6;
+    --text-secondary: #9CA3AF;
+    --text-muted: #6B7280;
   }
 
   body {

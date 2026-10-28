@@ -57,7 +57,7 @@ export const AuthModal: React.FC = () => {
         const res = await loginWithGmail(email, password);
         if (res.success) {
           setFeedback({ type: 'success', message: res.message });
-          setTimeout(() => closeAuthModal(), 1200);
+          setTimeout(() => closeAuthModal(), 800);
         } else {
           setFeedback({ type: 'error', message: res.message });
         }
@@ -358,6 +358,38 @@ export const AuthModal: React.FC = () => {
               </>
             )}
           </button>
+
+          {authModalMode === 'login' && (
+            <div className="pt-2 border-t border-[var(--border-color)]">
+              <p className="text-[10px] font-semibold text-[var(--text-muted)] mb-1.5 text-center">
+                Quick Demo Sign-In:
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('aakriti.narayan955@gmail.com');
+                    setPassword('Password@123');
+                    setAuthRole('student');
+                  }}
+                  className="flex-1 py-1 px-2 rounded-lg bg-[var(--bg-subtle)] hover:bg-blue-50 dark:hover:bg-blue-950/50 border border-[var(--border-color)] text-[11px] font-medium text-[var(--text-secondary)] hover:text-blue-600 transition-colors"
+                >
+                  Student (Aakriti)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('rajesh.kumar@opgworldschool.com');
+                    setPassword('PeerForge@2026');
+                    setAuthRole('teacher');
+                  }}
+                  className="flex-1 py-1 px-2 rounded-lg bg-[var(--bg-subtle)] hover:bg-indigo-50 dark:hover:bg-indigo-950/50 border border-[var(--border-color)] text-[11px] font-medium text-[var(--text-secondary)] hover:text-indigo-600 transition-colors"
+                >
+                  Faculty (Dr. Rajesh)
+                </button>
+              </div>
+            </div>
+          )}
         </form>
 
         {/* Footer info */}

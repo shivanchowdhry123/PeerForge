@@ -180,7 +180,7 @@ export const Navbar: React.FC = () => {
           </button>
 
           {/* Auth Actions Zone */}
-          {!isAuthenticated ? (
+          {(!isAuthenticated || !currentUser) ? (
             <div className="relative z-10 flex items-center gap-2">
               <button
                 onClick={() => openAuthModal('login')}
@@ -286,7 +286,7 @@ export const Navbar: React.FC = () => {
                       className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors text-left font-semibold"
                     >
                       <LogOut className="w-3.5 h-3.5" />
-                      <span>Sign Out (Guest View)</span>
+                      <span>Log Out</span>
                     </button>
                   </div>
                 </div>

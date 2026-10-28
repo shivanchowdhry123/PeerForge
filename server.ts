@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { type Request, type Response } from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
@@ -7,8 +7,6 @@ import multer from 'multer';
 import { GoogleGenAI } from '@google/genai';
 import {
   INITIAL_STUDENTS,
-  INITIAL_COMMUNITIES,
-  INITIAL_POSTS,
   INITIAL_PROJECTS,
   INITIAL_QUESTIONS,
   INITIAL_ANSWERS,
@@ -20,7 +18,7 @@ import {
   INITIAL_CONTACT_INQUIRIES,
   INITIAL_UPLOADED_FILES
 } from './src/data/initialData.ts';
-import {
+import type {
   StudentProfile,
   AIMatchResult,
   Question,
@@ -28,8 +26,6 @@ import {
   Project,
   Message,
   Conversation,
-  Community,
-  CommunityPost,
   SchoolEvent,
   AppNotification,
   ContentReport,
@@ -73,7 +69,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 30 * 1024 * 1024 } // 30MB limit
+  limits: { fileSize: 15 * 1024 * 1024 } // 15MB Free Tier safe limit
 });
 
 // Initialize server-side Gemini client
@@ -89,8 +85,6 @@ const ai = new GoogleGenAI({
 // In-Memory Data Store with Initial School Seed
 const db = {
   students: [...INITIAL_STUDENTS],
-  communities: [...INITIAL_COMMUNITIES],
-  posts: [...INITIAL_POSTS],
   projects: [...INITIAL_PROJECTS],
   questions: [...INITIAL_QUESTIONS],
   answers: [...INITIAL_ANSWERS],
@@ -844,91 +838,6 @@ app.post('/api/questions/:id/accept-answer', (req: Request, res: Response) => {
   res.json({ success: true, acceptedAnswerId: answerId });
 });
 
-// --- COMMUNITIES & SOCIETIES ---
-
-app.get('/api/communities', (_req: Request, res: Response) => {
-  res.json(db.communities);
-});
-
-app.post('/api/communities/:id/join', (req: Request, res: Response) => {
-  const comm = db.communities.find(c => c.id === req.params.id);
-  if (!comm) return res.status(404).json({ error: 'Community not found' });
-
-  comm.isJoined = !comm.isJoined;
-  comm.membersCount += comm.isJoined ? 1 : -1;
-  res.json(comm);
-});
-
-app.get('/api/communities/:id/posts', (req: Request, res: Response) => {
-  const posts = db.posts.filter(p => p.communityId === req.params.id);
-  res.json(posts);
-});
-
-app.post('/api/communities/:id/posts', (req: Request, res: Response) => {
-  const { authorId, content, pollQuestion, pollOptions } = req.body;
-  const comm = db.communities.find(c => c.id === req.params.id);
-  if (!comm) return res.status(404).json({ error: 'Community not found' });
-
-  const author = db.students.find(s => s.id === authorId);
-  const newPost: CommunityPost = {
-    id: `post-${Date.now()}`,
-    communityId: String(req.params.id),
-    authorId,
-    authorName: author?.name || 'Student Member',
-    authorGrade: author?.grade || 'Class 11',
-    authorAvatar: author?.avatar || 'https://api.dicebear.com/7.x/adventurer/svg?seed=Post',
-    content,
-    createdAt: 'Just now',
-    likes: 0,
-    likedBy: [],
-    commentsCount: 0,
-    poll: pollQuestion && Array.isArray(pollOptions) && pollOptions.length > 0 ? {
-      question: pollQuestion,
-      options: pollOptions.map((opt: string) => ({ text: opt, votes: 0, voters: [] }))
-    } : undefined
-  };
-
-  db.posts.unshift(newPost);
-  res.status(201).json(newPost);
-});
-
-app.post('/api/posts/:id/like', (req: Request, res: Response) => {
-  const { userId } = req.body;
-  const post = db.posts.find(p => p.id === req.params.id);
-  if (!post) return res.status(404).json({ error: 'Post not found' });
-
-  const idx = post.likedBy.indexOf(userId);
-  if (idx > -1) {
-    post.likedBy.splice(idx, 1);
-    post.likes = Math.max(0, post.likes - 1);
-  } else {
-    post.likedBy.push(userId);
-    post.likes += 1;
-  }
-
-  res.json(post);
-});
-
-app.post('/api/posts/:id/poll-vote', (req: Request, res: Response) => {
-  const { userId, optionIndex } = req.body;
-  const post = db.posts.find(p => p.id === req.params.id);
-  if (!post || !post.poll) return res.status(404).json({ error: 'Poll not found' });
-
-  post.poll.options.forEach((opt, idx) => {
-    const voterIdx = opt.voters.indexOf(userId);
-    if (voterIdx > -1) {
-      opt.voters.splice(voterIdx, 1);
-      opt.votes = Math.max(0, opt.votes - 1);
-    }
-    if (idx === optionIndex) {
-      opt.voters.push(userId);
-      opt.votes += 1;
-    }
-  });
-
-  res.json(post);
-});
-
 // --- PROJECTS & TEAM BUILDING ---
 
 app.get('/api/projects', (_req: Request, res: Response) => {
@@ -1198,7 +1107,12 @@ app.all('/api/*', (_req: Request, res: Response) => {
 // --- DEV SERVER (VITE) & PRODUCTION STATIC HOSTING ---
 
 async function startServer() {
-  if (process.env.NODE_ENV !== 'production') {
+  const isProduction =
+    process.env.NODE_ENV === 'production' ||
+    process.env.npm_lifecycle_event === 'start' ||
+    (!process.env.npm_lifecycle_event && fs.existsSync(path.resolve(__dirname, 'dist', 'index.html')));
+
+  if (!isProduction) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: {
@@ -1209,19 +1123,41 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.resolve(__dirname, 'dist')));
-    app.get('*', (_req: Request, res: Response) => {
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
-    });
+    const distPath = path.resolve(__dirname, 'dist');
+    if (fs.existsSync(distPath)) {
+      app.use(express.static(distPath));
+      app.get('*', (_req: Request, res: Response) => {
+        res.sendFile(path.resolve(distPath, 'index.html'));
+      });
+    }
   }
 
+  // Primary listen on port 3000 (standard AI Studio port proxied by nginx)
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`PeerForge OPG World School full-stack server running on http://0.0.0.0:${PORT}`);
   });
 
   server.on('error', (err: any) => {
-    console.error('Server listen error:', err);
+    console.error(`Server listen error on port ${PORT}:`, err?.message || err);
   });
+
+  // If deployed in an environment where Cloud Run maps traffic directly to process.env.PORT (e.g., 8080)
+  const envPort = process.env.PORT ? parseInt(process.env.PORT, 10) : null;
+  if (envPort && envPort !== PORT) {
+    try {
+      const secondaryServer = app.listen(envPort, '0.0.0.0', () => {
+        console.log(`PeerForge dual-listener active on http://0.0.0.0:${envPort}`);
+      });
+      secondaryServer.on('error', (err: any) => {
+        // In dev container, port 8080 is used by nginx reverse proxy so EADDRINUSE is expected
+        if (err?.code !== 'EADDRINUSE') {
+          console.warn(`Secondary port ${envPort} warning:`, err?.message || err);
+        }
+      });
+    } catch (e: any) {
+      console.warn(`Could not bind secondary port ${envPort}:`, e?.message || e);
+    }
+  }
 }
 
 startServer();

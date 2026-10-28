@@ -4,8 +4,6 @@ import {
   Project,
   Question,
   Answer,
-  Community,
-  CommunityPost,
   SchoolEvent,
   AppNotification,
   Conversation,
@@ -14,6 +12,8 @@ import {
   UploadedFile
 } from '../types';
 
+import { sanitizeStudentForDb, sanitizeMessageText } from '../utils/storageOptimizer';
+
 // Supabase configuration
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder';
@@ -21,7 +21,8 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder
 export const isSupabaseConfigured = Boolean(
   import.meta.env.VITE_SUPABASE_URL &&
   import.meta.env.VITE_SUPABASE_ANON_KEY &&
-  !import.meta.env.VITE_SUPABASE_URL.includes('placeholder')
+  !import.meta.env.VITE_SUPABASE_URL.includes('placeholder') &&
+  !import.meta.env.VITE_SUPABASE_URL.includes('your-project')
 );
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -35,6 +36,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 /**
  * Supabase Data Service Layer for PeerForge OPG World School Platform
  * Handles table synchronization, real-time channels, and robust local/remote fallbacks.
+ * Optimizes Free Tier resource consumption by preventing base64 blob storage and trimming payloads.
  */
 
 export async function fetchSupabaseStudents(): Promise<StudentProfile[] | null> {
@@ -52,7 +54,8 @@ export async function fetchSupabaseStudents(): Promise<StudentProfile[] | null> 
 export async function saveSupabaseStudent(student: StudentProfile): Promise<boolean> {
   if (!isSupabaseConfigured) return false;
   try {
-    const { error } = await supabase.from('students').upsert(student);
+    const cleanStudent = sanitizeStudentForDb(student);
+    const { error } = await supabase.from('students').upsert(cleanStudent);
     if (error) throw error;
     return true;
   } catch (err) {
@@ -183,12 +186,38 @@ export async function fetchSupabaseMessages(conversationId: string): Promise<Mes
 export async function saveSupabaseMessage(message: Message): Promise<boolean> {
   if (!isSupabaseConfigured) return false;
   try {
-    const { error } = await supabase.from('messages').upsert(message);
+    const cleanMessage: Message = {
+      ...message,
+      text: sanitizeMessageText(message.text)
+    };
+    const { error } = await supabase.from('messages').upsert(cleanMessage);
     if (error) throw error;
     return true;
   } catch (err) {
     console.warn('Supabase save message error:', err);
     return false;
+  }
+}
+
+/**
+ * Prunes read notifications older than 14 days or in excess of 30 to prevent row explosion
+ */
+export async function pruneSupabaseNotifications(userId: string): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  try {
+    const { data: readNotifs } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('userId', userId)
+      .eq('read', true)
+      .order('timestamp', { ascending: false });
+
+    if (readNotifs && readNotifs.length > 25) {
+      const idsToDelete = readNotifs.slice(25).map(n => n.id);
+      await supabase.from('notifications').delete().in('id', idsToDelete);
+    }
+  } catch (err) {
+    console.warn('Supabase prune notifications error:', err);
   }
 }
 

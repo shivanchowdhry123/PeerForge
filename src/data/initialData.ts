@@ -1,9 +1,7 @@
-import {
+import type {
   StudentProfile,
   Question,
   Answer,
-  Community,
-  CommunityPost,
   Project,
   SchoolEvent,
   AppNotification,
@@ -12,7 +10,7 @@ import {
   ContentReport,
   ContactInquiry,
   UploadedFile
-} from '../types';
+} from '../types/index.ts';
 
 export const INITIAL_STUDENTS: StudentProfile[] = [
   {
@@ -302,86 +300,6 @@ export const INITIAL_STUDENTS: StudentProfile[] = [
   }
 ];
 
-export const INITIAL_COMMUNITIES: Community[] = [
-  {
-    id: 'comm-1',
-    name: 'OPG Robotics & AI Society',
-    description: 'The epicenter for tinkerers, electronics enthusiasts, autonomous vehicle coders, and competition builders at OPG World School.',
-    category: 'STEM & Robotics',
-    coverImage: '/src/assets/images/opg_stem_collaboration_1792943471637.jpg',
-    membersCount: 46,
-    isJoined: true,
-    isOfficial: true,
-    leaderName: 'Aakriti Narayan (Grade 11)',
-    topics: ['Arduino', 'Computer Vision', 'Microcontrollers', 'CBSE Science Fair'],
-    createdDate: '2026-08-01'
-  },
-  {
-    id: 'comm-2',
-    name: 'OPG Debate & Model UN Society',
-    description: 'Honing diplomacy, parliamentary debate, critical analysis, and persuasive discourse across Class 9 to 12 delegates.',
-    category: 'Debate & Humanities',
-    coverImage: '/src/assets/images/opg_arts_mun_showcase_1792943473605.jpg',
-    membersCount: 38,
-    isJoined: false,
-    isOfficial: true,
-    leaderName: 'Ananya Desai (Grade 10)',
-    topics: ['MUN Diplomacy', 'Parliamentary Debate', 'Geopolitics', 'Extempore'],
-    createdDate: '2026-08-05'
-  },
-  {
-    id: 'comm-3',
-    name: 'OPG Pure Sciences & Olympiad Guild',
-    description: 'Collaborative problem solving for JEE Advanced, NEET, KVPY/NSEP, and International Olympiad problem sets in Physics, Chemistry & Math.',
-    category: 'Academic Olympiads',
-    coverImage: '/src/assets/images/opg_campus_hero_1792943472157.jpg',
-    membersCount: 54,
-    isJoined: true,
-    isOfficial: true,
-    leaderName: 'Vihaan Kapoor (Grade 12)',
-    topics: ['Irodov Physics', 'Calculus', 'Organic Mechanisms', 'Olympiad Proofs'],
-    createdDate: '2026-08-12'
-  }
-];
-
-export const INITIAL_POSTS: CommunityPost[] = [
-  {
-    id: 'post-1',
-    communityId: 'comm-1',
-    authorId: 'user-aakriti',
-    authorName: 'Aakriti Narayan',
-    authorGrade: 'Grade 11',
-    authorAvatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Aakriti',
-    content: 'Welcome to PeerForge! Built by Class 11 students at OPG World School to connect students across Classes 9 to 12 for projects, peer doubt solving, shared file resources, and inter-school academic competitions.',
-    createdAt: '2 hours ago',
-    likes: 14,
-    likedBy: ['user-aakriti', 'user-teacher-mentor', 'user-vihaan'],
-    commentsCount: 3
-  },
-  {
-    id: 'post-2',
-    communityId: 'comm-1',
-    authorId: 'user-teacher-mentor',
-    authorName: 'Mr. Rajesh Sharma',
-    authorGrade: 'Faculty Mentor',
-    authorAvatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=TeacherSharma',
-    content: 'Notice for Robotics Society: The Physics and Computer Labs will have designated evening hours (3:30 PM - 5:00 PM) starting this Thursday for all teams registered in the upcoming Science & Innovation Conclave.',
-    createdAt: '5 hours ago',
-    likes: 22,
-    likedBy: ['user-aakriti', 'user-vihaan', 'user-kabir'],
-    commentsCount: 5,
-    poll: {
-      question: 'Which component do you need additional stock of in the lab?',
-      options: [
-        { text: 'Ultrasonic & IR Sensor Modules', votes: 12, voters: ['user-aakriti', 'user-kabir'] },
-        { text: 'ESP32 / Arduino Microcontrollers', votes: 18, voters: ['user-vihaan'] },
-        { text: 'Servo Motors & Chassis Brackets', votes: 8, voters: [] },
-        { text: 'Soldering Stations & Wire Kits', votes: 6, voters: [] }
-      ]
-    }
-  }
-];
-
 export const INITIAL_PROJECTS: Project[] = [
   {
     id: 'project-1',
@@ -555,56 +473,11 @@ export const INITIAL_EVENTS: SchoolEvent[] = [
   }
 ];
 
-export const INITIAL_CONVERSATIONS: Conversation[] = [
-  {
-    id: 'conv-1',
-    isGroup: false,
-    participantIds: ['user-aakriti', 'user-teacher-mentor'],
-    lastMessage: {
-      text: 'Good morning Aakriti! I reviewed the PeerForge project brief. The robotics lab will be available after 3:30 PM this Friday for hardware integration.',
-      senderId: 'user-teacher-mentor',
-      timestamp: '10:30 AM'
-    },
-    updatedAt: '2026-10-26T10:30:00Z',
-    projectId: 'project-1'
-  }
-];
+export const INITIAL_CONVERSATIONS: Conversation[] = [];
 
-export const INITIAL_MESSAGES: Message[] = [
-  {
-    id: 'msg-1',
-    conversationId: 'conv-1',
-    senderId: 'user-aakriti',
-    senderName: 'Aakriti Narayan',
-    senderAvatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Aakriti',
-    text: 'Good morning sir! Could we coordinate lab access this Friday to test prototype sensors with our PeerForge team?',
-    timestamp: '10:15 AM',
-    readBy: ['user-aakriti', 'user-teacher-mentor']
-  },
-  {
-    id: 'msg-2',
-    conversationId: 'conv-1',
-    senderId: 'user-teacher-mentor',
-    senderName: 'Mr. Rajesh Sharma',
-    senderAvatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=TeacherSharma',
-    text: 'Good morning Aakriti! I reviewed the PeerForge project brief. The robotics lab will be available after 3:30 PM this Friday for hardware integration.',
-    timestamp: '10:30 AM',
-    readBy: ['user-aakriti', 'user-teacher-mentor']
-  }
-];
+export const INITIAL_MESSAGES: Message[] = [];
 
-export const INITIAL_NOTIFICATIONS: AppNotification[] = [
-  {
-    id: 'notif-1',
-    userId: 'user-aakriti',
-    type: 'system',
-    title: 'Welcome to PeerForge',
-    description: 'Your developer account is active. Explore projects, doubt solving, files hub, and upcoming events.',
-    read: false,
-    timestamp: 'Just now',
-    actionTab: 'home'
-  }
-];
+export const INITIAL_NOTIFICATIONS: AppNotification[] = [];
 
 export const INITIAL_REPORTS: ContentReport[] = [];
 

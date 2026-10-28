@@ -46,7 +46,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     { id: 'messages', label: 'Messages', icon: MessageSquare, badge: unreadMessagesCount },
     { id: 'qa', label: 'Questions & Answers', icon: HelpCircle },
     { id: 'projects', label: 'Projects & Team', icon: FolderKanban },
-    { id: 'communities', label: 'Societies & Clubs', icon: Users },
     { id: 'events', label: 'Events & Notices', icon: Calendar },
     { id: 'notifications', label: 'Notifications', icon: Bell, badge: unreadNotifsCount },
     { id: 'profile', label: 'My Profile', icon: User },
