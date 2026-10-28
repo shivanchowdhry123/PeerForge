@@ -47,7 +47,7 @@ import {
 } from '../services/supabaseClient';
 
 interface AppContextType {
-  currentUser: StudentProfile;
+  currentUser: StudentProfile | null;
   allStudents: StudentProfile[];
   communities: Community[];
   projects: Project[];
@@ -178,31 +178,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     return INITIAL_STUDENTS;
   });
-  const [currentUser, setCurrentUser] = useState<StudentProfile>({
-    id: 'guest',
-    name: 'Visitor',
-    email: 'visitor@opgworldschool.com',
-    avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Guest',
-    grade: 'N/A',
-    section: 'N/A',
-    role: 'student',
-    bio: 'Welcome to PeerForge. Please sign in to explore.',
-    skills: [],
-    interests: [],
-    academicStrengths: [],
-    projects: [],
-    achievements: [],
-    availability: 'Focusing on Studies / Busy',
-    privacySettings: {
-      showGradeToAll: false,
-      allowDirectMessages: 'verified_only',
-      showAchievements: false
-    },
-    completeness: 0,
-    isVerified: false,
-    isApproved: false,
-    joinedDate: 'N/A'
-  });
+  const [currentUser, setCurrentUser] = useState<StudentProfile | null>(null);
 
   // Sync state with backend database API on mount
   useEffect(() => {
@@ -230,31 +206,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           // Optionally fetch profile here too
         } else {
           setIsAuthenticated(false);
-          setCurrentUser({
-            id: 'guest',
-            name: 'Visitor',
-            email: 'visitor@opgworldschool.com',
-            avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Guest',
-            grade: 'N/A',
-            section: 'N/A',
-            role: 'student',
-            bio: 'Welcome to PeerForge. Please sign in to explore.',
-            skills: [],
-            interests: [],
-            academicStrengths: [],
-            projects: [],
-            achievements: [],
-            availability: 'Focusing on Studies / Busy',
-            privacySettings: {
-              showGradeToAll: false,
-              allowDirectMessages: 'verified_only',
-              showAchievements: false
-            },
-            completeness: 0,
-            isVerified: false,
-            isApproved: false,
-            joinedDate: 'N/A'
-          });
+          setCurrentUser(null);
         }
       });
 
@@ -296,9 +248,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ]).then(([studentsRes, projectsRes, questionsRes, communitiesRes, eventsRes, convRes, msgRes, notifRes]) => {
         if (Array.isArray(studentsRes)) {
           setAllStudents(studentsRes);
-          const savedId = localStorage.getItem('opg_current_user_id');
-          const found = studentsRes.find((s: StudentProfile) => s.id === savedId);
-          if (found) setCurrentUser(found);
+          // Do not auto-assign a user if not authenticated
         }
         if (Array.isArray(projectsRes)) setProjects(projectsRes);
         if (Array.isArray(questionsRes)) setQuestions(questionsRes);
@@ -343,10 +293,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_CONTACT_INQUIRIES;
   });
   const [isDeveloperMode, setIsDeveloperMode] = useState<boolean>(true);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    const saved = localStorage.getItem('opg_is_authenticated');
-    return saved === 'true';
-  });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   const [authRole, setAuthRole] = useState<'student' | 'teacher'>('student');
@@ -375,7 +322,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [allStudents]);
 
   useEffect(() => {
-    localStorage.setItem('opg_current_user_id', currentUser.id);
+    if (currentUser) {
+      localStorage.setItem('opg_current_user_id', currentUser.id);
+    } else {
+      localStorage.removeItem('opg_current_user_id');
+    }
   }, [currentUser]);
 
   useEffect(() => {
@@ -398,6 +349,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateCurrentUserProfile = (updated: Partial<StudentProfile>) => {
+    if (!currentUser) return;
     const updatedUser = { ...currentUser, ...updated };
     // Recalculate completeness
     let comp = 50;
@@ -423,6 +375,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addSkillToCurrent = (skill: Skill) => {
+    if (!currentUser) return;
     if (currentUser.skills.some(s => s.name.toLowerCase() === skill.name.toLowerCase())) {
       return;
     }
@@ -431,12 +384,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const removeSkillFromCurrent = (skillName: string) => {
+    if (!currentUser) return;
     const updatedSkills = currentUser.skills.filter(s => s.name !== skillName);
     updateCurrentUserProfile({ skills: updatedSkills });
   };
 
   const sendMessage = (convId: string, text: string, replyTo?: Message['replyTo']) => {
-    if (!text.trim()) return;
+    if (!text.trim() || !currentUser) return;
 
     const newMsg: Message = {
       id: `msg-${Date.now()}`,
@@ -468,42 +422,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (isSupabaseConfigured) {
       saveSupabaseMessage(newMsg);
-      saveSupabaseConversation({
-        ...conversations.find(c => c.id === convId)!,
-        lastMessage: {
-          text: newMsg.text,
-          senderId: currentUser.id,
-          timestamp: newMsg.timestamp
-        },
-        updatedAt: new Date().toISOString()
-      });
-    }
-
-    // Simulated peer reply in demo if chatting 1-on-1 with another student
-    const conv = conversations.find(c => c.id === convId);
-    if (conv && !conv.isGroup) {
-      const otherId = conv.participantIds.find(id => id !== currentUser.id);
-      const otherStudent = allStudents.find(s => s.id === otherId);
-      if (otherStudent && otherStudent.role === 'student') {
-        setTimeout(() => {
-          const peerReply: Message = {
-            id: `msg-${Date.now() + 1}`,
-            conversationId: convId,
-            senderId: otherStudent.id,
-            senderName: otherStudent.name,
-            senderAvatar: otherStudent.avatar,
-            text: `Thanks for connecting, ${currentUser.name.split(' ')[0]}! Let's collaborate on this at school tomorrow.`,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            reactions: {},
-            readBy: [otherStudent.id]
-          };
-          setMessages(prev => [...prev, peerReply]);
-        }, 1400);
+      const conv = conversations.find(c => c.id === convId);
+      if (conv) {
+        saveSupabaseConversation({
+          ...conv,
+          lastMessage: {
+            text: newMsg.text,
+            senderId: currentUser.id,
+            timestamp: newMsg.timestamp
+          },
+          updatedAt: new Date().toISOString()
+        });
       }
     }
+
   };
 
   const openDirectMessageWith = (student: StudentProfile) => {
+    if (!currentUser) {
+      openAuthModal('login');
+      return;
+    }
     let conv = conversations.find(
       c => !c.isGroup && c.participantIds.includes(currentUser.id) && c.participantIds.includes(student.id)
     );
@@ -528,6 +467,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const createGroupConversation = (name: string, participantIds: string[], topic?: string): string => {
+    if (!currentUser) return '';
     const allParticipants = Array.from(new Set([currentUser.id, ...participantIds]));
     const newGroup: Conversation = {
       id: `conv-group-${Date.now()}`,
@@ -564,6 +504,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const reactToMessage = (messageId: string, emoji: string) => {
+    if (!currentUser) return;
     setMessages(prev =>
       prev.map(m => {
         if (m.id === messageId) {
@@ -584,6 +525,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const createProject = (newProject: Partial<Project>) => {
+    if (!currentUser) return;
     const project: Project = {
       id: `project-${Date.now()}`,
       title: newProject.title || 'Untitled Project',
@@ -643,6 +585,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const applyToProject = (projectId: string, roleId: string, roleTitle: string, note: string) => {
+    if (!currentUser) {
+      openAuthModal('login');
+      return;
+    }
     const appItem = {
       id: `app-${Date.now()}`,
       studentId: currentUser.id,
@@ -684,6 +630,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const handleProjectApplication = (projectId: string, appId: string, action: 'accepted' | 'rejected') => {
+    if (!currentUser) return;
     setProjects(prev =>
       prev.map(p => {
         if (p.id === projectId) {
@@ -736,6 +683,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const developerAcceptApplication = (projectId: string, appId: string, devNote?: string) => {
+    if (!currentUser) return;
     let acceptedApplicantName = '';
     let roleName = '';
     let projectTitle = '';
@@ -818,6 +766,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const askQuestion = async (newQ: Partial<Question>): Promise<Question> => {
+    if (!currentUser) throw new Error('Authentication required');
     const q: Question = {
       id: `q-${Date.now()}`,
       authorId: currentUser.id,
@@ -850,7 +799,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const postAnswer = (questionId: string, body: string) => {
-    if (!body.trim()) return;
+    if (!body.trim() || !currentUser) return;
 
     const newAns: Answer = {
       id: `ans-${Date.now()}`,
@@ -895,6 +844,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const upvoteAnswer = (answerId: string) => {
+    if (!currentUser) return;
     setAnswers(prev =>
       prev.map(a => {
         if (a.id === answerId) {
@@ -951,6 +901,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const createCommunityPost = (communityId: string, content: string, pollQuestion?: string, pollOptions?: string[]) => {
+    if (!currentUser) return;
     // Implement post creation
     fetch(`/api/communities/${communityId}/posts`, {
       method: 'POST',
@@ -970,6 +921,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const likeCommunityPost = (postId: string) => {
+    if (!currentUser) return;
     fetch(`/api/posts/${postId}/like`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -978,6 +930,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const votePoll = (postId: string, optionIndex: number) => {
+    if (!currentUser) return;
     fetch(`/api/posts/${postId}/poll-vote`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1002,6 +955,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const submitContentReport = (report: Partial<ContentReport>) => {
+    if (!currentUser) return;
     const newRep: ContentReport = {
       id: `rep-${Date.now()}`,
       reporterId: currentUser.id,
@@ -1035,6 +989,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const markNotificationsAsRead = () => {
+    if (!currentUser) return;
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     fetch('/api/notifications/mark-read', {
       method: 'POST',
@@ -1044,6 +999,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const exportMyData = () => {
+    if (!currentUser) return;
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(currentUser, null, 2));
     const dlAnchorElem = document.createElement('a');
     dlAnchorElem.setAttribute('href', dataStr);
@@ -1052,6 +1008,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deactivateOwnAccount = () => {
+    if (!currentUser) return;
     const updatedUser = {
       ...currentUser,
       isDeactivated: true,
@@ -1066,6 +1023,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const reactivateOwnAccount = () => {
+    if (!currentUser) return;
     const updatedUser = {
       ...currentUser,
       isDeactivated: false,
@@ -1174,6 +1132,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resolveContactInquiry = (inquiryId: string, status: 'reviewed' | 'resolved', developerNotes?: string) => {
+    if (!currentUser) return;
     setContactInquiries(prev =>
       prev.map(inq => {
         if (inq.id === inquiryId) {
@@ -1383,31 +1342,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await supabase.auth.signOut();
     }
     setIsAuthenticated(false);
-    setCurrentUser({
-      id: 'guest',
-      name: 'Visitor',
-      email: 'visitor@opgworldschool.com',
-      avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Guest',
-      grade: 'N/A',
-      section: 'N/A',
-      role: 'student',
-      bio: 'Welcome to PeerForge. Please sign in to explore.',
-      skills: [],
-      interests: [],
-      academicStrengths: [],
-      projects: [],
-      achievements: [],
-      availability: 'Focusing on Studies / Busy',
-      privacySettings: {
-        showGradeToAll: false,
-        allowDirectMessages: 'verified_only',
-        showAchievements: false
-      },
-      completeness: 0,
-      isVerified: false,
-      isApproved: false,
-      joinedDate: 'N/A'
-    });
+    setCurrentUser(null);
     localStorage.removeItem('opg_current_user_id');
     localStorage.removeItem('opg_is_authenticated');
   };
@@ -1442,10 +1377,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       formData.append('category', category);
       formData.append('description', description || '');
       if (projectId) formData.append('projectId', projectId);
-      formData.append('uploaderId', currentUser.id);
-      formData.append('uploaderName', currentUser.name);
-      formData.append('uploaderRole', currentUser.role);
-      formData.append('uploaderAvatar', currentUser.avatar);
+      if (currentUser) {
+        formData.append('uploaderId', currentUser.id);
+        formData.append('uploaderName', currentUser.name);
+        formData.append('uploaderRole', currentUser.role);
+        formData.append('uploaderAvatar', currentUser.avatar);
+      }
 
       const res = await fetch('/api/uploads', {
         method: 'POST',
@@ -1481,7 +1418,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ? notifications.filter(n => !n.read && (n.userId === currentUser.id || n.userId === 'all')).length 
     : 0;
   // Assuming messages have a 'read' property or similar mechanism; adjusting to look for messages not from current user
-  const unreadMessagesCount = messages.filter(m => m.senderId !== currentUser.id && !m.readBy?.includes(currentUser.id)).length;
+  const unreadMessagesCount = currentUser ? messages.filter(m => m.senderId !== currentUser.id && !m.readBy?.includes(currentUser.id)).length : 0;
 
   return (
     <AppContext.Provider

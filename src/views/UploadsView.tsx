@@ -119,6 +119,7 @@ export const UploadsView: React.FC = () => {
   };
 
   const handleDelete = async (file: UploadedFile) => {
+    if (!currentUser) return;
     const isOwner = file.uploadedBy.id === currentUser.id;
     const isStaff = currentUser.role === 'admin' || currentUser.role === 'developer' || currentUser.role === 'teacher';
 
@@ -499,7 +500,7 @@ export const UploadsView: React.FC = () => {
                       </a>
 
                       {/* Delete Button */}
-                      {(file.uploadedBy.id === currentUser.id ||
+                      {currentUser && (file.uploadedBy.id === currentUser.id ||
                         currentUser.role === 'admin' ||
                         currentUser.role === 'developer' ||
                         currentUser.role === 'teacher') && (

@@ -15,7 +15,8 @@ import {
   Eye,
   EyeOff,
   ShieldCheck,
-  Check
+  Check,
+  User
 } from 'lucide-react';
 
 export const ProfileView: React.FC = () => {
@@ -29,11 +30,12 @@ export const ProfileView: React.FC = () => {
     addSkillToCurrent,
     removeSkillFromCurrent,
     openDirectMessageWith,
-    setIsOnboardingOpen
+    setIsOnboardingOpen,
+    openAuthModal
   } = useApp();
 
-  const student: StudentProfile = selectedStudentForProfile || currentUser;
-  const isOwnProfile = student.id === currentUser.id;
+  const student = selectedStudentForProfile || currentUser;
+  const isOwnProfile = student && currentUser ? student.id === currentUser.id : false;
 
   // Add skill local form
   const [isAddingSkill, setIsAddingSkill] = useState(false);
@@ -50,8 +52,30 @@ export const ProfileView: React.FC = () => {
 
   // Gmail account states
   const [isEditingGmail, setIsEditingGmail] = useState(false);
-  const [gmailInput, setGmailInput] = useState(currentUser.gmailAccount || currentUser.email);
+  const [gmailInput, setGmailInput] = useState(currentUser?.gmailAccount || currentUser?.email || '');
   const [gmailFeedback, setGmailFeedback] = useState<string | null>(null);
+
+  if (!student) {
+    return (
+      <div className="p-12 text-center rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-color)] max-w-lg mx-auto space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center mx-auto text-blue-500">
+          <User className="w-8 h-8" />
+        </div>
+        <h2 className="text-lg font-bold text-[var(--text-primary)]">Profile Not Found</h2>
+        <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+          Please sign in to view your school profile or select a student from the directory to learn about their skills.
+        </p>
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={() => openAuthModal('login')}
+            className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-sm"
+          >
+            Sign In Now
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,7 +215,7 @@ export const ProfileView: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium text-[var(--text-secondary)]">Status:</span>
                     <select
-                      value={currentUser.availability}
+                      value={currentUser?.availability || 'Open to Collaborate'}
                       onChange={e => handleAvailabilityChange(e.target.value as any)}
                       className="px-2.5 py-1 text-xs font-medium rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none"
                     >
@@ -518,14 +542,14 @@ export const ProfileView: React.FC = () => {
                   <div className="p-2.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <span className="text-xs font-medium text-[var(--text-primary)] truncate block">
-                        {currentUser.gmailAccount || currentUser.email}
+                        {currentUser?.gmailAccount || currentUser?.email}
                       </span>
                       <span className="text-[10px] text-[var(--text-muted)]">Primary school communication & auth</span>
                     </div>
                   </div>
                   <button
                     onClick={() => {
-                      setGmailInput(currentUser.gmailAccount || currentUser.email);
+                      setGmailInput(currentUser?.gmailAccount || currentUser?.email || '');
                       setIsEditingGmail(true);
                     }}
                     className="w-full py-1.5 px-3 rounded-xl text-xs font-semibold text-blue-600 dark:text-blue-400 bg-[var(--bg-subtle)] hover:bg-[var(--border-color)]/60 border border-[var(--border-color)] transition-colors"
@@ -596,7 +620,7 @@ export const ProfileView: React.FC = () => {
                     <div>
                       <span className="text-[10px] text-[var(--text-muted)] block">Current Passcode</span>
                       <span className="text-xs font-mono font-bold tracking-wider text-[var(--text-primary)]">
-                        {showPassword ? (currentUser.password || '••••••••') : '••••••••••••'}
+                        {showPassword ? (currentUser?.password || '••••••••') : '••••••••••••'}
                       </span>
                     </div>
                     <button

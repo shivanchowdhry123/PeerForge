@@ -24,15 +24,15 @@ export const EventsView: React.FC = () => {
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
   // New Event Form State
-  const canPublish = currentUser.role === 'developer' || currentUser.role === 'teacher' || currentUser.role === 'admin';
-  const roleLabel = currentUser.role === 'developer' ? 'App Developer' : currentUser.role === 'teacher' ? 'Teacher / Faculty' : 'Admin';
+  const canPublish = currentUser && (currentUser.role === 'developer' || currentUser.role === 'teacher' || currentUser.role === 'admin');
+  const roleLabel = currentUser?.role === 'developer' ? 'App Developer' : currentUser?.role === 'teacher' ? 'Teacher / Faculty' : 'Admin';
 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<SchoolEvent['category']>('Competition');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('10:00 AM - 01:00 PM');
   const [location, setLocation] = useState('OPG World School Main Auditorium & Quad');
-  const [organizer, setOrganizer] = useState(`${currentUser.name} (${roleLabel})`);
+  const [organizer, setOrganizer] = useState(`${currentUser?.name || 'Staff'} (${roleLabel})`);
   const [description, setDescription] = useState('');
   const [isOfficial, setIsOfficial] = useState(true);
 
@@ -55,7 +55,7 @@ export const EventsView: React.FC = () => {
       date: date.trim(),
       time: time.trim() || 'TBA',
       location: location.trim() || 'Campus',
-      organizer: organizer.trim() || `${currentUser.name} (${roleLabel})`,
+      organizer: organizer.trim() || `${currentUser?.name || 'Authorized Staff'} (${roleLabel})`,
       description: description.trim() || 'No additional details provided.',
       isOfficial,
       linkText: 'RSVP Now'
@@ -231,7 +231,7 @@ export const EventsView: React.FC = () => {
                     Publish Upcoming Event
                   </h3>
                   <p className="text-[11px] text-[var(--text-muted)]">
-                    Authorized for {roleLabel} ({currentUser.name})
+                    Authorized for {roleLabel} ({currentUser?.name || 'Staff'})
                   </p>
                 </div>
               </div>

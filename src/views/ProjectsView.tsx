@@ -23,6 +23,8 @@ import {
 export const ProjectsView: React.FC = () => {
   const {
     currentUser,
+    isAuthenticated,
+    openAuthModal,
     projects,
     selectedProjectForDetail,
     setSelectedProjectForDetail,
@@ -296,7 +298,7 @@ export const ProjectsView: React.FC = () => {
               </div>
 
               {/* Project Owner & Developer Authority: Applicant Applications Queue */}
-              {(selectedProjectForDetail.ownerId === currentUser.id || currentUser.role === 'developer') && (
+              {currentUser && (selectedProjectForDetail.ownerId === currentUser.id || currentUser.role === 'developer') && (
                 <div className="p-6 rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-color)] space-y-4 shadow-xs">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
@@ -386,7 +388,7 @@ export const ProjectsView: React.FC = () => {
                               </button>
                               <button
                                 onClick={() =>
-                                  currentUser.role === 'developer' && selectedProjectForDetail.ownerId !== currentUser.id
+                                  currentUser && currentUser.role === 'developer' && selectedProjectForDetail.ownerId !== currentUser.id
                                     ? developerAcceptApplication(selectedProjectForDetail.id, app.id)
                                     : handleProjectApplication(
                                         selectedProjectForDetail.id,
@@ -398,7 +400,7 @@ export const ProjectsView: React.FC = () => {
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" />
                                 <span>
-                                  {currentUser.role === 'developer' && selectedProjectForDetail.ownerId !== currentUser.id
+                                  {currentUser && currentUser.role === 'developer' && selectedProjectForDetail.ownerId !== currentUser.id
                                     ? 'Accept as Developer'
                                     : 'Accept into Team'}
                                 </span>
@@ -490,7 +492,13 @@ export const ProjectsView: React.FC = () => {
             </div>
 
             <button
-              onClick={() => setIsCreateModalOpen(true)}
+              onClick={() => {
+                if (!isAuthenticated) {
+                  openAuthModal('login');
+                } else {
+                  setIsCreateModalOpen(true);
+                }
+              }}
               className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors self-start sm:self-auto"
             >
               <Plus className="w-4 h-4" />
@@ -499,7 +507,7 @@ export const ProjectsView: React.FC = () => {
           </div>
 
           {/* Developer Rights & Cross-Approval Console */}
-          {currentUser.role === 'developer' && (
+          {currentUser?.role === 'developer' && (
             <div className="p-6 rounded-3xl bg-[var(--bg-surface)] border-2 border-blue-500/30 shadow-sm space-y-4 animate-in fade-in">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border-color)]">
                 <div className="flex items-center gap-3">

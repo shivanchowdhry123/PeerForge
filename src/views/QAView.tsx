@@ -26,7 +26,8 @@ export const QAView: React.FC = () => {
     askQuestion,
     postAnswer,
     upvoteAnswer,
-    acceptAnswer
+    acceptAnswer,
+    openAuthModal
   } = useApp();
 
   const [activeTopic, setActiveTopic] = useState('All');
@@ -195,6 +196,7 @@ export const QAView: React.FC = () => {
             {currentAnswers.map(ans => {
               const isAccepted = ans.isAccepted;
               const canAccept =
+                currentUser &&
                 selectedQuestionForDetail.authorId === currentUser.id &&
                 !selectedQuestionForDetail.acceptedAnswerId;
 
@@ -248,7 +250,7 @@ export const QAView: React.FC = () => {
                     <button
                       onClick={() => upvoteAnswer(ans.id)}
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                        ans.upvotedBy.includes(currentUser.id)
+                        currentUser && ans.upvotedBy.includes(currentUser.id)
                           ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
                           : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-[var(--border-color)] hover:text-blue-600'
                       }`}
@@ -268,28 +270,42 @@ export const QAView: React.FC = () => {
           {/* Submit Answer Form */}
           <div className="p-6 rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-color)] space-y-3">
             <h3 className="text-sm font-bold text-[var(--text-primary)]">Your Answer</h3>
-            <p className="text-xs text-[var(--text-muted)]">
-              Support your peer with clear reasoning, textbook references, or problem-solving steps.
-            </p>
-            <form onSubmit={handleAnswerSubmit} className="space-y-3">
-              <textarea
-                rows={4}
-                value={answerInput}
-                onChange={e => setAnswerInput(e.target.value)}
-                placeholder="Write your explanation or step-by-step resolution..."
-                className="w-full p-4 text-xs sm:text-sm rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-blue-400"
-                required
-              />
-              <div className="flex justify-end">
+            {currentUser ? (
+              <>
+                <p className="text-xs text-[var(--text-muted)]">
+                  Support your peer with clear reasoning, textbook references, or problem-solving steps.
+                </p>
+                <form onSubmit={handleAnswerSubmit} className="space-y-3">
+                  <textarea
+                    rows={4}
+                    value={answerInput}
+                    onChange={e => setAnswerInput(e.target.value)}
+                    placeholder="Write your explanation or step-by-step resolution..."
+                    className="w-full p-4 text-xs sm:text-sm rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-blue-400"
+                    required
+                  />
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={!answerInput.trim()}
+                      className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs disabled:opacity-50"
+                    >
+                      Post Answer
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-center space-y-2">
+                <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Please sign in to answer questions and help your peers.</p>
                 <button
-                  type="submit"
-                  disabled={!answerInput.trim()}
-                  className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs disabled:opacity-50"
+                  onClick={() => openAuthModal('login')}
+                  className="px-4 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold"
                 >
-                  Post Answer
+                  Sign In
                 </button>
               </div>
-            </form>
+            )}
           </div>
         </div>
       ) : (

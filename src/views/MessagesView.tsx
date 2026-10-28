@@ -198,7 +198,7 @@ export const MessagesView: React.FC = () => {
               Peer & Team Messaging Hub
             </h1>
             <p className="text-xs text-[var(--text-muted)]">
-              Logged in as <span className="font-semibold text-blue-600 dark:text-blue-400">{currentUser.name}</span> ({currentUser.role === 'teacher' ? 'Teacher' : 'Student'})
+              Logged in as <span className="font-semibold text-blue-600 dark:text-blue-400">{currentUser?.name}</span> ({currentUser?.role === 'teacher' ? 'Teacher' : 'Student'})
             </p>
           </div>
         </div>

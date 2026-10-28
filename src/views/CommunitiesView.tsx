@@ -26,7 +26,8 @@ export const CommunitiesView: React.FC = () => {
     toggleJoinCommunity,
     createCommunityPost,
     likeCommunityPost,
-    votePoll
+    votePoll,
+    openAuthModal
   } = useApp();
 
   const [activeCategory, setActiveCategory] = useState('All');
@@ -70,10 +71,10 @@ export const CommunitiesView: React.FC = () => {
     const newPost: CommunityPost = {
       id: `post-${Date.now()}`,
       communityId: selectedCommunityForDetail.id,
-      authorId: currentUser.id,
-      authorName: currentUser.name,
-      authorGrade: currentUser.grade,
-      authorAvatar: currentUser.avatar,
+      authorId: currentUser?.id || 'visitor',
+      authorName: currentUser?.name || 'Visitor',
+      authorGrade: currentUser?.grade || 'N/A',
+      authorAvatar: currentUser?.avatar || '',
       content: postContent.trim(),
       createdAt: 'Just now',
       likes: 0,
@@ -104,14 +105,14 @@ export const CommunitiesView: React.FC = () => {
       prev.map(p => {
         if (p.id === postId && p.poll) {
           const updatedOptions = p.poll.options.map((opt, i) => {
-            const hasVoted = opt.voters.includes(currentUser.id);
+            const hasVoted = currentUser && opt.voters.includes(currentUser.id);
             if (i === optIndex) {
               return {
                 ...opt,
                 votes: hasVoted ? opt.votes : opt.votes + 1,
-                voters: hasVoted ? opt.voters : [...opt.voters, currentUser.id]
+                voters: hasVoted || !currentUser ? opt.voters : [...opt.voters, currentUser.id]
               };
-            } else if (hasVoted) {
+            } else if (hasVoted && currentUser) {
               return {
                 ...opt,
                 votes: Math.max(0, opt.votes - 1),
@@ -134,13 +135,13 @@ export const CommunitiesView: React.FC = () => {
     setLocalPosts(prev =>
       prev.map(p => {
         if (p.id === postId) {
-          const hasLiked = p.likedBy.includes(currentUser.id);
+          const hasLiked = currentUser && p.likedBy.includes(currentUser.id);
           return {
             ...p,
-            likes: hasLiked ? p.likes - 1 : p.likes + 1,
-            likedBy: hasLiked
+            likes: hasLiked ? p.likes - 1 : (currentUser ? p.likes + 1 : p.likes),
+            likedBy: hasLiked && currentUser
               ? p.likedBy.filter(id => id !== currentUser.id)
-              : [...p.likedBy, currentUser.id]
+              : (currentUser ? [...p.likedBy, currentUser.id] : p.likedBy)
           };
         }
         return p;
@@ -235,65 +236,77 @@ export const CommunitiesView: React.FC = () => {
               {/* Create Post Form */}
               <div className="p-5 rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-color)] space-y-3 shadow-xs">
                 <h3 className="text-sm font-bold text-[var(--text-primary)]">Share with Club Members</h3>
-                <form onSubmit={handleCreatePost} className="space-y-3">
-                  <textarea
-                    rows={3}
-                    placeholder="Announce a project meeting, share resources, or discuss an upcoming competition..."
-                    value={postContent}
-                    onChange={e => setPostContent(e.target.value)}
-                    className="w-full p-3.5 text-xs sm:text-sm rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-blue-400"
-                    required
-                  />
+                {currentUser ? (
+                  <form onSubmit={handleCreatePost} className="space-y-3">
+                    <textarea
+                      rows={3}
+                      placeholder="Announce a project meeting, share resources, or discuss an upcoming competition..."
+                      value={postContent}
+                      onChange={e => setPostContent(e.target.value)}
+                      className="w-full p-3.5 text-xs sm:text-sm rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-blue-400"
+                      required
+                    />
 
-                  {/* Optional Poll Drawer */}
-                  {showPollCreator && (
-                    <div className="p-3.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] space-y-2">
-                      <div className="text-xs font-bold text-[var(--text-primary)]">Add a Member Poll</div>
-                      <input
-                        type="text"
-                        placeholder="Poll question..."
-                        value={pollQuestion}
-                        onChange={e => setPollQuestion(e.target.value)}
-                        className="w-full p-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none"
-                      />
-                      <div className="grid grid-cols-2 gap-2">
+                    {/* Optional Poll Drawer */}
+                    {showPollCreator && (
+                      <div className="p-3.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] space-y-2">
+                        <div className="text-xs font-bold text-[var(--text-primary)]">Add a Member Poll</div>
                         <input
                           type="text"
-                          placeholder="Option 1..."
-                          value={pollOpt1}
-                          onChange={e => setPollOpt1(e.target.value)}
-                          className="p-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none"
+                          placeholder="Poll question..."
+                          value={pollQuestion}
+                          onChange={e => setPollQuestion(e.target.value)}
+                          className="w-full p-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none"
                         />
-                        <input
-                          type="text"
-                          placeholder="Option 2..."
-                          value={pollOpt2}
-                          onChange={e => setPollOpt2(e.target.value)}
-                          className="p-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none"
-                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            placeholder="Option 1..."
+                            value={pollOpt1}
+                            onChange={e => setPollOpt1(e.target.value)}
+                            className="p-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Option 2..."
+                            value={pollOpt2}
+                            onChange={e => setPollOpt2(e.target.value)}
+                            className="p-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none"
+                          />
+                        </div>
                       </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setShowPollCreator(!showPollCreator)}
+                        className="text-xs font-medium text-purple-700 dark:text-purple-300 hover:underline flex items-center gap-1"
+                      >
+                        <BarChart2 className="w-3.5 h-3.5" />
+                        <span>{showPollCreator ? 'Remove Poll' : '+ Attach Poll'}</span>
+                      </button>
+
+                      <button
+                        type="submit"
+                        disabled={!postContent.trim()}
+                        className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold disabled:opacity-50 transition-colors shadow-xs"
+                      >
+                        Publish Post
+                      </button>
                     </div>
-                  )}
-
-                  <div className="flex items-center justify-between pt-1">
+                  </form>
+                ) : (
+                  <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-center space-y-2">
+                    <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Please sign in to post updates and participate in polls.</p>
                     <button
-                      type="button"
-                      onClick={() => setShowPollCreator(!showPollCreator)}
-                      className="text-xs font-medium text-purple-700 dark:text-purple-300 hover:underline flex items-center gap-1"
+                      onClick={() => openAuthModal('login')}
+                      className="px-4 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold"
                     >
-                      <BarChart2 className="w-3.5 h-3.5" />
-                      <span>{showPollCreator ? 'Remove Poll' : '+ Attach Poll'}</span>
-                    </button>
-
-                    <button
-                      type="submit"
-                      disabled={!postContent.trim()}
-                      className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold disabled:opacity-50 transition-colors shadow-xs"
-                    >
-                      Publish Post
+                      Sign In
                     </button>
                   </div>
-                </form>
+                )}
               </div>
 
               {/* Posts Feed */}
@@ -336,7 +349,7 @@ export const CommunitiesView: React.FC = () => {
                           {post.poll.options.map((opt, idx) => {
                             const totalVotes = post.poll!.options.reduce((sum, o) => sum + o.votes, 0);
                             const pct = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0;
-                            const hasVotedThis = opt.voters.includes(currentUser.id);
+                            const hasVotedThis = currentUser && opt.voters.includes(currentUser.id);
 
                             return (
                               <button
@@ -367,7 +380,7 @@ export const CommunitiesView: React.FC = () => {
                       <button
                         onClick={() => handleLike(post.id)}
                         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border transition-colors ${
-                          post.likedBy.includes(currentUser.id)
+                          currentUser && post.likedBy.includes(currentUser.id)
                             ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300'
                             : 'bg-[var(--bg-subtle)] text-[var(--text-muted)] border-[var(--border-color)] hover:text-blue-600'
                         }`}

@@ -39,11 +39,11 @@ export const HomeView: React.FC = () => {
   const developerCount = activeProfiles.filter(s => s.role === 'developer').length;
   const teacherCount = activeProfiles.filter(s => s.role === 'teacher' || s.role === 'admin').length;
   const studentCount = activeProfiles.filter(s => s.role === 'student' || s.role === 'moderator').length;
-  const canAddEvents = currentUser.role === 'developer' || currentUser.role === 'teacher' || currentUser.role === 'admin';
+  const canAddEvents = currentUser && (currentUser.role === 'developer' || currentUser.role === 'teacher' || currentUser.role === 'admin');
 
   // Peers with complementary skills
   const suggestedPeers = (allStudents || [])
-    .filter(s => s && s.id !== currentUser.id && !s.isDeactivated)
+    .filter(s => s && s.id !== currentUser?.id && !s.isDeactivated)
     .slice(0, 3);
 
   // Active projects recruiting
@@ -112,7 +112,7 @@ export const HomeView: React.FC = () => {
                 <GraduationCap className="w-3.5 h-3.5 shrink-0" />
                 Verified School Account Portal
               </span>
-              {isAuthenticated ? (
+              {isAuthenticated && currentUser ? (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 text-[10px] font-bold border border-emerald-300 dark:border-emerald-800">
                   <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                   Authenticated as {currentUser.role === 'developer' ? 'App Developer' : currentUser.role === 'teacher' ? 'Faculty Mentor' : 'Student'}
@@ -125,7 +125,7 @@ export const HomeView: React.FC = () => {
             </div>
 
             <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
-              {isAuthenticated
+              {isAuthenticated && currentUser
                 ? `Logged in: ${currentUser.name} (${currentUser.email})`
                 : 'Join OPG World School PeerForge'}
             </h3>

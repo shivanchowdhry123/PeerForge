@@ -20,6 +20,8 @@ export const OnboardingModal: React.FC = () => {
     setIsOnboardingOpen
   } = useApp();
 
+  if (!currentUser || !isOnboardingOpen) return null;
+
   const [step, setStep] = useState(1);
   const [name, setName] = useState(currentUser.name);
   const [grade, setGrade] = useState(currentUser.grade);
@@ -29,8 +31,6 @@ export const OnboardingModal: React.FC = () => {
   const [skills, setSkills] = useState<Skill[]>(currentUser.skills);
   const [interestsText, setInterestsText] = useState(currentUser.interests.join(', '));
   const [strengthsText, setStrengthsText] = useState(currentUser.academicStrengths.join(', '));
-
-  if (!isOnboardingOpen) return null;
 
   const popularSkillsPresets: Skill[] = [
     { name: 'Python', category: 'Technical', level: 'Intermediate', verified: false },

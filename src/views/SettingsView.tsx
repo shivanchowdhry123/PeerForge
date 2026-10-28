@@ -26,7 +26,8 @@ export const SettingsView: React.FC = () => {
     toggleTheme,
     exportMyData,
     deactivateOwnAccount,
-    reactivateOwnAccount
+    reactivateOwnAccount,
+    openAuthModal
   } = useApp();
 
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -34,7 +35,7 @@ export const SettingsView: React.FC = () => {
   const [deactivationFeedback, setDeactivationFeedback] = useState<string | null>(null);
 
   // Safe fallback for privacySettings
-  const currentPrivacy = currentUser.privacySettings || {
+  const currentPrivacy = currentUser?.privacySettings || {
     showGradeToAll: true,
     allowDirectMessages: 'anyone' as const,
     showAchievements: true
@@ -43,11 +44,31 @@ export const SettingsView: React.FC = () => {
   // Gmail & Password states
   const [showSettingsPassword, setShowSettingsPassword] = useState(false);
   const [isEditingSettingsGmail, setIsEditingSettingsGmail] = useState(false);
-  const [settingsGmailInput, setSettingsGmailInput] = useState(currentUser.gmailAccount || currentUser.email);
+  const [settingsGmailInput, setSettingsGmailInput] = useState(currentUser?.gmailAccount || currentUser?.email || '');
   const [isEditingSettingsPassword, setIsEditingSettingsPassword] = useState(false);
   const [settingsNewPassword, setSettingsNewPassword] = useState('');
   const [settingsConfirmPassword, setSettingsConfirmPassword] = useState('');
   const [credentialMessage, setCredentialMessage] = useState<string | null>(null);
+
+  if (!currentUser) {
+    return (
+      <div className="p-12 text-center rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-color)] max-w-lg mx-auto space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/40 flex items-center justify-center mx-auto text-blue-500">
+          <Lock className="w-8 h-8" />
+        </div>
+        <h2 className="text-lg font-bold text-[var(--text-primary)]">Settings Restricted</h2>
+        <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+          Please sign in to access your account settings and privacy preferences.
+        </p>
+        <button
+          onClick={() => openAuthModal('login')}
+          className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-sm"
+        >
+          Sign In Now
+        </button>
+      </div>
+    );
+  }
 
   const handleSettingsGmailSave = (e: React.FormEvent) => {
     e.preventDefault();

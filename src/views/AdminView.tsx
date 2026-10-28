@@ -16,7 +16,7 @@ export const AdminView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'students' | 'audit'>('students');
 
   // Verify access
-  if (currentUser.role !== 'admin' && currentUser.role !== 'moderator' && currentUser.role !== 'developer' && currentUser.role !== 'teacher') {
+  if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'moderator' && currentUser.role !== 'developer' && currentUser.role !== 'teacher')) {
     return (
       <div className="p-12 text-center rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-color)] max-w-lg mx-auto space-y-3">
         <ShieldCheck className="w-10 h-10 text-blue-500 mx-auto" />

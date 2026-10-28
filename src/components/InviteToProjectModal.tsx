@@ -12,7 +12,7 @@ export const InviteToProjectModal: React.FC = () => {
   } = useApp();
 
   const student = inviteStudentModal.student;
-  const userProjects = projects.filter(p => p.ownerId === currentUser.id);
+  const userProjects = currentUser ? projects.filter(p => p.ownerId === currentUser.id) : [];
 
   const [selectedProjectId, setSelectedProjectId] = useState<string>(
     userProjects[0]?.id || ''
@@ -22,7 +22,7 @@ export const InviteToProjectModal: React.FC = () => {
     'Hi! I saw your skills on OPG Connect and would love to collaborate with you on our project.'
   );
 
-  if (!inviteStudentModal.isOpen || !student) return null;
+  if (!inviteStudentModal.isOpen || !student || !currentUser) return null;
 
   const currentProject = projects.find(p => p.id === selectedProjectId);
 

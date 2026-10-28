@@ -119,7 +119,7 @@ const MainLayout: React.FC = () => {
           </div>
 
           {/* Deactivation Status Alert */}
-          {currentUser.isDeactivated && (
+          {currentUser?.isDeactivated && (
             <div className="mb-4 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200 animate-in fade-in">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />

@@ -55,7 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     { id: 'contact', label: 'Contact Us', icon: Mail }
   ];
 
-  if (currentUser.role === 'teacher') {
+  if (currentUser?.role === 'teacher') {
     navItems.push({ id: 'admin', label: 'Staff Console', icon: ShieldCheck });
   }
 
@@ -118,7 +118,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
         </div>
 
         {/* Auth & School Hub Card */}
-        {!isAuthenticated ? (
+        {!isAuthenticated || !currentUser ? (
           <div className="p-3.5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 space-y-2.5">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
@@ -164,7 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
               </span>
             </div>
             <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
-              Signed in as <strong className="text-[var(--text-primary)]">{currentUser.name}</strong> ({currentUser.gmailAccount || currentUser.email})
+              Signed in as <strong className="text-[var(--text-primary)]">{currentUser?.name}</strong> ({currentUser?.gmailAccount || currentUser?.email})
             </p>
             <button
               onClick={() => setActiveTab('contact')}

@@ -28,7 +28,7 @@ export const ContactUsView: React.FC = () => {
   const [activeDevNoteId, setActiveDevNoteId] = useState<string | null>(null);
   const [devNoteText, setDevNoteText] = useState('');
 
-  const isDeveloper = currentUser.role === 'developer';
+  const isDeveloper = currentUser?.role === 'developer';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

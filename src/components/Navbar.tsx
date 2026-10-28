@@ -205,17 +205,17 @@ export const Navbar: React.FC = () => {
                 title="Account Settings"
               >
                 <img
-                  src={currentUser.avatar}
-                  alt={currentUser.name}
+                  src={currentUser?.avatar}
+                  alt={currentUser?.name}
                   className="w-7 h-7 rounded-lg bg-blue-100 object-cover"
                   referrerPolicy="no-referrer"
                 />
                 <div className="hidden sm:block text-left">
                   <div className="flex items-center gap-1">
                     <span className="text-xs font-semibold text-[var(--text-primary)] leading-none truncate max-w-[110px]">
-                      {currentUser.name}
+                      {currentUser?.name}
                     </span>
-                    {currentUser.role === 'teacher' ? (
+                    {currentUser?.role === 'teacher' ? (
                       <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold">
                         Teacher
                       </span>
@@ -226,13 +226,13 @@ export const Navbar: React.FC = () => {
                     )}
                   </div>
                   <span className="text-[10px] text-[var(--text-muted)] leading-tight block truncate max-w-[120px]">
-                    {currentUser.email}
+                    {currentUser?.email}
                   </span>
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-[var(--text-muted)]" />
               </button>
 
-              {isUserMenuOpen && (
+              {isUserMenuOpen && currentUser && (
                 <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-2xl z-50 p-2 overflow-hidden animate-in fade-in zoom-in-95">
                   <div className="px-3 py-2 border-b border-[var(--border-color)]">
                     <p className="text-xs font-bold text-[var(--text-primary)] truncate">{currentUser.name}</p>
