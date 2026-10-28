@@ -1,54 +1,111 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
-    --bg-ivory: #FAF8F5;
+    --bg-page: #F8FAFC;
     --bg-surface: #FFFFFF;
-    --bg-subtle: #F5F1EA;
-    --border-color: #E8E2D7;
-    --text-primary: #1F242E;
-    --text-secondary: #5E6676;
-    --text-muted: #8E98A8;
+    --bg-surface-glass: rgba(255, 255, 255, 0.85);
+    --bg-subtle: #F1F5F9;
+    --bg-muted: #E2E8F0;
+    --border-color: rgba(226, 232, 240, 0.9);
+    --border-hover: rgba(148, 163, 184, 0.4);
     
-    /* Pastel Blue Accents */
-    --pastel-blue-50: #F0F6FF;
-    --pastel-blue-100: #E0EDFE;
-    --pastel-blue-200: #BAE0FD;
-    --pastel-blue-400: #60A5FA;
-    --pastel-blue-500: #3B82F6;
-    --pastel-blue-600: #2563EB;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #64748B;
     
-    /* Lavender Accents */
-    --lavender-50: #F6F3FE;
-    --lavender-100: #ECE6FD;
-    --lavender-200: #DDD4FC;
-    --lavender-400: #A78BFA;
-    --lavender-500: #8B5CF6;
-    --lavender-600: #7C3AED;
+    --accent-blue: #2563EB;
+    --accent-blue-subtle: #EFF6FF;
+    --accent-indigo: #4F46E5;
+    --accent-purple: #7C3AED;
+    --accent-emerald: #059669;
+    --accent-amber: #D97706;
+
+    --card-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 8px 24px -4px rgba(15, 23, 42, 0.04);
+    --card-shadow-hover: 0 4px 6px rgba(15, 23, 42, 0.05), 0 16px 32px -6px rgba(15, 23, 42, 0.08);
+
+    /* Legacy mapping fallback */
+    --bg-ivory: var(--bg-page);
   }
 
   .dark {
-    --bg-ivory: #0F1117;
-    --bg-surface: #161922;
-    --bg-subtle: #1E232E;
-    --border-color: #2D3445;
-    --text-primary: #F3F4F6;
-    --text-secondary: #9CA3AF;
-    --text-muted: #6B7280;
+    --bg-page: #0B0F19;
+    --bg-surface: #121826;
+    --bg-surface-glass: rgba(18, 24, 38, 0.82);
+    --bg-subtle: #172134;
+    --bg-muted: #1E2D4A;
+    --border-color: rgba(59, 130, 246, 0.18);
+    --border-hover: rgba(59, 130, 246, 0.35);
+    
+    --text-primary: #F8FAFC;
+    --text-secondary: #CBD5E1;
+    --text-muted: #94A3B8;
+    
+    --accent-blue: #3B82F6;
+    --accent-blue-subtle: rgba(59, 130, 246, 0.15);
+    --accent-indigo: #6366F1;
+    --accent-purple: #8B5CF6;
+    --accent-emerald: #10B981;
+    --accent-amber: #F59E0B;
+
+    --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.6);
+    --card-shadow-hover: 0 8px 30px -4px rgba(0, 0, 0, 0.75);
+
+    /* Legacy mapping fallback */
+    --bg-ivory: var(--bg-page);
   }
 
   body {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: var(--bg-ivory);
+    background-color: var(--bg-page);
     color: var(--text-primary);
+    overflow-x: hidden;
   }
 }
 
-/* Light ivory and accent utility classes */
+/* Glassmorphism & Card Utility Classes */
+.pf-glass {
+  background-color: var(--bg-surface-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+}
+
+.pf-card {
+  background-color: var(--bg-surface-glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+
+.pf-card:hover {
+  border-color: var(--border-hover);
+}
+
+.pf-card-interactive {
+  background-color: var(--bg-surface-glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+
+.pf-card-interactive:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-hover);
+  box-shadow: var(--card-shadow-hover);
+}
+
+/* Backward compatibility aliases */
 .bg-ivory-page {
-  background-color: var(--bg-ivory);
+  background-color: var(--bg-page);
 }
 .bg-ivory-card {
   background-color: var(--bg-surface);
@@ -58,6 +115,122 @@
 }
 .border-ivory {
   border-color: var(--border-color);
+}
+.dark .glass-dark {
+  background-color: var(--bg-surface-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+}
+
+/* Universal Dark Mode Card Aesthetics (matching the 2nd card on Home screen) */
+.dark .bg-\[var\(--bg-surface\)\],
+.dark .bg-ivory-card,
+.dark .pf-card,
+.dark .pf-card-interactive {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(99, 102, 241, 0.05) 50%, rgba(139, 92, 246, 0.07) 100%), rgba(18, 24, 38, 0.85) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-color: rgba(59, 130, 246, 0.2) !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dark .bg-\[var\(--bg-subtle\)\],
+.dark .bg-ivory-subtle {
+  background-color: rgba(23, 33, 52, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Eliminate white and light grey backgrounds in dark mode */
+.dark .bg-white {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(99, 102, 241, 0.05) 50%, rgba(139, 92, 246, 0.07) 100%), rgba(18, 24, 38, 0.85) !important;
+  border-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+.dark .bg-slate-50,
+.dark .bg-slate-100,
+.dark .bg-slate-200,
+.dark .bg-gray-50,
+.dark .bg-gray-100,
+.dark .bg-gray-200 {
+  background-color: rgba(23, 33, 52, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Dual mode color badge and pill adaptation */
+.dark .bg-blue-50,
+.dark .bg-indigo-50 {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  color: #93C5FD !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+.dark .bg-purple-50 {
+  background-color: rgba(139, 92, 246, 0.15) !important;
+  color: #DDD6FE !important;
+  border-color: rgba(139, 92, 246, 0.3) !important;
+}
+
+.dark .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #A7F3D0 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+.dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  color: #FDE68A !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+/* Ensure high text contrast in dark mode across all legacy color tags */
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-slate-700,
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+  color: #F8FAFC !important;
+}
+
+.dark .text-slate-600,
+.dark .text-gray-600 {
+  color: #CBD5E1 !important;
+}
+
+.dark .text-slate-500,
+.dark .text-gray-500 {
+  color: #94A3B8 !important;
+}
+
+.dark .text-blue-900,
+.dark .text-blue-800,
+.dark .text-blue-700 {
+  color: #93C5FD !important;
+}
+
+.dark .text-purple-900,
+.dark .text-purple-800,
+.dark .text-purple-700 {
+  color: #DDD6FE !important;
+}
+
+.dark .text-emerald-900,
+.dark .text-emerald-800,
+.dark .text-emerald-700 {
+  color: #A7F3D0 !important;
+}
+
+.dark .text-amber-900,
+.dark .text-amber-800,
+.dark .text-amber-700 {
+  color: #FDE68A !important;
+}
+
+/* Tabular numbers */
+.num-tabular {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 /* Custom scrollbars */
@@ -69,30 +242,16 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(160, 168, 185, 0.35);
+  background: rgba(148, 163, 184, 0.3);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(140, 150, 170, 0.55);
-}
-
-/* Tabular numbers for clean data/time display */
-.num-tabular {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
-}
-
-.dark .glass-dark {
-  background: rgba(25, 30, 41, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(148, 163, 184, 0.5);
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.16);
 }
-
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.28);
 }

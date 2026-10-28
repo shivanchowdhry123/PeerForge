@@ -274,11 +274,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fetch('/api/notifications').then(r => r.json()).catch(() => []),
       ]).then(([students, projects, questions, answers, events, notifications]) => {
         if (students && Array.isArray(students) && students.length > 0) setAllStudents(students);
-        if (projects && Array.isArray(projects)) setProjects(projects);
-        if (questions && Array.isArray(questions)) setQuestions(questions);
-        if (answers && Array.isArray(answers)) setAnswers(answers);
-        if (Array.isArray(events)) setEvents(events);
-        if (Array.isArray(notifications)) setNotifications(notifications);
+        if (projects && Array.isArray(projects) && projects.length > 0) setProjects(projects);
+        if (questions && Array.isArray(questions) && questions.length > 0) setQuestions(questions);
+        if (answers && Array.isArray(answers) && answers.length > 0) setAnswers(answers);
+        if (Array.isArray(events) && events.length > 0) setEvents(events);
+        if (Array.isArray(notifications) && notifications.length > 0) setNotifications(notifications);
       });
     } else {
       Promise.all([
@@ -293,12 +293,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (Array.isArray(studentsRes) && studentsRes.length > 0) {
           setAllStudents(studentsRes);
         }
-        if (Array.isArray(projectsRes)) setProjects(projectsRes);
-        if (Array.isArray(questionsRes)) setQuestions(questionsRes);
-        if (Array.isArray(eventsRes)) setEvents(eventsRes);
-        if (Array.isArray(convRes)) setConversations(convRes);
-        if (Array.isArray(msgRes)) setMessages(msgRes);
-        if (Array.isArray(notifRes)) setNotifications(notifRes);
+        if (Array.isArray(projectsRes) && projectsRes.length > 0) setProjects(projectsRes);
+        if (Array.isArray(questionsRes) && questionsRes.length > 0) setQuestions(questionsRes);
+        if (Array.isArray(eventsRes) && eventsRes.length > 0) setEvents(eventsRes);
+        if (Array.isArray(convRes) && convRes.length > 0) setConversations(convRes);
+        if (Array.isArray(msgRes) && msgRes.length > 0) setMessages(msgRes);
+        if (Array.isArray(notifRes) && notifRes.length > 0) setNotifications(notifRes);
       }).catch(e => console.warn('Backend sync failed:', e));
     }
 

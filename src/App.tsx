@@ -27,8 +27,32 @@ import {
   HelpCircle,
   Menu,
   X,
-  HardDriveUpload
+  AlertTriangle
 } from 'lucide-react';
+
+const AmbientBackground: React.FC = () => {
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
+      {/* Top right gradient aura */}
+      <div className="absolute -top-40 -right-40 w-[550px] h-[550px] rounded-full bg-gradient-to-br from-blue-400/10 via-indigo-500/10 to-purple-500/5 dark:from-blue-600/15 dark:via-indigo-600/10 dark:to-purple-600/5 blur-3xl opacity-75 transform-gpu" />
+      
+      {/* Mid left ambient aura */}
+      <div className="absolute top-1/3 -left-48 w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-sky-400/10 via-indigo-400/5 to-transparent dark:from-sky-700/15 dark:via-indigo-900/10 dark:to-transparent blur-3xl opacity-60 transform-gpu" />
+
+      {/* Bottom right accent glow */}
+      <div className="absolute -bottom-32 right-1/4 w-[450px] h-[450px] rounded-full bg-gradient-to-t from-purple-400/10 via-blue-500/5 to-transparent dark:from-purple-900/15 dark:via-blue-900/10 dark:to-transparent blur-3xl opacity-50 transform-gpu" />
+
+      {/* Subtle modern geometric dot matrix */}
+      <div 
+        className="absolute inset-0 opacity-[0.035] dark:opacity-[0.06]"
+        style={{
+          backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)',
+          backgroundSize: '24px 24px'
+        }}
+      />
+    </div>
+  );
+};
 
 const MainLayout: React.FC = () => {
   const { activeTab, setActiveTab, unreadMessagesCount, currentUser, reactivateOwnAccount } = useApp();
@@ -70,11 +94,14 @@ const MainLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ivory-page dark:bg-[var(--bg-ivory)] text-[var(--text-primary)] flex flex-col transition-colors selection:bg-blue-100 selection:text-blue-900">
+    <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-primary)] flex flex-col relative transition-colors duration-200">
+      {/* Subtle ambient visual canvas */}
+      <AmbientBackground />
+
       {/* Top Navbar */}
       <Navbar />
 
-      <div className="flex-1 flex max-w-7xl w-full mx-auto">
+      <div className="flex-1 flex max-w-7xl w-full mx-auto relative z-10">
         {/* Desktop Left Sidebar */}
         <div className="hidden md:block">
           <Sidebar />
@@ -82,13 +109,14 @@ const MainLayout: React.FC = () => {
 
         {/* Mobile Drawer Menu */}
         {mobileMenuOpen && (
-          <div className="fixed inset-0 z-50 md:hidden bg-black/40 backdrop-blur-xs flex">
-            <div className="w-72 bg-[var(--bg-surface)] h-full p-4 overflow-y-auto animate-in slide-in-from-left">
-              <div className="flex items-center justify-between pb-3 border-b border-[var(--border-color)] mb-2">
-                <span className="font-bold text-sm text-[var(--text-primary)]">Navigation Menu</span>
+          <div className="fixed inset-0 z-50 md:hidden bg-black/50 backdrop-blur-sm flex">
+            <div className="w-72 bg-[var(--bg-surface)] h-full p-4 overflow-y-auto animate-in slide-in-from-left duration-200 shadow-2xl border-r border-[var(--border-color)]">
+              <div className="flex items-center justify-between pb-3 border-b border-[var(--border-color)] mb-3">
+                <span className="font-bold text-sm tracking-tight text-[var(--text-primary)]">Navigation</span>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors"
+                  aria-label="Close menu"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -102,29 +130,29 @@ const MainLayout: React.FC = () => {
         {/* Central Content Viewport */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           {/* Mobile Top Bar Toggler */}
-          <div className="md:hidden flex items-center justify-between pb-4 mb-2 border-b border-[var(--border-color)]">
+          <div className="md:hidden flex items-center justify-between pb-3.5 mb-4 border-b border-[var(--border-color)]">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--bg-subtle)] text-xs font-semibold text-[var(--text-primary)] border border-[var(--border-color)]"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--bg-surface)] text-xs font-semibold text-[var(--text-primary)] border border-[var(--border-color)] shadow-xs hover:border-[var(--border-hover)] transition-all"
             >
               <Menu className="w-4 h-4" />
               <span>Menu</span>
             </button>
-            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+            <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
               {activeTab.replace('-', ' ')}
             </span>
           </div>
 
           {/* Deactivation Status Alert */}
           {currentUser?.isDeactivated && (
-            <div className="mb-4 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200 animate-in fade-in">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
-                <span>Your account is currently deactivated and hidden from fellow student directories.</span>
+            <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200 backdrop-blur-sm">
+              <div className="flex items-center gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                <span className="font-medium">Your profile is currently deactivated and hidden from peer directories.</span>
               </div>
               <button
                 onClick={reactivateOwnAccount}
-                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors shrink-0 shadow-2xs"
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors shrink-0 shadow-xs"
               >
                 Reactivate Account Now
               </button>
@@ -136,11 +164,11 @@ const MainLayout: React.FC = () => {
       </div>
 
       {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden sticky bottom-0 z-40 w-full border-t border-[var(--border-color)] bg-[var(--bg-surface)]/95 backdrop-blur-md px-3 py-2 flex items-center justify-around">
+      <nav className="md:hidden sticky bottom-0 z-40 w-full border-t border-[var(--border-color)] bg-[var(--bg-surface)]/90 backdrop-blur-lg px-3 py-2 flex items-center justify-around shadow-lg">
         <button
           onClick={() => setActiveTab('home')}
-          className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors ${
-            activeTab === 'home' ? 'text-blue-600 font-bold' : 'text-[var(--text-muted)]'
+          className={`flex flex-col items-center gap-1 text-[10px] font-medium transition-colors ${
+            activeTab === 'home' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-[var(--text-muted)]'
           }`}
         >
           <Home className="w-4 h-4" />
@@ -149,41 +177,41 @@ const MainLayout: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('discover')}
-          className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors ${
-            activeTab === 'discover' ? 'text-blue-600 font-bold' : 'text-[var(--text-muted)]'
+          className={`flex flex-col items-center gap-1 text-[10px] font-medium transition-colors ${
+            activeTab === 'discover' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-[var(--text-muted)]'
           }`}
         >
           <Compass className="w-4 h-4" />
-          <span>Discover</span>
+          <span>Directory</span>
         </button>
 
         <button
           onClick={() => setActiveTab('ai-finder')}
-          className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors ${
-            activeTab === 'ai-finder' ? 'text-purple-600 font-bold' : 'text-purple-500'
+          className={`flex flex-col items-center gap-1 text-[10px] font-medium transition-colors ${
+            activeTab === 'ai-finder' ? 'text-purple-600 dark:text-purple-400 font-bold' : 'text-purple-500/80'
           }`}
         >
           <Sparkles className="w-4 h-4" />
-          <span>Match Finder</span>
+          <span>Matcher</span>
         </button>
 
         <button
           onClick={() => setActiveTab('messages')}
-          className={`relative flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors ${
-            activeTab === 'messages' ? 'text-blue-600 font-bold' : 'text-[var(--text-muted)]'
+          className={`relative flex flex-col items-center gap-1 text-[10px] font-medium transition-colors ${
+            activeTab === 'messages' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-[var(--text-muted)]'
           }`}
         >
           <MessageSquare className="w-4 h-4" />
           <span>Chat</span>
           {unreadMessagesCount > 0 && (
-            <span className="absolute -top-1 right-2 w-2 h-2 rounded-full bg-blue-600" />
+            <span className="absolute -top-1 right-2 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-[var(--bg-surface)]" />
           )}
         </button>
 
         <button
           onClick={() => setActiveTab('qa')}
-          className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-colors ${
-            activeTab === 'qa' ? 'text-blue-600 font-bold' : 'text-[var(--text-muted)]'
+          className={`flex flex-col items-center gap-1 text-[10px] font-medium transition-colors ${
+            activeTab === 'qa' ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-[var(--text-muted)]'
           }`}
         >
           <HelpCircle className="w-4 h-4" />

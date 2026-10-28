@@ -15,9 +15,7 @@ import {
   Info,
   Mail,
   LogIn,
-  UserPlus,
-  Users,
-  HardDriveUpload
+  UserPlus
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -31,31 +29,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
     currentUser,
     unreadNotifsCount,
     unreadMessagesCount,
-    uploadedFiles,
     setSelectedStudentForProfile,
-    setIsOnboardingOpen,
     isAuthenticated,
-    openAuthModal,
-    logout
+    openAuthModal
   } = useApp();
 
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
-    { id: 'discover', label: 'Discover Students', icon: Compass },
-    { id: 'ai-finder', label: 'Match Finder', icon: Sparkles, accent: true },
+    { id: 'discover', label: 'Student Directory', icon: Compass },
+    { id: 'ai-finder', label: 'AI Match Finder', icon: Sparkles, accent: true },
     { id: 'messages', label: 'Messages', icon: MessageSquare, badge: unreadMessagesCount },
-    { id: 'qa', label: 'Questions & Answers', icon: HelpCircle },
-    { id: 'projects', label: 'Projects & Team', icon: FolderKanban },
-    { id: 'events', label: 'Events & Notices', icon: Calendar },
+    { id: 'qa', label: 'Questions & Requests', icon: HelpCircle },
+    { id: 'projects', label: 'Projects & Teams', icon: FolderKanban },
+    { id: 'events', label: 'Campus Notices', icon: Calendar },
     { id: 'notifications', label: 'Notifications', icon: Bell, badge: unreadNotifsCount },
     { id: 'profile', label: 'My Profile', icon: User },
     { id: 'settings', label: 'Settings & Privacy', icon: Settings },
     { id: 'about', label: 'About Us', icon: Info },
-    { id: 'contact', label: 'Contact Us', icon: Mail }
+    { id: 'contact', label: 'Contact & Support', icon: Mail }
   ];
 
   if (currentUser?.role === 'teacher') {
-    navItems.push({ id: 'admin', label: 'Staff Console', icon: ShieldCheck });
+    navItems.push({ id: 'admin', label: 'Faculty Console', icon: ShieldCheck });
   }
 
   const handleNavClick = (id: string) => {
@@ -67,8 +62,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
   };
 
   return (
-    <aside className="w-64 shrink-0 flex flex-col justify-between h-[calc(100vh-61px)] sticky top-[61px] border-r border-[var(--border-color)] bg-[var(--bg-surface)] dark:glass-dark p-3 overflow-y-auto">
-      <div className="space-y-6">
+    <aside className="w-64 shrink-0 flex flex-col justify-between h-[calc(100vh-61px)] sticky top-[61px] border-r border-[var(--border-color)] bg-[var(--bg-surface)]/75 dark:bg-[var(--bg-surface)]/70 backdrop-blur-md p-3.5 overflow-y-auto transition-colors">
+      <div className="space-y-5">
         {/* Navigation list */}
         <div className="space-y-1">
           {navItems.map(item => {
@@ -78,34 +73,34 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
               <button
                 key={item.id}
                 onClick={() => handleNavClick(item.id)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all text-left ${
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all text-left group cursor-pointer ${
                   isActive
                     ? item.accent
-                      ? 'bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 font-semibold shadow-xs'
-                      : 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 font-semibold shadow-xs'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]'
+                      ? 'bg-purple-600/10 text-purple-700 dark:text-purple-300 font-semibold border border-purple-500/20 shadow-xs'
+                      : 'bg-blue-600/10 text-blue-700 dark:text-blue-300 font-semibold border border-blue-500/20 shadow-xs'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] border border-transparent'
                 }`}
               >
                 <div className="flex items-center gap-3 truncate">
                   <Icon
-                    className={`w-4 h-4 shrink-0 ${
+                    className={`w-4 h-4 shrink-0 transition-colors ${
                       isActive
                         ? item.accent
                           ? 'text-purple-600 dark:text-purple-400'
                           : 'text-blue-600 dark:text-blue-400'
                         : item.accent
-                        ? 'text-purple-500'
-                        : 'text-[var(--text-muted)]'
+                        ? 'text-purple-500/80 group-hover:text-purple-600'
+                        : 'text-[var(--text-muted)] group-hover:text-[var(--text-primary)]'
                     }`}
                   />
                   <span className="truncate">{item.label}</span>
                 </div>
                 {item.badge !== undefined && item.badge > 0 ? (
                   <span
-                    className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                    className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full num-tabular ${
                       item.accent
-                        ? 'bg-purple-200 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                        : 'bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                        ? 'bg-purple-500/20 text-purple-700 dark:text-purple-300'
+                        : 'bg-blue-500/20 text-blue-700 dark:text-blue-300'
                     }`}
                   >
                     {item.badge}
@@ -116,29 +111,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
           })}
         </div>
 
-        {/* Auth & School Hub Card */}
+        {/* Auth / Status Card */}
         {!isAuthenticated || !currentUser ? (
-          <div className="p-3.5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 space-y-2.5">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-xs font-bold text-blue-900 dark:text-blue-200">
-                Sign In Required
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-purple-500/5 border border-blue-500/20 dark:border-blue-500/15 space-y-3">
+            <div>
+              <span className="text-xs font-bold text-[var(--text-primary)] block">
+                School Member Access
               </span>
+              <p className="text-[11px] text-[var(--text-secondary)] mt-1 leading-relaxed">
+                Log in to create projects, exchange peer doubt solutions, and collaborate.
+              </p>
             </div>
-            <p className="text-[11px] text-blue-800/80 dark:text-blue-300/80 leading-relaxed">
-              Log in or register as a Student or Teacher to join projects, Q&A, and campus events.
-            </p>
-            <div className="flex flex-col gap-1.5 pt-1">
+            <div className="flex flex-col gap-1.5 pt-0.5">
               <button
                 onClick={() => openAuthModal('login')}
-                className="w-full py-1.5 px-3 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-2xs text-center flex items-center justify-center gap-1.5"
+                className="w-full py-1.5 px-3 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Sign In</span>
               </button>
               <button
                 onClick={() => openAuthModal('signup')}
-                className="w-full py-1.5 px-3 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-white dark:bg-slate-800 rounded-xl border border-blue-200 dark:border-blue-800 hover:bg-blue-50 transition-colors text-center flex items-center justify-center gap-1.5"
+                className="w-full py-1.5 px-3 text-xs font-semibold text-[var(--text-primary)] bg-[var(--bg-surface)] hover:bg-[var(--bg-subtle)] rounded-xl border border-[var(--border-color)] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <UserPlus className="w-3.5 h-3.5" />
                 <span>Register Account</span>
@@ -146,41 +140,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile }) => {
             </div>
           </div>
         ) : (
-          <div className="p-3.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] space-y-2">
+          <div className="p-3.5 rounded-2xl bg-[var(--bg-subtle)]/70 border border-[var(--border-color)] space-y-2">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-bold text-[var(--text-primary)]">
-                  {currentUser.role === 'teacher'
-                    ? 'Faculty Mentor'
-                    : currentUser.role === 'developer'
-                    ? 'Developer Portal'
-                    : 'Student Portal'}
-                </span>
-              </div>
-              <span className="text-[10px] font-bold uppercase px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                Online
+              <span className="text-xs font-bold text-[var(--text-primary)]">
+                {currentUser.role === 'teacher'
+                  ? 'Faculty Mentor'
+                  : currentUser.role === 'developer'
+                  ? 'Dev Portal'
+                  : 'Student Account'}
+              </span>
+              <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                Active
               </span>
             </div>
             <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
-              Signed in as <strong className="text-[var(--text-primary)]">{currentUser?.name}</strong> ({currentUser?.gmailAccount || currentUser?.email})
+              Signed in as <span className="font-semibold text-[var(--text-primary)]">{currentUser.name}</span>
             </p>
             <button
               onClick={() => setActiveTab('contact')}
-              className="w-full py-1.5 px-3 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-white dark:bg-slate-800/80 rounded-lg border border-blue-200 dark:border-blue-800/60 hover:bg-blue-50 transition-colors shadow-2xs text-center"
+              className="w-full py-1.5 px-3 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-[var(--bg-surface)] hover:bg-[var(--bg-muted)] rounded-xl border border-[var(--border-color)] transition-all text-center cursor-pointer shadow-2xs"
             >
-              Contact Developers
+              School Support
             </button>
           </div>
         )}
       </div>
 
       {/* Footer info */}
-      <div className="pt-4 border-t border-[var(--border-color)]/80 text-[11px] text-[var(--text-muted)]">
-        <p className="font-semibold text-[var(--text-secondary)]">PeerForge</p>
-        <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
-          OPG World School · Dwarka
-        </p>
+      <div className="pt-3 border-t border-[var(--border-color)] text-[11px] text-[var(--text-muted)] flex items-center justify-between">
+        <div>
+          <p className="font-bold text-[var(--text-secondary)]">PeerForge</p>
+          <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+            OPG World School · Dwarka
+          </p>
+        </div>
+        <span className="text-[10px] font-mono text-[var(--text-muted)]">v2.4</span>
       </div>
     </aside>
   );
