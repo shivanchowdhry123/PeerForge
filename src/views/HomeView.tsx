@@ -309,9 +309,9 @@ export const HomeView: React.FC = () => {
                       <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
                         <span className="font-semibold text-blue-600 dark:text-blue-400">{project.category}</span>
                         <span>·</span>
-                        <span>Lead: {project.leadStudentName}</span>
+                        <span>Lead: {project.ownerName}</span>
                         <span>·</span>
-                        <span className="num-tabular">{project.membersCount}/{project.maxMembers} Members</span>
+                        <span className="num-tabular">{project.members?.length || 1}/{project.teamSize} Members</span>
                       </div>
                       <ArrowUpRight className="w-4 h-4 text-[var(--text-muted)] group-hover:text-blue-600 transition-colors" />
                     </div>

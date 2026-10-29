@@ -35,12 +35,24 @@ import {
   saveSupabaseAnswer,
   saveSupabaseMessage,
   saveSupabaseConversation,
+  saveSupabaseEvent,
+  saveSupabaseNotification,
+  saveSupabaseReport,
+  saveSupabaseContactInquiry,
+  saveSupabaseUpload,
+  deleteSupabaseUpload,
   fetchSupabaseStudents,
   fetchSupabaseProjects,
   fetchSupabaseQuestions,
   fetchSupabaseAnswers,
   fetchSupabaseConversations,
-  fetchSupabaseMessages
+  fetchSupabaseMessages,
+  fetchSupabaseEvents,
+  fetchSupabaseNotifications,
+  fetchSupabaseReports,
+  fetchSupabaseContactInquiries,
+  fetchSupabaseUploads,
+  subscribeToSupabaseRealtime
 } from '../services/supabaseClient';
 
 interface AppContextType {
@@ -54,6 +66,8 @@ interface AppContextType {
   conversations: Conversation[];
   messages: Message[];
   reports: ContentReport[];
+  contactInquiries: ContactInquiry[];
+  uploadedFiles: UploadedFile[];
   unreadNotifsCount: number;
   unreadMessagesCount: number;
   activeTab: string;
@@ -95,7 +109,6 @@ interface AppContextType {
   updatePassword: (password: string) => void;
   linkGmailAccount: (gmail: string) => void;
   addNewProfile: (profile: Partial<StudentProfile>) => void;
-  contactInquiries: ContactInquiry[];
   submitContactInquiry: (inquiryData: {
     name: string;
     email: string;
@@ -135,7 +148,6 @@ interface AppContextType {
   setAuthRole: (role: 'student' | 'teacher') => void;
   openAuthModal: (mode: 'login' | 'signup', role?: 'student' | 'teacher') => void;
   closeAuthModal: () => void;
-  uploadedFiles: UploadedFile[];
   uploadFile: (file: File, category: string, description?: string, projectId?: string) => Promise<{ success: boolean; file?: UploadedFile; error?: string }>;
   deleteUploadedFile: (id: string) => Promise<boolean>;
   refreshUploadedFiles: () => Promise<void>;
@@ -145,168 +157,24 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [allStudents, setAllStudents] = useState<StudentProfile[]>(() => {
-    try {
-      const version = localStorage.getItem('opg_profiles_version');
-      if (version !== 'v6_clean_auth') {
-        localStorage.setItem('opg_profiles_version', 'v6_clean_auth');
-        localStorage.setItem('opg_students', JSON.stringify(INITIAL_STUDENTS));
-        localStorage.removeItem('opg_current_user_id');
-        localStorage.removeItem('opg_is_authenticated');
-        localStorage.removeItem('opg_contact_inquiries');
-        return INITIAL_STUDENTS;
-      }
-      const saved = localStorage.getItem('opg_students');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
-      }
-    } catch (e) {
-      console.warn('Storage read failed', e);
-    }
-    return INITIAL_STUDENTS;
-  });
 
-  const [currentUser, setCurrentUser] = useState<StudentProfile | null>(() => {
-    try {
-      const savedUser = localStorage.getItem('opg_current_user');
-      if (savedUser) {
-        const parsed = JSON.parse(savedUser);
-        if (parsed && parsed.id && parsed.name) {
-          return parsed;
-        }
-      }
-      const savedId = localStorage.getItem('opg_current_user_id');
-      if (savedId) {
-        const found = INITIAL_STUDENTS.find(s => s.id === savedId);
-        if (found) return found;
-      }
-    } catch (e) {
-      console.warn('Initial currentUser restore error:', e);
-    }
-    return null;
-  });
+  // Application Data States
+  const [allStudents, setAllStudents] = useState<StudentProfile[]>(() => (isSupabaseConfigured ? [] : INITIAL_STUDENTS));
+  const [currentUser, setCurrentUser] = useState<StudentProfile | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    try {
-      if (localStorage.getItem('opg_is_authenticated') === 'true') return true;
-      const savedUser = localStorage.getItem('opg_current_user');
-      if (savedUser) {
-        const parsed = JSON.parse(savedUser);
-        return Boolean(parsed && parsed.id);
-      }
-    } catch {
-      // ignore
-    }
-    return false;
-  });
+  const [projects, setProjects] = useState<Project[]>(() => (isSupabaseConfigured ? [] : INITIAL_PROJECTS));
+  const [questions, setQuestions] = useState<Question[]>(() => (isSupabaseConfigured ? [] : INITIAL_QUESTIONS));
+  const [answers, setAnswers] = useState<Answer[]>(() => (isSupabaseConfigured ? [] : INITIAL_ANSWERS));
+  const [events, setEvents] = useState<SchoolEvent[]>(() => (isSupabaseConfigured ? [] : INITIAL_EVENTS));
+  const [conversations, setConversations] = useState<Conversation[]>(() => (isSupabaseConfigured ? [] : INITIAL_CONVERSATIONS));
+  const [messages, setMessages] = useState<Message[]>(() => (isSupabaseConfigured ? [] : INITIAL_MESSAGES));
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => (isSupabaseConfigured ? [] : INITIAL_NOTIFICATIONS));
+  const [reports, setReports] = useState<ContentReport[]>(() => (isSupabaseConfigured ? [] : INITIAL_REPORTS));
+  const [contactInquiries, setContactInquiries] = useState<ContactInquiry[]>(() => (isSupabaseConfigured ? [] : INITIAL_CONTACT_INQUIRIES));
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>(() => (isSupabaseConfigured ? [] : INITIAL_UPLOADED_FILES));
 
-  // Sync state with backend database API on mount
-  useEffect(() => {
-    let unsubscribeAuth: (() => void) | undefined;
-
-    // Check for existing Supabase session if configured
-    if (isSupabaseConfigured) {
-      supabase.auth.getSession().then(async ({ data: { session } }) => {
-        if (session?.user) {
-          try {
-            const { data: sbStudent } = await supabase
-              .from('students')
-              .select('*')
-              .or(`id.eq.${session.user.id},email.eq.${session.user.email}`)
-              .maybeSingle();
-
-            if (sbStudent) {
-              setCurrentUser(sbStudent as StudentProfile);
-              setIsAuthenticated(true);
-            }
-          } catch {
-            fetch(`/api/students/${session.user.id}`)
-              .then(r => r.json())
-              .then(student => {
-                if (student && !student.error) {
-                  setCurrentUser(student);
-                  setIsAuthenticated(true);
-                }
-              })
-              .catch(() => {});
-          }
-        }
-      });
-
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_OUT') {
-          setIsAuthenticated(false);
-          setCurrentUser(null);
-          localStorage.removeItem('opg_current_user_id');
-          localStorage.removeItem('opg_current_user');
-          localStorage.removeItem('opg_is_authenticated');
-        } else if (session?.user) {
-          try {
-            const { data: sbStudent } = await supabase
-              .from('students')
-              .select('*')
-              .or(`id.eq.${session.user.id},email.eq.${session.user.email}`)
-              .maybeSingle();
-
-            if (sbStudent) {
-              setCurrentUser(sbStudent as StudentProfile);
-              setIsAuthenticated(true);
-            }
-          } catch {
-            // ignore
-          }
-        }
-      });
-
-      unsubscribeAuth = () => subscription.unsubscribe();
-    }
-
-    if (isSupabaseConfigured) {
-      Promise.all([
-        fetchSupabaseStudents(),
-        fetchSupabaseProjects(),
-        fetchSupabaseQuestions(),
-        fetchSupabaseAnswers(),
-        fetch('/api/events').then(r => r.json()).catch(() => []),
-        fetch('/api/notifications').then(r => r.json()).catch(() => []),
-      ]).then(([students, projects, questions, answers, events, notifications]) => {
-        if (students && Array.isArray(students) && students.length > 0) setAllStudents(students);
-        if (projects && Array.isArray(projects) && projects.length > 0) setProjects(projects);
-        if (questions && Array.isArray(questions) && questions.length > 0) setQuestions(questions);
-        if (answers && Array.isArray(answers) && answers.length > 0) setAnswers(answers);
-        if (Array.isArray(events) && events.length > 0) setEvents(events);
-        if (Array.isArray(notifications) && notifications.length > 0) setNotifications(notifications);
-      });
-    } else {
-      Promise.all([
-        fetch('/api/students').then(r => r.json()).catch(() => []),
-        fetch('/api/projects').then(r => r.json()).catch(() => []),
-        fetch('/api/questions').then(r => r.json()).catch(() => []),
-        fetch('/api/events').then(r => r.json()).catch(() => []),
-        fetch('/api/conversations').then(r => r.json()).catch(() => []),
-        fetch('/api/messages').then(r => r.json()).catch(() => []),
-        fetch('/api/notifications').then(r => r.json()).catch(() => []),
-      ]).then(([studentsRes, projectsRes, questionsRes, eventsRes, convRes, msgRes, notifRes]) => {
-        if (Array.isArray(studentsRes) && studentsRes.length > 0) {
-          setAllStudents(studentsRes);
-        }
-        if (Array.isArray(projectsRes) && projectsRes.length > 0) setProjects(projectsRes);
-        if (Array.isArray(questionsRes) && questionsRes.length > 0) setQuestions(questionsRes);
-        if (Array.isArray(eventsRes) && eventsRes.length > 0) setEvents(eventsRes);
-        if (Array.isArray(convRes) && convRes.length > 0) setConversations(convRes);
-        if (Array.isArray(msgRes) && msgRes.length > 0) setMessages(msgRes);
-        if (Array.isArray(notifRes) && notifRes.length > 0) setNotifications(notifRes);
-      }).catch(e => console.warn('Backend sync failed:', e));
-    }
-
-    return () => {
-      if (unsubscribeAuth) unsubscribeAuth();
-    };
-  }, []);
-
+  // Navigation & UI States
   const [activeTab, setActiveTab] = useState<string>('home');
   const [selectedStudentForProfile, setSelectedStudentForProfile] = useState<StudentProfile | null>(null);
   const [selectedQuestionForDetail, setSelectedQuestionForDetail] = useState<Question | null>(null);
@@ -319,23 +187,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     student: null
   });
 
-  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
-  const [questions, setQuestions] = useState<Question[]>(INITIAL_QUESTIONS);
-  const [answers, setAnswers] = useState<Answer[]>(INITIAL_ANSWERS);
-  const [events, setEvents] = useState<SchoolEvent[]>(INITIAL_EVENTS);
-  const [conversations, setConversations] = useState<Conversation[]>(INITIAL_CONVERSATIONS);
-  const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
-  const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
-  const [reports, setReports] = useState<ContentReport[]>(INITIAL_REPORTS);
-  const [contactInquiries, setContactInquiries] = useState<ContactInquiry[]>(() => {
-    try {
-      const saved = localStorage.getItem('opg_contact_inquiries');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.warn('Inquiries storage read error', e);
-    }
-    return INITIAL_CONTACT_INQUIRIES;
-  });
   const [isDeveloperMode, setIsDeveloperMode] = useState<boolean>(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
@@ -351,31 +202,226 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsAuthModalOpen(false);
   };
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('opg_contact_inquiries', JSON.stringify(contactInquiries));
-    } catch (e) {
-      console.warn('Inquiries storage write error', e);
-    }
-  }, [contactInquiries]);
 
-  // Sync to local storage
-  useEffect(() => {
-    localStorage.setItem('opg_students', JSON.stringify(allStudents));
-  }, [allStudents]);
 
+  // Synchronize state with Supabase backend database and setup live subscriptions
   useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('opg_current_user_id', currentUser.id);
-      localStorage.setItem('opg_current_user', JSON.stringify(currentUser));
-      localStorage.setItem('opg_is_authenticated', 'true');
+    let unsubscribeAuth: (() => void) | undefined;
+    const unsubscribes: (() => void)[] = [];
+
+    if (isSupabaseConfigured) {
+      // 1. Initial Data Fetch from Supabase
+      Promise.all([
+        fetchSupabaseStudents(),
+        fetchSupabaseProjects(),
+        fetchSupabaseQuestions(),
+        fetchSupabaseAnswers(),
+        fetchSupabaseConversations(),
+        fetchSupabaseMessages(),
+        fetchSupabaseEvents(),
+        fetchSupabaseNotifications(),
+        fetchSupabaseReports(),
+        fetchSupabaseContactInquiries(),
+        fetchSupabaseUploads()
+      ]).then(([
+        students,
+        projs,
+        qs,
+        ans,
+        convs,
+        msgs,
+        evts,
+        notifs,
+        reps,
+        inquiries,
+        uploads
+      ]) => {
+        if (students !== null) setAllStudents(students);
+        if (projs !== null) setProjects(projs);
+        if (qs !== null) setQuestions(qs);
+        if (ans !== null) setAnswers(ans);
+        if (convs !== null) setConversations(convs);
+        if (msgs !== null) setMessages(msgs);
+        if (evts !== null) setEvents(evts);
+        if (notifs !== null) setNotifications(notifs);
+        if (reps !== null) setReports(reps);
+        if (inquiries !== null) setContactInquiries(inquiries);
+        if (uploads !== null) setUploadedFiles(uploads);
+      });
+
+      // 2. Auth Session Check & Auth State Change Listener
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
+        if (session?.user) {
+          const { data: sbStudent } = await supabase
+            .from('students')
+            .select('*')
+            .or(`id.eq.${session.user.id},email.eq.${session.user.email}`)
+            .maybeSingle();
+
+          if (sbStudent) {
+            setCurrentUser(sbStudent as StudentProfile);
+            setIsAuthenticated(true);
+          }
+        }
+      });
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_OUT') {
+          setIsAuthenticated(false);
+          setCurrentUser(null);
+        } else if (session?.user) {
+          const { data: sbStudent } = await supabase
+            .from('students')
+            .select('*')
+            .or(`id.eq.${session.user.id},email.eq.${session.user.email}`)
+            .maybeSingle();
+
+          if (sbStudent) {
+            setCurrentUser(sbStudent as StudentProfile);
+            setIsAuthenticated(true);
+          }
+        }
+      });
+      unsubscribeAuth = () => subscription.unsubscribe();
+
+      // 3. Live Supabase Real-Time Subscriptions for instant multi-user syncing
+      unsubscribes.push(
+        subscribeToSupabaseRealtime('messages', (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newMsg = payload.new as Message;
+            setMessages(prev => (prev.some(m => m.id === newMsg.id) ? prev : [...prev, newMsg]));
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedMsg = payload.new as Message;
+            setMessages(prev => prev.map(m => (m.id === updatedMsg.id ? updatedMsg : m)));
+          } else if (payload.eventType === 'DELETE') {
+            setMessages(prev => prev.filter(m => m.id !== payload.old.id));
+          }
+        })
+      );
+
+      unsubscribes.push(
+        subscribeToSupabaseRealtime('conversations', (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newConv = payload.new as Conversation;
+            setConversations(prev => (prev.some(c => c.id === newConv.id) ? prev : [newConv, ...prev]));
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedConv = payload.new as Conversation;
+            setConversations(prev => prev.map(c => (c.id === updatedConv.id ? updatedConv : c)));
+          }
+        })
+      );
+
+      unsubscribes.push(
+        subscribeToSupabaseRealtime('students', (payload) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const student = payload.new as StudentProfile;
+            setAllStudents(prev => {
+              const exists = prev.some(s => s.id === student.id);
+              return exists ? prev.map(s => (s.id === student.id ? student : s)) : [student, ...prev];
+            });
+            setCurrentUser(curr => (curr && curr.id === student.id ? student : curr));
+          }
+        })
+      );
+
+      unsubscribes.push(
+        subscribeToSupabaseRealtime('projects', (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newProj = payload.new as Project;
+            setProjects(prev => (prev.some(p => p.id === newProj.id) ? prev : [newProj, ...prev]));
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedProj = payload.new as Project;
+            setProjects(prev => prev.map(p => (p.id === updatedProj.id ? updatedProj : p)));
+          }
+        })
+      );
+
+      unsubscribes.push(
+        subscribeToSupabaseRealtime('questions', (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newQ = payload.new as Question;
+            setQuestions(prev => (prev.some(q => q.id === newQ.id) ? prev : [newQ, ...prev]));
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedQ = payload.new as Question;
+            setQuestions(prev => prev.map(q => (q.id === updatedQ.id ? updatedQ : q)));
+          }
+        })
+      );
+
+      unsubscribes.push(
+        subscribeToSupabaseRealtime('answers', (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newA = payload.new as Answer;
+            setAnswers(prev => (prev.some(a => a.id === newA.id) ? prev : [...prev, newA]));
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedA = payload.new as Answer;
+            setAnswers(prev => prev.map(a => (a.id === updatedA.id ? updatedA : a)));
+          }
+        })
+      );
+
+      unsubscribes.push(
+        subscribeToSupabaseRealtime('notifications', (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newN = payload.new as AppNotification;
+            setNotifications(prev => (prev.some(n => n.id === newN.id) ? prev : [newN, ...prev]));
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedN = payload.new as AppNotification;
+            setNotifications(prev => prev.map(n => (n.id === updatedN.id ? updatedN : n)));
+          }
+        })
+      );
+
+      unsubscribes.push(
+        subscribeToSupabaseRealtime('contact_inquiries', (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newInq = payload.new as ContactInquiry;
+            setContactInquiries(prev => (prev.some(i => i.id === newInq.id) ? prev : [newInq, ...prev]));
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedInq = payload.new as ContactInquiry;
+            setContactInquiries(prev => prev.map(i => (i.id === updatedInq.id ? updatedInq : i)));
+          }
+        })
+      );
+
+      unsubscribes.push(
+        subscribeToSupabaseRealtime('uploaded_files', (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newFile = payload.new as UploadedFile;
+            setUploadedFiles(prev => (prev.some(f => f.id === newFile.id) ? prev : [newFile, ...prev]));
+          } else if (payload.eventType === 'DELETE') {
+            setUploadedFiles(prev => prev.filter(f => f.id !== payload.old.id));
+          }
+        })
+      );
     } else {
-      localStorage.removeItem('opg_current_user_id');
-      localStorage.removeItem('opg_current_user');
-      localStorage.removeItem('opg_is_authenticated');
+      // Fallback: Local Server API Sync
+      Promise.all([
+        fetch('/api/students').then(r => r.json()).catch(() => []),
+        fetch('/api/projects').then(r => r.json()).catch(() => []),
+        fetch('/api/questions').then(r => r.json()).catch(() => []),
+        fetch('/api/events').then(r => r.json()).catch(() => []),
+        fetch('/api/conversations').then(r => r.json()).catch(() => []),
+        fetch('/api/messages').then(r => r.json()).catch(() => []),
+        fetch('/api/notifications').then(r => r.json()).catch(() => [])
+      ]).then(([studentsRes, projectsRes, questionsRes, eventsRes, convRes, msgRes, notifRes]) => {
+        if (Array.isArray(studentsRes) && studentsRes.length > 0) setAllStudents(studentsRes);
+        if (Array.isArray(projectsRes) && projectsRes.length > 0) setProjects(projectsRes);
+        if (Array.isArray(questionsRes) && questionsRes.length > 0) setQuestions(questionsRes);
+        if (Array.isArray(eventsRes) && eventsRes.length > 0) setEvents(eventsRes);
+        if (Array.isArray(convRes) && convRes.length > 0) setConversations(convRes);
+        if (Array.isArray(msgRes) && msgRes.length > 0) setMessages(msgRes);
+        if (Array.isArray(notifRes) && notifRes.length > 0) setNotifications(notifRes);
+      });
     }
-  }, [currentUser]);
 
+    return () => {
+      if (unsubscribeAuth) unsubscribeAuth();
+      unsubscribes.forEach(unsub => unsub());
+    };
+  }, []);
+
+  // Theme Sync
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -392,13 +438,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const s = allStudents.find(item => item.id === studentId);
     if (s) {
       setCurrentUser(s);
+      setIsAuthenticated(true);
     }
   };
 
   const updateCurrentUserProfile = (updated: Partial<StudentProfile>) => {
     if (!currentUser) return;
     const updatedUser = { ...currentUser, ...updated };
-    // Recalculate completeness
+
     let comp = 50;
     if (updatedUser.bio && updatedUser.bio.length > 20) comp += 15;
     if (updatedUser.skills && updatedUser.skills.length >= 3) comp += 15;
@@ -409,13 +456,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser(updatedUser);
     setAllStudents(prev => prev.map(s => (s.id === currentUser.id ? updatedUser : s)));
 
-    // Also sync to server if available
-    fetch(`/api/students/${currentUser.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedUser)
-    }).catch(e => console.warn('Server sync error', e));
-
     if (isSupabaseConfigured) {
       saveSupabaseStudent(updatedUser);
     }
@@ -423,9 +463,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addSkillToCurrent = (skill: Skill) => {
     if (!currentUser) return;
-    if (currentUser.skills.some(s => s.name.toLowerCase() === skill.name.toLowerCase())) {
-      return;
-    }
+    if (currentUser.skills.some(s => s.name.toLowerCase() === skill.name.toLowerCase())) return;
     const updatedSkills = [...currentUser.skills, skill];
     updateCurrentUserProfile({ skills: updatedSkills });
   };
@@ -454,35 +492,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setMessages(prev => [...prev, newMsg]);
 
-    // Call server endpoint
-    fetch(`/api/conversations/${convId}/messages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        senderId: currentUser.id,
-        senderName: currentUser.name,
-        senderAvatar: currentUser.avatar,
-        text: text.trim(),
-        replyTo
-      })
-    }).catch(e => console.warn('Message sync error', e));
-
-    if (isSupabaseConfigured) {
-      saveSupabaseMessage(newMsg);
-      const conv = conversations.find(c => c.id === convId);
-      if (conv) {
-        saveSupabaseConversation({
-          ...conv,
-          lastMessage: {
-            text: newMsg.text,
-            senderId: currentUser.id,
-            timestamp: newMsg.timestamp
-          },
-          updatedAt: new Date().toISOString()
-        });
+    const targetConv = conversations.find(c => c.id === convId);
+    if (targetConv) {
+      const updatedConv: Conversation = {
+        ...targetConv,
+        lastMessage: {
+          text: newMsg.text,
+          senderId: currentUser.id,
+          timestamp: newMsg.timestamp
+        },
+        updatedAt: new Date().toISOString()
+      };
+      setConversations(prev => prev.map(c => (c.id === convId ? updatedConv : c)));
+      if (isSupabaseConfigured) {
+        saveSupabaseConversation(updatedConv);
       }
     }
 
+    if (isSupabaseConfigured) {
+      saveSupabaseMessage(newMsg);
+    }
   };
 
   const openDirectMessageWith = (student: StudentProfile) => {
@@ -507,6 +536,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       };
       setConversations(prev => [conv!, ...prev]);
+      if (isSupabaseConfigured) {
+        saveSupabaseConversation(conv);
+      }
     }
 
     setActiveConversationId(conv.id);
@@ -533,7 +565,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveConversationId(newGroup.id);
     setActiveTab('messages');
 
-    // Send initial system message
     const initialMsg: Message = {
       id: `msg-init-${Date.now()}`,
       conversationId: newGroup.id,
@@ -547,11 +578,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setMessages(prev => [...prev, initialMsg]);
 
+    if (isSupabaseConfigured) {
+      saveSupabaseConversation(newGroup);
+      saveSupabaseMessage(initialMsg);
+    }
+
     return newGroup.id;
   };
 
   const reactToMessage = (messageId: string, emoji: string) => {
     if (!currentUser) return;
+    let targetMsg: Message | undefined;
+
     setMessages(prev =>
       prev.map(m => {
         if (m.id === messageId) {
@@ -564,11 +602,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           } else {
             reactions[emoji].push(currentUser.id);
           }
-          return { ...m, reactions };
+          targetMsg = { ...m, reactions };
+          return targetMsg;
         }
         return m;
       })
     );
+
+    if (isSupabaseConfigured && targetMsg) {
+      saveSupabaseMessage(targetMsg);
+    }
   };
 
   const createProject = (newProject: Partial<Project>) => {
@@ -603,7 +646,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setProjects(prev => [project, ...prev]);
 
-    // Also create project group chat conversation automatically
     const groupConv: Conversation = {
       id: `conv-proj-${project.id}`,
       name: `${project.title} (Team)`,
@@ -618,12 +660,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     };
     setConversations(prev => [groupConv, ...prev]);
-
-    fetch('/api/projects', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(project)
-    }).catch(e => console.warn('Project sync error', e));
 
     if (isSupabaseConfigured) {
       saveSupabaseProject(project);
@@ -649,35 +685,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: 'Just now'
     };
 
+    let updatedProject: Project | undefined;
+
     setProjects(prev =>
       prev.map(p => {
         if (p.id === projectId) {
-          return {
+          updatedProject = {
             ...p,
             applications: [...p.applications, appItem]
           };
+          return updatedProject;
         }
         return p;
       })
     );
 
-    fetch(`/api/projects/${projectId}/apply`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        studentId: currentUser.id,
-        studentName: currentUser.name,
-        studentGrade: currentUser.grade,
-        studentAvatar: currentUser.avatar,
-        roleId,
-        roleTitle,
-        note
-      })
-    }).catch(e => console.warn('Application sync error', e));
+    if (isSupabaseConfigured && updatedProject) {
+      saveSupabaseProject(updatedProject);
+    }
   };
 
   const handleProjectApplication = (projectId: string, appId: string, action: 'accepted' | 'rejected') => {
     if (!currentUser) return;
+    let updatedProject: Project | undefined;
+
     setProjects(prev =>
       prev.map(p => {
         if (p.id === projectId) {
@@ -717,16 +748,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           }
 
-          return {
+          updatedProject = {
             ...p,
             applications: updatedApps,
             members: updatedMembers,
             openRoles: updatedRoles
           };
+          return updatedProject;
         }
         return p;
       })
     );
+
+    if (isSupabaseConfigured && updatedProject) {
+      saveSupabaseProject(updatedProject);
+    }
   };
 
   const developerAcceptApplication = (projectId: string, appId: string, devNote?: string) => {
@@ -734,6 +770,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let acceptedApplicantName = '';
     let roleName = '';
     let projectTitle = '';
+    let updatedProject: Project | undefined;
 
     setProjects(prev =>
       prev.map(p => {
@@ -771,45 +808,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               : r
           );
 
-          return {
+          updatedProject = {
             ...p,
             applications: updatedApps,
             members: updatedMembers,
             openRoles: updatedRoles
           };
+          return updatedProject;
         }
         return p;
       })
     );
 
-    // Send confirmation notification
-    setNotifications(prev => [
-      {
-        id: `notif-${Date.now()}`,
-        userId: currentUser.id,
-        type: 'system',
-        title: `Developer Approved: ${acceptedApplicantName || 'Candidate'}`,
-        description: `Accepted application for "${roleName}" on project "${projectTitle}". Granted cross-role developer & teacher authority.`,
-        read: false,
-        timestamp: 'Just now',
-        actionTab: 'projects'
-      },
-      ...prev
-    ]);
+    const devNotif: AppNotification = {
+      id: `notif-${Date.now()}`,
+      userId: currentUser.id,
+      type: 'system',
+      title: `Developer Approved: ${acceptedApplicantName || 'Candidate'}`,
+      description: `Accepted application for "${roleName}" on project "${projectTitle}". Granted cross-role developer & teacher authority.`,
+      read: false,
+      timestamp: 'Just now',
+      actionTab: 'projects'
+    };
+
+    setNotifications(prev => [devNotif, ...prev]);
+
+    if (isSupabaseConfigured) {
+      if (updatedProject) saveSupabaseProject(updatedProject);
+      saveSupabaseNotification(devNotif);
+    }
   };
 
   const toggleProjectTask = (projectId: string, taskId: string) => {
+    let updatedProject: Project | undefined;
     setProjects(prev =>
       prev.map(p => {
         if (p.id === projectId) {
-          return {
+          updatedProject = {
             ...p,
             tasks: p.tasks.map(t => (t.id === taskId ? { ...t, completed: !t.completed } : t))
           };
+          return updatedProject;
         }
         return p;
       })
     );
+
+    if (isSupabaseConfigured && updatedProject) {
+      saveSupabaseProject(updatedProject);
+    }
   };
 
   const askQuestion = async (newQ: Partial<Question>): Promise<Question> => {
@@ -832,14 +879,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setQuestions(prev => [q, ...prev]);
 
-    fetch('/api/questions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(q)
-    }).catch(e => console.warn('Question sync error', e));
-
     if (isSupabaseConfigured) {
-      saveSupabaseQuestion(q);
+      await saveSupabaseQuestion(q);
     }
 
     return q;
@@ -864,34 +905,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setAnswers(prev => [...prev, newAns]);
 
+    let updatedQ: Question | undefined;
     setQuestions(prev =>
       prev.map(q => {
         if (q.id === questionId) {
-          return { ...q, answersCount: q.answersCount + 1 };
+          updatedQ = { ...q, answersCount: q.answersCount + 1 };
+          return updatedQ;
         }
         return q;
       })
     );
 
-    fetch(`/api/questions/${questionId}/answers`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        authorId: currentUser.id,
-        authorName: currentUser.name,
-        authorGrade: currentUser.grade,
-        authorAvatar: currentUser.avatar,
-        body: body.trim()
-      })
-    }).catch(e => console.warn('Answer sync error', e));
-
     if (isSupabaseConfigured) {
       saveSupabaseAnswer(newAns);
+      if (updatedQ) saveSupabaseQuestion(updatedQ);
     }
   };
 
   const upvoteAnswer = (answerId: string) => {
     if (!currentUser) return;
+    let updatedAns: Answer | undefined;
+
     setAnswers(prev =>
       prev.map(a => {
         if (a.id === answerId) {
@@ -905,46 +939,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             upvotedBy.push(currentUser.id);
             upvotes += 1;
           }
-          return { ...a, upvotes, upvotedBy };
+          updatedAns = { ...a, upvotes, upvotedBy };
+          return updatedAns;
         }
         return a;
       })
     );
+
+    if (isSupabaseConfigured && updatedAns) {
+      saveSupabaseAnswer(updatedAns);
+    }
   };
 
   const acceptAnswer = (questionId: string, answerId: string) => {
+    let updatedQ: Question | undefined;
     setQuestions(prev =>
       prev.map(q => {
         if (q.id === questionId) {
-          return { ...q, acceptedAnswerId: answerId };
+          updatedQ = { ...q, acceptedAnswerId: answerId };
+          return updatedQ;
         }
         return q;
       })
     );
+
     setAnswers(prev =>
       prev.map(a => {
         if (a.questionId === questionId) {
-          return { ...a, isAccepted: a.id === answerId };
+          const updatedA = { ...a, isAccepted: a.id === answerId };
+          if (isSupabaseConfigured) saveSupabaseAnswer(updatedA);
+          return updatedA;
         }
         return a;
       })
     );
+
+    if (isSupabaseConfigured && updatedQ) {
+      saveSupabaseQuestion(updatedQ);
+    }
   };
 
   const toggleEventRsvp = (eventId: string) => {
+    let updatedEvt: SchoolEvent | undefined;
     setEvents(prev =>
       prev.map(e => {
         if (e.id === eventId) {
           const isRsvpd = !e.isRsvpd;
-          return {
+          updatedEvt = {
             ...e,
             isRsvpd,
             rsvpCount: e.rsvpCount + (isRsvpd ? 1 : -1)
           };
+          return updatedEvt;
         }
         return e;
       })
     );
+
+    if (isSupabaseConfigured && updatedEvt) {
+      saveSupabaseEvent(updatedEvt);
+    }
   };
 
   const submitContentReport = (report: Partial<ContentReport>) => {
@@ -963,32 +1017,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setReports(prev => [newRep, ...prev]);
 
-    fetch('/api/reports', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newRep)
-    }).catch(e => console.warn('Report sync error', e));
+    if (isSupabaseConfigured) {
+      saveSupabaseReport(newRep);
+    }
   };
 
   const resolveReport = (reportId: string, action: 'dismiss' | 'action_taken', note?: string) => {
+    let updatedRep: ContentReport | undefined;
     setReports(prev =>
-      prev.map(r => (r.id === reportId ? { ...r, status: action === 'dismiss' ? 'dismissed' : 'action_taken' } : r))
+      prev.map(r => {
+        if (r.id === reportId) {
+          updatedRep = { ...r, status: action === 'dismiss' ? 'dismissed' : 'action_taken' };
+          return updatedRep;
+        }
+        return r;
+      })
     );
-    fetch(`/api/admin/reports/${reportId}/resolve`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, note })
-    }).catch(e => console.warn('Report resolve sync error', e));
+
+    if (isSupabaseConfigured && updatedRep) {
+      saveSupabaseReport(updatedRep);
+    }
   };
 
   const markNotificationsAsRead = () => {
     if (!currentUser) return;
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    fetch('/api/notifications/mark-read', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUser.id })
-    }).catch(e => console.warn('Notif sync error', e));
+    setNotifications(prev =>
+      prev.map(n => {
+        const updatedN = { ...n, read: true };
+        if (isSupabaseConfigured) saveSupabaseNotification(updatedN);
+        return updatedN;
+      })
+    );
   };
 
   const exportMyData = () => {
@@ -1008,11 +1067,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       availability: 'Focusing on Studies / Busy' as const
     };
     setCurrentUser(updatedUser);
-    setAllStudents(prev => {
-      const updated = prev.map(s => (s.id === currentUser.id ? updatedUser : s));
-      localStorage.setItem('opg_students', JSON.stringify(updated));
-      return updated;
-    });
+    setAllStudents(prev => prev.map(s => (s.id === currentUser.id ? updatedUser : s)));
+
+    if (isSupabaseConfigured) {
+      saveSupabaseStudent(updatedUser);
+    }
   };
 
   const reactivateOwnAccount = () => {
@@ -1023,11 +1082,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       availability: 'Active & Seeking Projects' as const
     };
     setCurrentUser(updatedUser);
-    setAllStudents(prev => {
-      const updated = prev.map(s => (s.id === currentUser.id ? updatedUser : s));
-      localStorage.setItem('opg_students', JSON.stringify(updated));
-      return updated;
-    });
+    setAllStudents(prev => prev.map(s => (s.id === currentUser.id ? updatedUser : s)));
+
+    if (isSupabaseConfigured) {
+      saveSupabaseStudent(updatedUser);
+    }
   };
 
   const addEvent = (eventData: Omit<SchoolEvent, 'id' | 'rsvpCount' | 'isRsvpd'>) => {
@@ -1038,6 +1097,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isRsvpd: true
     };
     setEvents(prev => [newEvent, ...prev]);
+
+    if (isSupabaseConfigured) {
+      saveSupabaseEvent(newEvent);
+    }
   };
 
   const updatePassword = (newPassword: string) => {
@@ -1054,7 +1117,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addNewProfile = (newProfileData: Partial<StudentProfile>) => {
     const cleanEmail = (newProfileData.email || newProfileData.gmailAccount || '').toLowerCase().trim();
     if (cleanEmail && allStudents.some(s => s.email.toLowerCase() === cleanEmail || s.gmailAccount?.toLowerCase() === cleanEmail)) {
-      console.warn('One student/teacher, one account: account already exists for', cleanEmail);
+      console.warn('Account already exists for', cleanEmail);
       return;
     }
     const newStudent: StudentProfile = {
@@ -1085,6 +1148,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       joinedDate: new Date().toISOString().split('T')[0]
     };
     setAllStudents(prev => [...prev, newStudent]);
+
+    if (isSupabaseConfigured) {
+      saveSupabaseStudent(newStudent);
+    }
   };
 
   const submitContactInquiry = (inquiryData: {
@@ -1108,7 +1175,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setContactInquiries(prev => [newInquiry, ...prev]);
 
-    // Send confidential notification strictly to developer accounts
     const devNotif: AppNotification = {
       id: `notif-${Date.now()}`,
       userId: 'user-aakriti',
@@ -1121,24 +1187,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setNotifications(prev => [devNotif, ...prev]);
 
+    if (isSupabaseConfigured) {
+      saveSupabaseContactInquiry(newInquiry);
+      saveSupabaseNotification(devNotif);
+    }
+
     return ticketId;
   };
 
   const resolveContactInquiry = (inquiryId: string, status: 'reviewed' | 'resolved', developerNotes?: string) => {
     if (!currentUser) return;
+    let updatedInquiry: ContactInquiry | undefined;
     setContactInquiries(prev =>
       prev.map(inq => {
         if (inq.id === inquiryId) {
-          return {
+          updatedInquiry = {
             ...inq,
             status,
             developerNotes: developerNotes !== undefined ? developerNotes : inq.developerNotes,
             assignedDeveloper: currentUser.name
           };
+          return updatedInquiry;
         }
         return inq;
       })
     );
+
+    if (isSupabaseConfigured && updatedInquiry) {
+      saveSupabaseContactInquiry(updatedInquiry);
+    }
   };
 
   const loginWithGmail = async (
@@ -1152,7 +1229,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     let profileToLogin: StudentProfile | null = null;
 
-    // 1. Try Supabase Auth if configured
     if (isSupabaseConfigured && password) {
       try {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -1163,35 +1239,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (error) {
           console.warn('Supabase sign-in note:', error.message);
         } else if (data?.user) {
-          // Check if profile exists in Supabase DB
-          try {
-            const { data: sbProfile } = await supabase
-              .from('students')
-              .select('*')
-              .or(`id.eq.${data.user.id},email.eq.${cleanEmail}`)
-              .maybeSingle();
+          const { data: sbProfile } = await supabase
+            .from('students')
+            .select('*')
+            .or(`id.eq.${data.user.id},email.eq.${cleanEmail}`)
+            .maybeSingle();
 
-            if (sbProfile) {
-              profileToLogin = sbProfile as StudentProfile;
-            }
-          } catch (sbErr) {
-            console.warn('Supabase profile query note:', sbErr);
+          if (sbProfile) {
+            profileToLogin = sbProfile as StudentProfile;
           }
 
-          // If not in Supabase DB, check local API
-          if (!profileToLogin) {
-            try {
-              const res = await fetch(`/api/students/${data.user.id}`);
-              const student = await res.json();
-              if (student && !student.error) {
-                profileToLogin = student;
-              }
-            } catch {
-              // ignore
-            }
-          }
-
-          // If still not found, construct profile from Supabase user metadata
           if (!profileToLogin) {
             const meta = data.user.user_metadata || {};
             profileToLogin = {
@@ -1231,12 +1288,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               isApproved: true,
               joinedDate: new Date().toISOString().split('T')[0]
             };
-            saveSupabaseStudent(profileToLogin);
-            fetch('/api/students', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(profileToLogin)
-            }).catch(() => {});
+            await saveSupabaseStudent(profileToLogin);
           }
         }
       } catch (e) {
@@ -1244,7 +1296,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    // 2. Check local allStudents by email
     if (!profileToLogin) {
       const matched = allStudents.find(
         s =>
@@ -1263,50 +1314,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
 
-    // 3. Fallback: Check server database directly
-    if (!profileToLogin) {
-      try {
-        const res = await fetch('/api/students');
-        const list: StudentProfile[] = await res.json();
-        if (Array.isArray(list)) {
-          const found = list.find(
-            s =>
-              s.email.toLowerCase().trim() === cleanEmail ||
-              (s.gmailAccount && s.gmailAccount.toLowerCase().trim() === cleanEmail)
-          );
-          if (found) {
-            if (password && found.password && found.password !== password) {
-              return {
-                success: false,
-                message: 'Incorrect password for this account. Please verify credentials.'
-              };
-            }
-            profileToLogin = found;
-          }
-        }
-      } catch {
-        // ignore
-      }
-    }
-
     if (!profileToLogin) {
       return {
         success: false,
-        message: 'No registered student or teacher account found with this email. Please click "Sign Up" to register your account!'
+        message: 'No registered account found with this email. Please click "Sign Up" to register!'
       };
     }
 
-    // Update state synchronously
     setCurrentUser(profileToLogin);
     setIsAuthenticated(true);
     setAllStudents(prev => {
       const exists = prev.some(s => s.id === profileToLogin!.id);
-      return exists ? prev.map(s => s.id === profileToLogin!.id ? profileToLogin! : s) : [profileToLogin!, ...prev];
+      return exists ? prev.map(s => (s.id === profileToLogin!.id ? profileToLogin! : s)) : [profileToLogin!, ...prev];
     });
-
-    localStorage.setItem('opg_current_user_id', profileToLogin.id);
-    localStorage.setItem('opg_current_user', JSON.stringify(profileToLogin));
-    localStorage.setItem('opg_is_authenticated', 'true');
 
     return {
       success: true,
@@ -1423,23 +1443,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setAllStudents(prev => [newProfile, ...prev]);
-    
+
     if (isSupabaseConfigured) {
       await saveSupabaseStudent(newProfile);
     }
 
-    fetch('/api/students', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newProfile)
-    }).catch(e => console.warn('Student profile sync error', e));
-
     setCurrentUser(newProfile);
     setIsAuthenticated(true);
-
-    localStorage.setItem('opg_current_user_id', newProfile.id);
-    localStorage.setItem('opg_current_user', JSON.stringify(newProfile));
-    localStorage.setItem('opg_is_authenticated', 'true');
 
     return { success: true, message: `Account created successfully! Welcome to PeerForge, ${cleanName}.`, user: newProfile };
   };
@@ -1450,28 +1460,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     setIsAuthenticated(false);
     setCurrentUser(null);
-    localStorage.removeItem('opg_current_user_id');
-    localStorage.removeItem('opg_current_user');
-    localStorage.removeItem('opg_is_authenticated');
   };
-
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>(INITIAL_UPLOADED_FILES);
 
   const refreshUploadedFiles = async () => {
-    try {
-      const res = await fetch('/api/uploads');
-      const data = await res.json();
-      if (data.files && Array.isArray(data.files)) {
-        setUploadedFiles(data.files);
-      }
-    } catch (e) {
-      console.warn('Could not refresh uploads from API:', e);
+    if (isSupabaseConfigured) {
+      const files = await fetchSupabaseUploads();
+      if (files) setUploadedFiles(files);
     }
   };
-
-  useEffect(() => {
-    refreshUploadedFiles();
-  }, []);
 
   const uploadFile = async (
     file: File,
@@ -1499,8 +1495,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const data = await res.json();
       if (res.ok && data.file) {
-        setUploadedFiles(prev => [data.file, ...prev]);
-        return { success: true, file: data.file };
+        const uploaded: UploadedFile = data.file;
+        setUploadedFiles(prev => [uploaded, ...prev]);
+        if (isSupabaseConfigured) {
+          saveSupabaseUpload(uploaded);
+        }
+        return { success: true, file: uploaded };
       }
       return { success: false, error: data.error || 'Upload failed' };
     } catch (err: any) {
@@ -1510,23 +1510,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteUploadedFile = async (id: string): Promise<boolean> => {
     try {
-      const res = await fetch(`/api/uploads/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setUploadedFiles(prev => prev.filter(f => f.id !== id));
-        return true;
+      await fetch(`/api/uploads/${id}`, { method: 'DELETE' }).catch(() => {});
+      if (isSupabaseConfigured) {
+        await deleteSupabaseUpload(id);
       }
+      setUploadedFiles(prev => prev.filter(f => f.id !== id));
+      return true;
     } catch (e) {
       console.warn('Delete upload error:', e);
+      setUploadedFiles(prev => prev.filter(f => f.id !== id));
+      return true;
     }
-    setUploadedFiles(prev => prev.filter(f => f.id !== id));
-    return true;
   };
 
-  const unreadNotifsCount = isAuthenticated && currentUser 
-    ? notifications.filter(n => !n.read && (n.userId === currentUser.id || n.userId === 'all')).length 
+  const unreadNotifsCount = isAuthenticated && currentUser
+    ? notifications.filter(n => !n.read && (n.userId === currentUser.id || n.userId === 'all')).length
     : 0;
-  // Assuming messages have a 'read' property or similar mechanism; adjusting to look for messages not from current user
-  const unreadMessagesCount = currentUser ? messages.filter(m => m.senderId !== currentUser.id && !m.readBy?.includes(currentUser.id)).length : 0;
+  const unreadMessagesCount = currentUser
+    ? messages.filter(m => m.senderId !== currentUser.id && !m.readBy?.includes(currentUser.id)).length
+    : 0;
 
   return (
     <AppContext.Provider
@@ -1541,6 +1543,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         conversations,
         messages,
         reports,
+        contactInquiries,
+        uploadedFiles,
         unreadNotifsCount,
         unreadMessagesCount,
         activeTab,
@@ -1583,7 +1587,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updatePassword,
         linkGmailAccount,
         addNewProfile,
-        contactInquiries,
         submitContactInquiry,
         resolveContactInquiry,
         isDeveloperMode,
@@ -1606,7 +1609,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setAuthRole,
         openAuthModal,
         closeAuthModal,
-        uploadedFiles,
         uploadFile,
         deleteUploadedFile,
         refreshUploadedFiles

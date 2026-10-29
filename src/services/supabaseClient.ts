@@ -9,6 +9,7 @@ import {
   Conversation,
   Message,
   ContentReport,
+  ContactInquiry,
   UploadedFile
 } from '../types';
 
@@ -35,10 +36,10 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 /**
  * Supabase Data Service Layer for PeerForge OPG World School Platform
- * Handles table synchronization, real-time channels, and robust local/remote fallbacks.
- * Optimizes Free Tier resource consumption by preventing base64 blob storage and trimming payloads.
+ * Handles table synchronization, real-time channels, and fallback handling.
  */
 
+// --- STUDENTS ---
 export async function fetchSupabaseStudents(): Promise<StudentProfile[] | null> {
   if (!isSupabaseConfigured) return null;
   try {
@@ -64,6 +65,7 @@ export async function saveSupabaseStudent(student: StudentProfile): Promise<bool
   }
 }
 
+// --- PROJECTS ---
 export async function fetchSupabaseProjects(): Promise<Project[] | null> {
   if (!isSupabaseConfigured) return null;
   try {
@@ -88,6 +90,7 @@ export async function saveSupabaseProject(project: Project): Promise<boolean> {
   }
 }
 
+// --- QUESTIONS ---
 export async function fetchSupabaseQuestions(): Promise<Question[] | null> {
   if (!isSupabaseConfigured) return null;
   try {
@@ -112,6 +115,7 @@ export async function saveSupabaseQuestion(question: Question): Promise<boolean>
   }
 }
 
+// --- ANSWERS ---
 export async function fetchSupabaseAnswers(questionId?: string): Promise<Answer[] | null> {
   if (!isSupabaseConfigured) return null;
   try {
@@ -140,13 +144,15 @@ export async function saveSupabaseAnswer(answer: Answer): Promise<boolean> {
   }
 }
 
-export async function fetchSupabaseConversations(userId: string): Promise<Conversation[] | null> {
+// --- CONVERSATIONS ---
+export async function fetchSupabaseConversations(userId?: string): Promise<Conversation[] | null> {
   if (!isSupabaseConfigured) return null;
   try {
-    const { data, error } = await supabase
-      .from('conversations')
-      .select('*')
-      .contains('participantIds', [userId]);
+    let query = supabase.from('conversations').select('*');
+    if (userId) {
+      query = query.contains('participantIds', [userId]);
+    }
+    const { data, error } = await query;
     if (error) throw error;
     return data as Conversation[];
   } catch (err) {
@@ -167,14 +173,15 @@ export async function saveSupabaseConversation(conversation: Conversation): Prom
   }
 }
 
-export async function fetchSupabaseMessages(conversationId: string): Promise<Message[] | null> {
+// --- MESSAGES ---
+export async function fetchSupabaseMessages(conversationId?: string): Promise<Message[] | null> {
   if (!isSupabaseConfigured) return null;
   try {
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('conversationId', conversationId)
-      .order('timestamp', { ascending: true });
+    let query = supabase.from('messages').select('*');
+    if (conversationId) {
+      query = query.eq('conversationId', conversationId);
+    }
+    const { data, error } = await query.order('timestamp', { ascending: true });
     if (error) throw error;
     return data as Message[];
   } catch (err) {
@@ -199,9 +206,60 @@ export async function saveSupabaseMessage(message: Message): Promise<boolean> {
   }
 }
 
-/**
- * Prunes read notifications older than 14 days or in excess of 30 to prevent row explosion
- */
+// --- EVENTS ---
+export async function fetchSupabaseEvents(): Promise<SchoolEvent[] | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const { data, error } = await supabase.from('events').select('*');
+    if (error) throw error;
+    return data as SchoolEvent[];
+  } catch (err) {
+    console.warn('Supabase fetch events error:', err);
+    return null;
+  }
+}
+
+export async function saveSupabaseEvent(event: SchoolEvent): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const { error } = await supabase.from('events').upsert(event);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase save event error:', err);
+    return false;
+  }
+}
+
+// --- NOTIFICATIONS ---
+export async function fetchSupabaseNotifications(userId?: string): Promise<AppNotification[] | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    let query = supabase.from('notifications').select('*');
+    if (userId) {
+      query = query.or(`userId.eq.${userId},userId.eq.all`);
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    return data as AppNotification[];
+  } catch (err) {
+    console.warn('Supabase fetch notifications error:', err);
+    return null;
+  }
+}
+
+export async function saveSupabaseNotification(notification: AppNotification): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const { error } = await supabase.from('notifications').upsert(notification);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase save notification error:', err);
+    return false;
+  }
+}
+
 export async function pruneSupabaseNotifications(userId: string): Promise<void> {
   if (!isSupabaseConfigured) return;
   try {
@@ -221,6 +279,57 @@ export async function pruneSupabaseNotifications(userId: string): Promise<void> 
   }
 }
 
+// --- REPORTS ---
+export async function fetchSupabaseReports(): Promise<ContentReport[] | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const { data, error } = await supabase.from('reports').select('*');
+    if (error) throw error;
+    return data as ContentReport[];
+  } catch (err) {
+    console.warn('Supabase fetch reports error:', err);
+    return null;
+  }
+}
+
+export async function saveSupabaseReport(report: ContentReport): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const { error } = await supabase.from('reports').upsert(report);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase save report error:', err);
+    return false;
+  }
+}
+
+// --- CONTACT INQUIRIES ---
+export async function fetchSupabaseContactInquiries(): Promise<ContactInquiry[] | null> {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const { data, error } = await supabase.from('contact_inquiries').select('*');
+    if (error) throw error;
+    return data as ContactInquiry[];
+  } catch (err) {
+    console.warn('Supabase fetch contact inquiries error:', err);
+    return null;
+  }
+}
+
+export async function saveSupabaseContactInquiry(inquiry: ContactInquiry): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const { error } = await supabase.from('contact_inquiries').upsert(inquiry);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase save contact inquiry error:', err);
+    return false;
+  }
+}
+
+// --- UPLOADED FILES ---
 export async function fetchSupabaseUploads(): Promise<UploadedFile[] | null> {
   if (!isSupabaseConfigured) return null;
   try {
@@ -243,4 +352,38 @@ export async function saveSupabaseUpload(file: UploadedFile): Promise<boolean> {
     console.warn('Supabase save upload error:', err);
     return false;
   }
+}
+
+export async function deleteSupabaseUpload(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const { error } = await supabase.from('uploaded_files').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase delete upload error:', err);
+    return false;
+  }
+}
+
+/**
+ * Setup Real-time Supabase subscriptions for live updates across all clients.
+ */
+export function subscribeToSupabaseRealtime(table: string, onChange: (payload: any) => void) {
+  if (!isSupabaseConfigured) return () => {};
+
+  const channel = supabase
+    .channel(`public:${table}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table },
+      (payload) => {
+        onChange(payload);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }
