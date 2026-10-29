@@ -764,6 +764,27 @@ app.post('/api/questions', (req: Request, res: Response) => {
   res.status(201).json(newQuestion);
 });
 
+app.delete('/api/questions/:id', (req: Request, res: Response) => {
+  const qIndex = db.questions.findIndex(item => item.id === req.params.id);
+  if (qIndex === -1) {
+    return res.status(404).json({ error: 'Question not found' });
+  }
+
+  const { requesterId } = req.body || {};
+  const targetQ = db.questions[qIndex];
+  if (requesterId && targetQ.authorId !== requesterId) {
+    const requester = db.students.find(s => s.id === requesterId);
+    if (!requester || requester.role !== 'developer') {
+      return res.status(403).json({ error: 'Only the author who posted this question can delete it.' });
+    }
+  }
+
+  db.questions.splice(qIndex, 1);
+  db.answers = db.answers.filter(a => a.questionId !== req.params.id);
+
+  res.json({ success: true, message: 'Question and associated answers successfully deleted' });
+});
+
 app.get('/api/questions/:id/answers', (req: Request, res: Response) => {
   const answers = db.answers.filter(a => a.questionId === req.params.id);
   res.json(answers);
@@ -806,6 +827,33 @@ app.post('/api/questions/:id/answers', (req: Request, res: Response) => {
   }
 
   res.status(201).json(newAnswer);
+});
+
+app.delete('/api/answers/:id', (req: Request, res: Response) => {
+  const ansIndex = db.answers.findIndex(a => a.id === req.params.id);
+  if (ansIndex === -1) {
+    return res.status(404).json({ error: 'Answer not found' });
+  }
+
+  const { requesterId } = req.body || {};
+  const targetAns = db.answers[ansIndex];
+  if (requesterId && targetAns.authorId !== requesterId) {
+    const requester = db.students.find(s => s.id === requesterId);
+    if (!requester || requester.role !== 'developer') {
+      return res.status(403).json({ error: 'Only the author who posted this answer can delete it.' });
+    }
+  }
+
+  const q = db.questions.find(item => item.id === targetAns.questionId);
+  if (q) {
+    q.answersCount = Math.max(0, (q.answersCount || 1) - 1);
+    if (q.acceptedAnswerId === targetAns.id) {
+      delete q.acceptedAnswerId;
+    }
+  }
+
+  db.answers.splice(ansIndex, 1);
+  res.json({ success: true, message: 'Answer deleted successfully' });
 });
 
 app.post('/api/answers/:id/upvote', (req: Request, res: Response) => {

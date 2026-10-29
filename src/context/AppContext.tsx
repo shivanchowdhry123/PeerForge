@@ -32,6 +32,7 @@ import {
   saveSupabaseStudent,
   saveSupabaseProject,
   saveSupabaseQuestion,
+  deleteSupabaseQuestion,
   saveSupabaseAnswer,
   saveSupabaseMessage,
   saveSupabaseConversation,
@@ -95,6 +96,7 @@ interface AppContextType {
   handleProjectApplication: (projectId: string, appId: string, action: 'accepted' | 'rejected') => void;
   toggleProjectTask: (projectId: string, taskId: string) => void;
   askQuestion: (newQ: Partial<Question>) => Promise<Question>;
+  deleteQuestion: (questionId: string) => Promise<boolean>;
   postAnswer: (questionId: string, body: string) => void;
   upvoteAnswer: (answerId: string) => void;
   acceptAnswer: (questionId: string, answerId: string) => void;
@@ -886,6 +888,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return q;
   };
 
+  const deleteQuestion = async (questionId: string): Promise<boolean> => {
+    if (!currentUser) return false;
+
+    // Remove question
+    setQuestions(prev => prev.filter(q => q.id !== questionId));
+
+    // Remove associated answers
+    setAnswers(prev => prev.filter(a => a.questionId !== questionId));
+
+    // If currently viewing details of this question, exit detail view
+    setSelectedQuestionForDetail(prev => (prev?.id === questionId ? null : prev));
+
+    if (isSupabaseConfigured) {
+      await deleteSupabaseQuestion(questionId);
+    }
+    return true;
+  };
+
   const postAnswer = (questionId: string, body: string) => {
     if (!body.trim() || !currentUser) return;
 
@@ -1573,6 +1593,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         developerAcceptApplication,
         toggleProjectTask,
         askQuestion,
+        deleteQuestion,
         postAnswer,
         upvoteAnswer,
         acceptAnswer,

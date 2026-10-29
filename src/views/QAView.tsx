@@ -15,7 +15,8 @@ import {
   Share2,
   Send,
   BookOpen,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 
 export const QAView: React.FC = () => {
@@ -26,6 +27,7 @@ export const QAView: React.FC = () => {
     selectedQuestionForDetail,
     setSelectedQuestionForDetail,
     askQuestion,
+    deleteQuestion,
     postAnswer,
     upvoteAnswer,
     acceptAnswer,
@@ -36,18 +38,16 @@ export const QAView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState<'newest' | 'discussed' | 'unanswered'>('newest');
 
+  // Delete question modal state
+  const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Ask Question Modal state
   const [isAskModalOpen, setIsAskModalOpen] = useState(false);
   const [qTitle, setQTitle] = useState('');
   const [qBody, setQBody] = useState('');
   const [qTopic, setQTopic] = useState('Computer Science');
   const [qTags, setQTags] = useState('Python, Robotics');
-  const [isAnalyzingWithAI, setIsAnalyzingWithAI] = useState(false);
-  const [aiSuggestions, setAiSuggestions] = useState<{
-    suggestedTags: string[];
-    clarityTips: string;
-    similarExistingQuestions: any[];
-  } | null>(null);
 
   // New answer input state
   const [answerInput, setAnswerInput] = useState('');
@@ -63,27 +63,6 @@ export const QAView: React.FC = () => {
     'Academic Exploration'
   ];
 
-  // AI Assistance check when title blur
-  const handleCheckQuestionAI = async () => {
-    if (!qTitle.trim() || qTitle.length < 8) return;
-    setIsAnalyzingWithAI(true);
-    try {
-      const res = await fetch('/api/ai/question-assistant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: qTitle, body: qBody })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setAiSuggestions(data);
-      }
-    } catch (e) {
-      console.warn('AI question assistant error', e);
-    } finally {
-      setIsAnalyzingWithAI(false);
-    }
-  };
-
   const handleAskSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!qTitle.trim() || !qBody.trim()) return;
@@ -98,7 +77,6 @@ export const QAView: React.FC = () => {
 
     setQTitle('');
     setQBody('');
-    setAiSuggestions(null);
     setIsAskModalOpen(false);
     setSelectedQuestionForDetail(newQ);
   };
@@ -152,20 +130,38 @@ export const QAView: React.FC = () => {
           {/* Question Card */}
           <div className="p-6 sm:p-8 rounded-3xl bg-[var(--bg-surface)]/90 border border-[var(--border-color)] shadow-md backdrop-blur-md space-y-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+              <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] flex-wrap">
                 <span className="font-semibold text-blue-600 dark:text-blue-400">{selectedQuestionForDetail.topic}</span>
                 <span>·</span>
                 <span className="text-[var(--text-secondary)]">Asked by {selectedQuestionForDetail.authorName} ({selectedQuestionForDetail.authorGrade})</span>
                 <span>·</span>
                 <span className="num-tabular">{selectedQuestionForDetail.createdAt}</span>
+                {currentUser && selectedQuestionForDetail.authorId === currentUser.id && (
+                  <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[11px] font-semibold border border-blue-500/20">
+                    Your Question
+                  </span>
+                )}
               </div>
 
-              {selectedQuestionForDetail.acceptedAnswerId && (
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Verified Solution</span>
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {selectedQuestionForDetail.acceptedAnswerId && (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Verified Solution</span>
+                  </span>
+                )}
+
+                {currentUser && (currentUser.id === selectedQuestionForDetail.authorId || currentUser.role === 'developer' || currentUser.role === 'admin' || currentUser.role === 'teacher') && (
+                  <button
+                    onClick={() => setQuestionToDelete(selectedQuestionForDetail)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 transition-all cursor-pointer shadow-xs"
+                    title="Delete your question"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Question</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-[var(--text-primary)] tracking-tight">
@@ -404,58 +400,96 @@ export const QAView: React.FC = () => {
                 </button>
               </div>
             ) : (
-              filteredQuestions.map(q => (
-                <div
-                  key={q.id}
-                  onClick={() => setSelectedQuestionForDetail(q)}
-                  className="p-5 sm:p-6 rounded-3xl bg-[var(--bg-surface)]/85 hover:bg-[var(--bg-surface)] border border-[var(--border-color)] hover:border-blue-400/50 dark:hover:border-blue-500/50 transition-all shadow-xs hover:shadow-md hover:-translate-y-0.5 cursor-pointer group space-y-3 backdrop-blur-md"
-                >
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-                      <span className="font-semibold text-blue-600 dark:text-blue-400">{q.topic}</span>
-                      <span>·</span>
-                      <span>{q.authorName} ({q.authorGrade})</span>
-                      <span>·</span>
-                      <span className="num-tabular">{q.createdAt}</span>
+              filteredQuestions.map(q => {
+                const isAuthor = Boolean(currentUser && currentUser.id === q.authorId);
+                const canDelete = Boolean(
+                  currentUser &&
+                  (isAuthor || currentUser.role === 'developer' || currentUser.role === 'admin' || currentUser.role === 'teacher')
+                );
+
+                return (
+                  <div
+                    key={q.id}
+                    onClick={() => setSelectedQuestionForDetail(q)}
+                    className={`p-5 sm:p-6 rounded-3xl bg-[var(--bg-surface)]/90 hover:bg-[var(--bg-surface)] border transition-all duration-200 shadow-xs hover:shadow-lg hover:-translate-y-0.5 cursor-pointer group space-y-3.5 backdrop-blur-md relative overflow-hidden ${
+                      isAuthor
+                        ? 'border-blue-500/35 hover:border-blue-500/70 dark:border-blue-500/30 dark:hover:border-blue-400/60'
+                        : 'border-[var(--border-color)] hover:border-blue-400/50 dark:hover:border-blue-500/50'
+                    }`}
+                  >
+                    {/* Top subtle highlight accent on hover */}
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500/0 via-blue-500/50 to-indigo-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] flex-wrap">
+                        <span className="font-semibold text-blue-600 dark:text-blue-400">{q.topic}</span>
+                        <span>·</span>
+                        <span className="font-medium text-[var(--text-secondary)]">{q.authorName} ({q.authorGrade})</span>
+                        <span>·</span>
+                        <span className="num-tabular">{q.createdAt}</span>
+                        {isAuthor && (
+                          <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold border border-blue-500/25">
+                            Your Question
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {q.acceptedAnswerId && (
+                          <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                            <span>Solved</span>
+                          </span>
+                        )}
+
+                        {canDelete && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setQuestionToDelete(q);
+                            }}
+                            className="p-1.5 sm:px-2.5 sm:py-1 rounded-xl text-rose-600 dark:text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                            title="Delete this question"
+                            aria-label="Delete question"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Delete</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    {q.acceptedAnswerId && (
-                      <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                        <span>Solved</span>
-                      </span>
-                    )}
-                  </div>
+                    <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
+                      {q.title}
+                    </h3>
 
-                  <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                    {q.title}
-                  </h3>
+                    <p className="text-xs sm:text-sm text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
+                      {q.body}
+                    </p>
 
-                  <p className="text-xs sm:text-sm text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
-                    {q.body}
-                  </p>
+                    <div className="flex items-center justify-between pt-2.5 border-t border-[var(--border-color)]/60 text-xs">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {q.tags.map((tag, tIdx) => (
+                          <span
+                            key={tIdx}
+                            className="px-2.5 py-0.5 rounded-lg bg-[var(--bg-subtle)] text-[10px] font-medium text-[var(--text-secondary)] border border-[var(--border-color)]/80 hover:border-blue-400/40 transition-colors"
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-[var(--border-color)]/60 text-xs">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {q.tags.map((tag, tIdx) => (
-                        <span
-                          key={tIdx}
-                          className="px-2 py-0.5 rounded-md bg-[var(--bg-subtle)] text-[10px] font-medium text-[var(--text-secondary)] border border-[var(--border-color)]"
-                        >
-                          #{tag}
+                      <div className="flex items-center gap-3 text-[var(--text-muted)] text-xs font-semibold num-tabular">
+                        <span className="flex items-center gap-1.5 group-hover:text-blue-600 transition-colors bg-[var(--bg-subtle)] px-2.5 py-1 rounded-xl border border-[var(--border-color)]/60">
+                          <MessageSquare className="w-3.5 h-3.5 text-blue-500" />
+                          <span>{q.answersCount} {q.answersCount === 1 ? 'answer' : 'answers'}</span>
                         </span>
-                      ))}
-                    </div>
-
-                    <div className="flex items-center gap-3 text-[var(--text-muted)] text-xs font-semibold num-tabular">
-                      <span className="flex items-center gap-1 group-hover:text-blue-600 transition-colors">
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span>{q.answersCount} {q.answersCount === 1 ? 'answer' : 'answers'}</span>
-                      </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -496,58 +530,10 @@ export const QAView: React.FC = () => {
                   placeholder="e.g. How do you implement PID control on Arduino for line tracking?"
                   value={qTitle}
                   onChange={e => setQTitle(e.target.value)}
-                  onBlur={handleCheckQuestionAI}
                   className="w-full px-4 py-2.5 text-xs sm:text-sm rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-blue-500 transition-all"
                   required
                 />
               </div>
-
-              {/* AI Assistant feedback box */}
-              {isAnalyzingWithAI ? (
-                <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-700 dark:text-purple-300 flex items-center gap-2">
-                  <div className="w-3.5 h-3.5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
-                  <span>AI Assistant checking for similar questions & suggestions...</span>
-                </div>
-              ) : (
-                aiSuggestions && (
-                  <div className="p-4 rounded-2xl bg-purple-500/8 border border-purple-500/20 space-y-2 text-xs">
-                    <div className="flex items-center gap-1.5 font-bold text-purple-700 dark:text-purple-300">
-                      <Sparkles className="w-3.5 h-3.5 text-purple-500" />
-                      <span>AI Question Coach</span>
-                    </div>
-                    <p className="text-[var(--text-secondary)]">{aiSuggestions.clarityTips}</p>
-
-                    {aiSuggestions.suggestedTags && (
-                      <div className="flex items-center gap-1.5 pt-1 flex-wrap">
-                        <span className="font-semibold text-purple-700 dark:text-purple-300">Suggested tags:</span>
-                        {aiSuggestions.suggestedTags.map((t, idx) => (
-                          <button
-                            type="button"
-                            key={idx}
-                            onClick={() => setQTags(prev => (prev ? `${prev}, ${t}` : t))}
-                            className="px-2 py-0.5 rounded-md bg-[var(--bg-surface)] text-[10px] text-purple-700 dark:text-purple-300 border border-purple-300/40 font-medium cursor-pointer"
-                          >
-                            +{t}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {aiSuggestions.similarExistingQuestions?.length > 0 && (
-                      <div className="pt-2 border-t border-purple-200/40 dark:border-purple-800/40">
-                        <span className="font-semibold text-purple-700 dark:text-purple-300">
-                          Similar existing questions:
-                        </span>
-                        <ul className="list-disc pl-4 mt-1 text-[11px] text-[var(--text-secondary)] space-y-0.5">
-                          {aiSuggestions.similarExistingQuestions.map((sq, i) => (
-                            <li key={i}>{sq.title}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                )
-              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -619,6 +605,60 @@ export const QAView: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Question Confirmation Modal */}
+      {questionToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[var(--bg-surface)] rounded-3xl max-w-md w-full p-6 sm:p-7 border border-[var(--border-color)] shadow-2xl space-y-4 animate-in fade-in zoom-in-95 backdrop-blur-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/25">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[var(--text-primary)]">Delete Question?</h3>
+                <p className="text-xs text-[var(--text-muted)]">This will permanently delete your question.</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-xs space-y-1">
+              <p className="font-semibold text-[var(--text-primary)] line-clamp-2">"{questionToDelete.title}"</p>
+              <p className="text-[11px] text-[var(--text-muted)]">
+                {questionToDelete.answersCount > 0
+                  ? `Also deletes ${questionToDelete.answersCount} peer ${questionToDelete.answersCount === 1 ? 'answer' : 'answers'} attached to this question.`
+                  : 'No peer answers posted yet.'}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setQuestionToDelete(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-subtle)] hover:bg-[var(--bg-muted)] border border-[var(--border-color)] transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={async () => {
+                  setIsDeleting(true);
+                  try {
+                    await deleteQuestion(questionToDelete.id);
+                  } finally {
+                    setIsDeleting(false);
+                    setQuestionToDelete(null);
+                  }
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeleting ? 'Deleting...' : 'Delete Permanently'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

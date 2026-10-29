@@ -115,6 +115,19 @@ export async function saveSupabaseQuestion(question: Question): Promise<boolean>
   }
 }
 
+export async function deleteSupabaseQuestion(questionId: string): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    await supabase.from('answers').delete().eq('questionId', questionId);
+    const { error } = await supabase.from('questions').delete().eq('id', questionId);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase delete question error:', err);
+    return false;
+  }
+}
+
 // --- ANSWERS ---
 export async function fetchSupabaseAnswers(questionId?: string): Promise<Answer[] | null> {
   if (!isSupabaseConfigured) return null;

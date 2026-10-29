@@ -17,7 +17,8 @@ import {
   MessageSquare,
   Award,
   Lightbulb,
-  ShieldCheck
+  ShieldCheck,
+  Trash2
 } from 'lucide-react';
 
 export const ProjectsView: React.FC = () => {
@@ -53,14 +54,33 @@ export const ProjectsView: React.FC = () => {
   const [projTitle, setProjTitle] = useState('');
   const [projDesc, setProjDesc] = useState('');
   const [projCategory, setProjCategory] = useState('Robotics & Hardware');
-  const [projSkills, setProjSkills] = useState('Python, Arduino, 3D CAD');
   const [projDeadline, setProjDeadline] = useState('2026-11-30');
-  const [roleTitle1, setRoleTitle1] = useState('Hardware Engineer');
-  const [roleTitle2, setRoleTitle2] = useState('UI / Poster Designer');
+  
+  // Dynamic Open Roles with individual required skill
+  const [projectRoles, setProjectRoles] = useState<Array<{ id: string; title: string; requiredSkill: string }>>([
+    { id: '1', title: 'Hardware Lead', requiredSkill: 'Arduino & Circuit Prototyping' },
+    { id: '2', title: 'Software Developer', requiredSkill: 'Python & Computer Vision' }
+  ]);
 
-  // AI Brainstorming inside modal
-  const [isBrainstorming, setIsBrainstorming] = useState(false);
-  const [brainstormIdea, setBrainstormIdea] = useState('');
+  const handleAddProjectRole = () => {
+    setProjectRoles(prev => [
+      ...prev,
+      { id: `${Date.now()}-${prev.length + 1}`, title: '', requiredSkill: '' }
+    ]);
+  };
+
+  const handleRemoveProjectRole = (index: number) => {
+    if (projectRoles.length <= 1) return;
+    setProjectRoles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleProjectRoleChange = (index: number, field: 'title' | 'requiredSkill', value: string) => {
+    setProjectRoles(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
 
   // Apply to role modal
   const [applyModalRole, setApplyModalRole] = useState<{ role: ProjectRole; project: Project } | null>(null);
@@ -75,63 +95,40 @@ export const ProjectsView: React.FC = () => {
     'General Innovation'
   ];
 
-  const handleBrainstormWithAI = async () => {
-    if (!brainstormIdea.trim()) return;
-    setIsBrainstorming(true);
-    try {
-      const res = await fetch('/api/ai/brainstorm-project', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idea: brainstormIdea, category: projCategory })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.projectTitle) setProjTitle(data.projectTitle);
-        if (data.refinedDescription) setProjDesc(data.refinedDescription);
-        if (data.recommendedRoles && data.recommendedRoles.length >= 2) {
-          setRoleTitle1(data.recommendedRoles[0].roleTitle);
-          setRoleTitle2(data.recommendedRoles[1].roleTitle);
-          setProjSkills(data.recommendedRoles.map((r: any) => r.requiredSkill).join(', '));
-        }
-      }
-    } catch (e) {
-      console.warn('AI brainstorm error', e);
-    } finally {
-      setIsBrainstorming(false);
-    }
-  };
-
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!projTitle.trim() || !projDesc.trim()) return;
 
-    const skillsArray = projSkills.split(',').map(s => s.trim()).filter(Boolean);
+    // Filter valid roles (at least has a title)
+    const validRoles = projectRoles.filter(r => r.title.trim());
+    const finalRoles = (validRoles.length > 0 ? validRoles : projectRoles).map((r, idx) => ({
+      id: `role-${Date.now()}-${idx + 1}`,
+      title: r.title.trim() || `Team Role #${idx + 1}`,
+      requiredSkill: r.requiredSkill.trim() || 'General Collaboration',
+      status: 'open' as const
+    }));
+
+    // Aggregate unique skills from each role for project-level indexing and tags
+    const aggregatedSkills = Array.from(
+      new Set(finalRoles.map(r => r.requiredSkill).filter(Boolean))
+    );
+
     createProject({
       title: projTitle.trim(),
       description: projDesc.trim(),
       category: projCategory,
       deadline: projDeadline,
-      requiredSkills: skillsArray,
-      openRoles: [
-        {
-          id: `role-${Date.now()}-1`,
-          title: roleTitle1 || 'Core Developer',
-          requiredSkill: skillsArray[0] || 'Technical',
-          status: 'open'
-        },
-        {
-          id: `role-${Date.now()}-2`,
-          title: roleTitle2 || 'Designer / Documenter',
-          requiredSkill: skillsArray[1] || 'Design',
-          status: 'open'
-        }
-      ]
+      requiredSkills: aggregatedSkills.length > 0 ? aggregatedSkills : ['STEM Collaboration'],
+      openRoles: finalRoles
     });
 
     setIsCreateModalOpen(false);
     setProjTitle('');
     setProjDesc('');
-    setBrainstormIdea('');
+    setProjectRoles([
+      { id: '1', title: 'Hardware Lead', requiredSkill: 'Arduino & Circuit Prototyping' },
+      { id: '2', title: 'Software Developer', requiredSkill: 'Python & Computer Vision' }
+    ]);
   };
 
   const handleApplySubmit = (e: React.FormEvent) => {
@@ -750,51 +747,41 @@ export const ProjectsView: React.FC = () => {
         </div>
       )}
 
-      {/* Create Project Modal with AI Brainstormer */}
+      {/* Create Project Modal */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[var(--bg-surface)] rounded-3xl max-w-2xl w-full p-6 sm:p-8 border border-[var(--border-color)] shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FolderKanban className="w-5 h-5 text-blue-600" />
-                <h3 className="text-lg font-bold text-[var(--text-primary)]">
-                  Launch a Student Project
-                </h3>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[var(--bg-surface)] rounded-3xl max-w-2xl w-full p-6 sm:p-8 border border-[var(--border-color)] shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 backdrop-blur-xl">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--border-color)]">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <FolderKanban className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-[var(--text-primary)]">
+                    Launch a Student Project
+                  </h3>
+                  <p className="text-[11px] text-[var(--text-muted)]">Post an initiative and assemble your team across Classes 9–12</p>
+                </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsCreateModalOpen(false)}
-                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-sm font-semibold"
+                className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer"
+                aria-label="Close modal"
               >
                 ✕
               </button>
             </div>
 
-            {/* AI Brainstorming Helper Box */}
-            <div className="p-4 rounded-2xl bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 space-y-2.5">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-purple-800 dark:text-purple-300">
-                <Sparkles className="w-4 h-4 text-purple-600" />
-                <span>AI Project Brainstormer & Role Planner</span>
+            {/* Project Collaboration Guidelines */}
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-transparent border border-blue-500/20 text-xs space-y-1 backdrop-blur-sm">
+              <div className="flex items-center gap-2 font-bold text-blue-700 dark:text-blue-300">
+                <FolderKanban className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span>OPG World School Project Guidelines</span>
               </div>
-              <p className="text-[11px] text-purple-900 dark:text-purple-200">
-                Have a rough idea? Enter a few words and our AI will suggest project scope, required skills, and key roles!
+              <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                Outline your project goals, required skills, and specific roles. Interested peers can apply directly with their profile credentials.
               </p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="e.g. Solar powered hydroponic herbs garden for the school cafeteria..."
-                  value={brainstormIdea}
-                  onChange={e => setBrainstormIdea(e.target.value)}
-                  className="flex-1 px-3 py-1.5 text-xs rounded-xl bg-white dark:bg-slate-800 border border-purple-200 dark:border-purple-700 text-[var(--text-primary)] focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleBrainstormWithAI}
-                  disabled={isBrainstorming || !brainstormIdea.trim()}
-                  className="px-4 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold shrink-0 disabled:opacity-50"
-                >
-                  {isBrainstorming ? 'Planning...' : 'Brainstorm'}
-                </button>
-              </div>
             </div>
 
             <form onSubmit={handleCreateSubmit} className="space-y-3.5">
@@ -857,44 +844,89 @@ export const ProjectsView: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
-                  Required Skills (comma separated):
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Python, OpenCV, Arduino, 3D CAD"
-                  value={projSkills}
-                  onChange={e => setProjSkills(e.target.value)}
-                  className="w-full px-3.5 py-2 text-xs rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none"
-                />
-              </div>
+              {/* Open Roles & Individual Role Required Skills */}
+              <div className="space-y-3 pt-1">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-bold text-[var(--text-primary)] block">
+                      Team Roles & Required Skills
+                    </label>
+                    <p className="text-[11px] text-[var(--text-muted)]">
+                      Specify each position and the skill required so matching peers can apply.
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
+                    {projectRoles.length} {projectRoles.length === 1 ? 'Role' : 'Roles'}
+                  </span>
+                </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
-                    Open Role #1:
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Hardware Lead"
-                    value={roleTitle1}
-                    onChange={e => setRoleTitle1(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none"
-                  />
+                <div className="space-y-3">
+                  {projectRoles.map((role, idx) => (
+                    <div
+                      key={role.id || idx}
+                      className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-subtle)]/70 border border-[var(--border-color)] space-y-3 transition-all hover:border-[var(--border-hover)]"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5 text-blue-500" />
+                          <span>Open Role #{idx + 1}</span>
+                        </span>
+
+                        {projectRoles.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveProjectRole(idx)}
+                            className="text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:text-rose-700 hover:bg-rose-500/10 px-2 py-0.5 rounded-lg border border-transparent hover:border-rose-500/20 transition-all flex items-center gap-1 cursor-pointer"
+                            title="Remove this role"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Remove</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">
+                            Role Title:
+                          </label>
+                          <input
+                            type="text"
+                            placeholder={idx === 0 ? "e.g. Hardware Lead" : idx === 1 ? "e.g. Software Developer" : "e.g. Researcher / UI Designer"}
+                            value={role.title}
+                            onChange={e => handleProjectRoleChange(idx, 'title', e.target.value)}
+                            className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-blue-500 transition-all"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">
+                            Required Skill for this Role:
+                          </label>
+                          <input
+                            type="text"
+                            placeholder={idx === 0 ? "e.g. Arduino & Microcontrollers" : idx === 1 ? "e.g. Python & Computer Vision" : "e.g. 3D Modeling / Public Speaking"}
+                            value={role.requiredSkill}
+                            onChange={e => handleProjectRoleChange(idx, 'requiredSkill', e.target.value)}
+                            className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-blue-500 transition-all"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
-                    Open Role #2:
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Graphic Designer"
-                    value={roleTitle2}
-                    onChange={e => setRoleTitle2(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none"
-                  />
-                </div>
+
+                {/* Add Another Role Button */}
+                <button
+                  type="button"
+                  onClick={handleAddProjectRole}
+                  className="w-full py-2.5 px-4 rounded-2xl border-2 border-dashed border-blue-500/30 hover:border-blue-500/60 bg-blue-500/5 hover:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs group"
+                >
+                  <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                  <span>Add Another Role</span>
+                </button>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3">
