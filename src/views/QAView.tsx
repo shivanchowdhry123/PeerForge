@@ -29,6 +29,7 @@ export const QAView: React.FC = () => {
     askQuestion,
     deleteQuestion,
     postAnswer,
+    deleteAnswer,
     upvoteAnswer,
     acceptAnswer,
     openAuthModal
@@ -38,8 +39,9 @@ export const QAView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState<'newest' | 'discussed' | 'unanswered'>('newest');
 
-  // Delete question modal state
+  // Delete question & answer modal state
   const [questionToDelete, setQuestionToDelete] = useState<Question | null>(null);
+  const [answerToDelete, setAnswerToDelete] = useState<Answer | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Ask Question Modal state
@@ -199,21 +201,28 @@ export const QAView: React.FC = () => {
 
             {currentAnswers.map(ans => {
               const isAccepted = ans.isAccepted;
+              const isAnsAuthor = Boolean(currentUser && currentUser.id === ans.authorId);
               const canAccept =
                 currentUser &&
                 selectedQuestionForDetail.authorId === currentUser.id &&
                 !selectedQuestionForDetail.acceptedAnswerId;
+              const canDeleteAns = Boolean(
+                currentUser &&
+                (isAnsAuthor || currentUser.role === 'developer' || currentUser.role === 'admin' || currentUser.role === 'teacher')
+              );
 
               return (
                 <div
                   key={ans.id}
-                  className={`p-6 rounded-3xl transition-all space-y-4 backdrop-blur-md ${
+                  className={`p-6 rounded-3xl transition-all space-y-4 backdrop-blur-md relative overflow-hidden ${
                     isAccepted
-                      ? 'border-2 border-emerald-500/30 bg-emerald-500/5 shadow-md'
+                      ? 'border-2 border-emerald-500/40 bg-emerald-500/5 shadow-md'
+                      : isAnsAuthor
+                      ? 'border border-blue-500/35 bg-[var(--bg-surface)]/90 shadow-xs'
                       : 'border border-[var(--border-color)] bg-[var(--bg-surface)]/85 shadow-xs'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-3">
                       <img
                         src={ans.authorAvatar}
@@ -222,28 +231,50 @@ export const QAView: React.FC = () => {
                         referrerPolicy="no-referrer"
                       />
                       <div>
-                        <span className="text-xs font-bold text-[var(--text-primary)] block">
-                          {ans.authorName}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-bold text-[var(--text-primary)] block">
+                            {ans.authorName}
+                          </span>
+                          {isAnsAuthor && (
+                            <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold border border-blue-500/20">
+                              Your Answer
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-[var(--text-muted)] num-tabular">
                           {ans.authorGrade} · {ans.createdAt}
                         </span>
                       </div>
                     </div>
 
-                    {isAccepted ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-500/30">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>Accepted Solution</span>
-                      </span>
-                    ) : canAccept ? (
-                      <button
-                        onClick={() => acceptAnswer(selectedQuestionForDetail.id, ans.id)}
-                        className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 bg-emerald-500/10 hover:bg-emerald-500/20 px-3.5 py-1.5 rounded-xl border border-emerald-500/30 transition-colors cursor-pointer"
-                      >
-                        Accept this Answer
-                      </button>
-                    ) : null}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {isAccepted ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-500/30">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Accepted Solution</span>
+                        </span>
+                      ) : canAccept ? (
+                        <button
+                          onClick={() => acceptAnswer(selectedQuestionForDetail.id, ans.id)}
+                          className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 bg-emerald-500/10 hover:bg-emerald-500/20 px-3.5 py-1.5 rounded-xl border border-emerald-500/30 transition-colors cursor-pointer"
+                        >
+                          Accept this Answer
+                        </button>
+                      ) : null}
+
+                      {canDeleteAns && (
+                        <button
+                          type="button"
+                          onClick={() => setAnswerToDelete(ans)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 transition-all cursor-pointer shadow-2xs active:scale-95"
+                          title="Delete your answer"
+                          aria-label="Delete answer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">
@@ -651,6 +682,60 @@ export const QAView: React.FC = () => {
                   } finally {
                     setIsDeleting(false);
                     setQuestionToDelete(null);
+                  }
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeleting ? 'Deleting...' : 'Delete Permanently'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Answer Confirmation Modal */}
+      {answerToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[var(--bg-surface)] rounded-3xl max-w-md w-full p-6 sm:p-7 border border-[var(--border-color)] shadow-2xl space-y-4 animate-in fade-in zoom-in-95 backdrop-blur-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/25">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[var(--text-primary)]">Delete Peer Answer?</h3>
+                <p className="text-xs text-[var(--text-muted)]">This will permanently remove your answer solution.</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-xs space-y-1">
+              <p className="font-semibold text-[var(--text-primary)] line-clamp-3 whitespace-pre-wrap">
+                "{answerToDelete.body}"
+              </p>
+              <p className="text-[11px] text-[var(--text-muted)] pt-1">
+                Posted {answerToDelete.createdAt} · {answerToDelete.upvotes} Upvotes
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setAnswerToDelete(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-subtle)] hover:bg-[var(--bg-muted)] border border-[var(--border-color)] transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={async () => {
+                  setIsDeleting(true);
+                  try {
+                    await deleteAnswer(answerToDelete.id);
+                  } finally {
+                    setIsDeleting(false);
+                    setAnswerToDelete(null);
                   }
                 }}
                 className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 active:bg-rose-800 shadow-xs transition-all cursor-pointer flex items-center gap-1.5"

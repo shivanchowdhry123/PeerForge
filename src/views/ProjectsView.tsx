@@ -18,7 +18,10 @@ import {
   Award,
   Lightbulb,
   ShieldCheck,
-  Trash2
+  Trash2,
+  Pencil,
+  Check,
+  X
 } from 'lucide-react';
 
 export const ProjectsView: React.FC = () => {
@@ -34,6 +37,9 @@ export const ProjectsView: React.FC = () => {
     handleProjectApplication,
     developerAcceptApplication,
     toggleProjectTask,
+    addProjectMilestone,
+    editProjectMilestone,
+    deleteProjectMilestone,
     setActiveTab,
     setActiveConversationId
   } = useApp();
@@ -81,6 +87,12 @@ export const ProjectsView: React.FC = () => {
       return updated;
     });
   };
+
+  // Milestone management state
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingTaskTitle, setEditingTaskTitle] = useState('');
+  const [isAddingMilestone, setIsAddingMilestone] = useState(false);
+  const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
 
   // Apply to role modal
   const [applyModalRole, setApplyModalRole] = useState<{ role: ProjectRole; project: Project } | null>(null);
@@ -438,40 +450,205 @@ export const ProjectsView: React.FC = () => {
               </div>
 
               {/* Tasks & Milestones */}
-              <div className="p-5 rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-color)] space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-[var(--text-primary)]">Project Milestones</h3>
-                  <span className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 num-tabular">
-                    {selectedProjectForDetail.tasks.filter(t => t.completed).length} /{' '}
-                    {selectedProjectForDetail.tasks.length}
-                  </span>
-                </div>
+              {(() => {
+                const isProjectLeader = Boolean(
+                  currentUser &&
+                  (selectedProjectForDetail.ownerId === currentUser.id ||
+                    currentUser.role === 'developer' ||
+                    currentUser.role === 'admin' ||
+                    currentUser.role === 'teacher')
+                );
+                const completedCount = selectedProjectForDetail.tasks.filter(t => t.completed).length;
+                const totalCount = selectedProjectForDetail.tasks.length;
+                const progressPct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-                <div className="space-y-2">
-                  {selectedProjectForDetail.tasks.map(task => (
-                    <button
-                      key={task.id}
-                      onClick={() => toggleProjectTask(selectedProjectForDetail.id, task.id)}
-                      className="w-full text-left flex items-start gap-2.5 p-2 rounded-xl hover:bg-[var(--bg-subtle)] transition-colors group"
-                    >
-                      {task.completed ? (
-                        <CheckSquare className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                      ) : (
-                        <Square className="w-4 h-4 text-[var(--text-muted)] shrink-0 mt-0.5" />
-                      )}
-                      <span
-                        className={`text-xs ${
-                          task.completed
-                            ? 'line-through text-[var(--text-muted)]'
-                            : 'text-[var(--text-primary)] font-medium'
-                        }`}
-                      >
-                        {task.title}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+                return (
+                  <div className="p-5 sm:p-6 rounded-3xl bg-[var(--bg-surface)]/90 border border-[var(--border-color)] space-y-4 shadow-xs backdrop-blur-md relative overflow-hidden">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-extrabold text-[var(--text-primary)]">Project Milestones</h3>
+                        {isProjectLeader && (
+                          <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold border border-blue-500/20">
+                            Leader Mode
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 num-tabular">
+                          {completedCount} / {totalCount} ({progressPct}%)
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full bg-[var(--bg-subtle)] h-2 rounded-full overflow-hidden border border-[var(--border-color)]/60">
+                      <div
+                        className="bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-500 h-full transition-all duration-500 rounded-full"
+                        style={{ width: `${progressPct}%` }}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      {selectedProjectForDetail.tasks.map(task => {
+                        const isEditingThis = editingTaskId === task.id;
+
+                        if (isEditingThis) {
+                          return (
+                            <form
+                              key={task.id}
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                editProjectMilestone(selectedProjectForDetail.id, task.id, editingTaskTitle);
+                                setEditingTaskId(null);
+                              }}
+                              className="flex items-center gap-1.5 p-1.5 rounded-xl bg-[var(--bg-subtle)] border border-blue-500/40"
+                            >
+                              <input
+                                type="text"
+                                value={editingTaskTitle}
+                                onChange={e => setEditingTaskTitle(e.target.value)}
+                                className="flex-1 px-2.5 py-1 text-xs rounded-lg bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-blue-500"
+                                autoFocus
+                                required
+                              />
+                              <button
+                                type="submit"
+                                className="p-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors cursor-pointer"
+                                title="Save changes"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingTaskId(null)}
+                                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+                                title="Cancel"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </form>
+                          );
+                        }
+
+                        return (
+                          <div
+                            key={task.id}
+                            className="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-[var(--bg-subtle)] transition-all group"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => toggleProjectTask(selectedProjectForDetail.id, task.id)}
+                              className="flex-1 text-left flex items-start gap-2.5 cursor-pointer min-w-0"
+                            >
+                              {task.completed ? (
+                                <CheckSquare className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                              ) : (
+                                <Square className="w-4 h-4 text-[var(--text-muted)] shrink-0 mt-0.5 group-hover:text-blue-500 transition-colors" />
+                              )}
+                              <span
+                                className={`text-xs leading-snug ${
+                                  task.completed
+                                    ? 'line-through text-[var(--text-muted)]'
+                                    : 'text-[var(--text-primary)] font-medium'
+                                }`}
+                              >
+                                {task.title}
+                              </span>
+                            </button>
+
+                            {isProjectLeader && (
+                              <div className="flex items-center gap-1 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingTaskId(task.id);
+                                    setEditingTaskTitle(task.title);
+                                  }}
+                                  className="p-1 rounded-lg text-[var(--text-muted)] hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-500/10 transition-colors cursor-pointer"
+                                  title="Edit milestone title"
+                                  aria-label="Edit milestone"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteProjectMilestone(selectedProjectForDetail.id, task.id);
+                                  }}
+                                  className="p-1 rounded-lg text-[var(--text-muted)] hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                  title="Delete milestone"
+                                  aria-label="Delete milestone"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Add Milestone Controls for Leader */}
+                    {isProjectLeader && (
+                      <div className="pt-2 border-t border-[var(--border-color)]/60">
+                        {isAddingMilestone ? (
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              if (newMilestoneTitle.trim()) {
+                                addProjectMilestone(selectedProjectForDetail.id, newMilestoneTitle);
+                                setNewMilestoneTitle('');
+                                setIsAddingMilestone(false);
+                              }
+                            }}
+                            className="space-y-2 animate-in fade-in"
+                          >
+                            <input
+                              type="text"
+                              placeholder="Enter new milestone description..."
+                              value={newMilestoneTitle}
+                              onChange={e => setNewMilestoneTitle(e.target.value)}
+                              className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--bg-subtle)] border border-blue-500/40 text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-blue-500"
+                              autoFocus
+                              required
+                            />
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsAddingMilestone(false);
+                                  setNewMilestoneTitle('');
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-xs font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="submit"
+                                className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-2xs transition-all cursor-pointer flex items-center gap-1"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Save Milestone</span>
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setIsAddingMilestone(true)}
+                            className="w-full py-2 px-3 rounded-2xl border border-dashed border-blue-500/30 hover:border-blue-500/60 bg-blue-500/5 hover:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-98"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add New Milestone</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

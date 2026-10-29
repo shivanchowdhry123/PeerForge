@@ -34,6 +34,7 @@ import {
   saveSupabaseQuestion,
   deleteSupabaseQuestion,
   saveSupabaseAnswer,
+  deleteSupabaseAnswer,
   saveSupabaseMessage,
   saveSupabaseConversation,
   saveSupabaseEvent,
@@ -95,9 +96,13 @@ interface AppContextType {
   applyToProject: (projectId: string, roleId: string, roleTitle: string, note: string) => void;
   handleProjectApplication: (projectId: string, appId: string, action: 'accepted' | 'rejected') => void;
   toggleProjectTask: (projectId: string, taskId: string) => void;
+  addProjectMilestone: (projectId: string, title: string) => void;
+  editProjectMilestone: (projectId: string, taskId: string, newTitle: string) => void;
+  deleteProjectMilestone: (projectId: string, taskId: string) => void;
   askQuestion: (newQ: Partial<Question>) => Promise<Question>;
   deleteQuestion: (questionId: string) => Promise<boolean>;
   postAnswer: (questionId: string, body: string) => void;
+  deleteAnswer: (answerId: string) => Promise<boolean>;
   upvoteAnswer: (answerId: string) => void;
   acceptAnswer: (questionId: string, answerId: string) => void;
   toggleEventRsvp: (eventId: string) => void;
@@ -856,8 +861,87 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
 
-    if (isSupabaseConfigured && updatedProject) {
-      saveSupabaseProject(updatedProject);
+    if (updatedProject) {
+      const targetProj = updatedProject;
+      setSelectedQuestionForDetail(null);
+      setSelectedProjectForDetail(prev => (prev?.id === projectId ? targetProj : prev));
+      if (isSupabaseConfigured) saveSupabaseProject(targetProj);
+    }
+  };
+
+  const addProjectMilestone = (projectId: string, title: string) => {
+    if (!title.trim()) return;
+    let updatedProject: Project | undefined;
+    const newTask = {
+      id: `task-${Date.now()}`,
+      title: title.trim(),
+      completed: false
+    };
+
+    setProjects(prev =>
+      prev.map(p => {
+        if (p.id === projectId) {
+          updatedProject = {
+            ...p,
+            tasks: [...p.tasks, newTask]
+          };
+          return updatedProject;
+        }
+        return p;
+      })
+    );
+
+    if (updatedProject) {
+      const targetProj = updatedProject;
+      setSelectedProjectForDetail(prev => (prev?.id === projectId ? targetProj : prev));
+      if (isSupabaseConfigured) saveSupabaseProject(targetProj);
+    }
+  };
+
+  const editProjectMilestone = (projectId: string, taskId: string, newTitle: string) => {
+    if (!newTitle.trim()) return;
+    let updatedProject: Project | undefined;
+
+    setProjects(prev =>
+      prev.map(p => {
+        if (p.id === projectId) {
+          updatedProject = {
+            ...p,
+            tasks: p.tasks.map(t => (t.id === taskId ? { ...t, title: newTitle.trim() } : t))
+          };
+          return updatedProject;
+        }
+        return p;
+      })
+    );
+
+    if (updatedProject) {
+      const targetProj = updatedProject;
+      setSelectedProjectForDetail(prev => (prev?.id === projectId ? targetProj : prev));
+      if (isSupabaseConfigured) saveSupabaseProject(targetProj);
+    }
+  };
+
+  const deleteProjectMilestone = (projectId: string, taskId: string) => {
+    let updatedProject: Project | undefined;
+
+    setProjects(prev =>
+      prev.map(p => {
+        if (p.id === projectId) {
+          updatedProject = {
+            ...p,
+            tasks: p.tasks.filter(t => t.id !== taskId)
+          };
+          return updatedProject;
+        }
+        return p;
+      })
+    );
+
+    if (updatedProject) {
+      const targetProj = updatedProject;
+      setSelectedProjectForDetail(prev => (prev?.id === projectId ? targetProj : prev));
+      if (isSupabaseConfigured) saveSupabaseProject(targetProj);
     }
   };
 
@@ -940,6 +1024,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       saveSupabaseAnswer(newAns);
       if (updatedQ) saveSupabaseQuestion(updatedQ);
     }
+  };
+
+  const deleteAnswer = async (answerId: string): Promise<boolean> => {
+    if (!currentUser) return false;
+
+    const target = answers.find(a => a.id === answerId);
+    if (!target) return false;
+
+    const qId = target.questionId;
+
+    setAnswers(prev => prev.filter(a => a.id !== answerId));
+
+    let updatedQ: Question | undefined;
+    setQuestions(prev =>
+      prev.map(q => {
+        if (q.id === qId) {
+          updatedQ = {
+            ...q,
+            answersCount: Math.max(0, q.answersCount - 1),
+            acceptedAnswerId: q.acceptedAnswerId === answerId ? undefined : q.acceptedAnswerId
+          };
+          return updatedQ;
+        }
+        return q;
+      })
+    );
+
+    setSelectedQuestionForDetail(prev => {
+      if (prev && prev.id === qId) {
+        return {
+          ...prev,
+          answersCount: Math.max(0, prev.answersCount - 1),
+          acceptedAnswerId: prev.acceptedAnswerId === answerId ? undefined : prev.acceptedAnswerId
+        };
+      }
+      return prev;
+    });
+
+    if (isSupabaseConfigured) {
+      await deleteSupabaseAnswer(answerId);
+      if (updatedQ) saveSupabaseQuestion(updatedQ);
+    }
+
+    return true;
   };
 
   const upvoteAnswer = (answerId: string) => {
@@ -1592,9 +1720,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         handleProjectApplication,
         developerAcceptApplication,
         toggleProjectTask,
+        addProjectMilestone,
+        editProjectMilestone,
+        deleteProjectMilestone,
         askQuestion,
         deleteQuestion,
         postAnswer,
+        deleteAnswer,
         upvoteAnswer,
         acceptAnswer,
         toggleEventRsvp,

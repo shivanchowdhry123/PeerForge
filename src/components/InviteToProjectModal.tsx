@@ -80,15 +80,15 @@ export const InviteToProjectModal: React.FC = () => {
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSendInvite} className="space-y-3.5">
+          <form onSubmit={handleSendInvite} className="space-y-4">
             <div>
-              <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
+              <label className="text-xs font-bold text-[var(--text-primary)] block mb-1.5">
                 Select Your Project:
               </label>
               <select
                 value={selectedProjectId}
                 onChange={e => setSelectedProjectId(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none"
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-purple-500 transition-all font-medium"
               >
                 {userProjects.map(p => (
                   <option key={p.id} value={p.id}>
@@ -99,7 +99,7 @@ export const InviteToProjectModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
+              <label className="text-xs font-bold text-[var(--text-primary)] block mb-1.5">
                 Proposed Role:
               </label>
               <input
@@ -107,34 +107,21 @@ export const InviteToProjectModal: React.FC = () => {
                 placeholder="e.g. Lead Programmer / UI Designer"
                 value={selectedRole}
                 onChange={e => setSelectedRole(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none"
+                className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-purple-500 transition-all font-medium"
               />
             </div>
 
-            <div>
-              <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
-                Personalized Invitation Note:
-              </label>
-              <textarea
-                rows={3}
-                value={inviteMessage}
-                onChange={e => setInviteMessage(e.target.value)}
-                className="w-full p-3 text-xs rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none"
-                required
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--border-color)]/60">
               <button
                 type="button"
                 onClick={() => setInviteStudentModal({ isOpen: false, student: null })}
-                className="px-4 py-2 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-[var(--bg-subtle)] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs"
+                className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Send Collaboration Invite</span>

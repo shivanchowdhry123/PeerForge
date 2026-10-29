@@ -157,6 +157,18 @@ export async function saveSupabaseAnswer(answer: Answer): Promise<boolean> {
   }
 }
 
+export async function deleteSupabaseAnswer(answerId: string): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const { error } = await supabase.from('answers').delete().eq('id', answerId);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase delete answer error:', err);
+    return false;
+  }
+}
+
 // --- CONVERSATIONS ---
 export async function fetchSupabaseConversations(userId?: string): Promise<Conversation[] | null> {
   if (!isSupabaseConfigured) return null;
