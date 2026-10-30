@@ -25,6 +25,9 @@ export const AdminView: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'students' | 'contact' | 'audit'>('students');
   const [replyTextMap, setReplyTextMap] = useState<Record<string, string>>({});
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteNotice, setDeleteNotice] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   // Verify access
   if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'moderator' && currentUser.role !== 'developer' && currentUser.role !== 'teacher')) {
@@ -161,6 +164,22 @@ export const AdminView: React.FC = () => {
             <span className="text-xs text-[var(--text-muted)] num-tabular">{allStudents.length} Total Accounts</span>
           </div>
 
+          {deleteNotice && (
+            <div className="mx-4 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs flex items-center justify-between animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="font-medium">{deleteNotice}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteNotice(null)}
+                className="text-[11px] underline font-semibold text-emerald-700 dark:text-emerald-300"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
           <div className="divide-y divide-[var(--border-color)] max-h-[500px] overflow-y-auto">
             {allStudents.map(student => (
               <div key={student.id} className="p-4 flex items-center justify-between gap-4">
@@ -194,19 +213,53 @@ export const AdminView: React.FC = () => {
                     Active
                   </span>
 
-                  <button
-                    onClick={() => {
-                      if (window.confirm(`Permanently delete account for "${student.name}"? This will remove the test account prior to publication.`)) {
-                        deleteStudentAccount(student.id);
-                        deleteStudentAccount(student.name);
-                      }
-                    }}
-                    className="px-3 py-1.5 rounded-xl bg-red-100 dark:bg-red-950/40 hover:bg-red-200 text-red-700 dark:text-red-300 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
-                    title="Permanently delete test account"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Delete Account</span>
-                  </button>
+                  {confirmDeleteId === student.id ? (
+                    <div className="flex items-center gap-1.5 animate-in fade-in">
+                      <button
+                        type="button"
+                        disabled={isDeleting === student.id}
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDeleting(student.id);
+                          await deleteStudentAccount(student.id, student.name, student.email);
+                          setDeleteNotice(`Account for "${student.name}" permanently deleted.`);
+                          setConfirmDeleteId(null);
+                          setIsDeleting(null);
+                          setTimeout(() => setDeleteNotice(null), 4000);
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 active:scale-95 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>{isDeleting === student.id ? 'Deleting...' : 'Confirm Delete?'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setConfirmDeleteId(null);
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl bg-[var(--bg-subtle)] hover:bg-[var(--border-color)] text-[var(--text-secondary)] text-xs font-medium transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setConfirmDeleteId(student.id);
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-red-100 dark:bg-red-950/40 hover:bg-red-200 text-red-700 dark:text-red-300 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                      title="Permanently delete test account"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Delete Account</span>
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

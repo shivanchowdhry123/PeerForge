@@ -65,12 +65,27 @@ export async function saveSupabaseStudent(student: StudentProfile): Promise<bool
   }
 }
 
-export async function deleteSupabaseStudent(studentId: string): Promise<boolean> {
+export async function deleteSupabaseStudent(
+  studentId: string,
+  studentName?: string,
+  studentEmail?: string
+): Promise<boolean> {
   if (!isSupabaseConfigured) return false;
   try {
-    const { error } = await supabase.from('students').delete().eq('id', studentId);
-    if (error) throw error;
-    return true;
+    let success = false;
+    if (studentId) {
+      const { error: errId } = await supabase.from('students').delete().eq('id', studentId);
+      if (!errId) success = true;
+    }
+    if (studentEmail) {
+      const { error: errEmail } = await supabase.from('students').delete().eq('email', studentEmail);
+      if (!errEmail) success = true;
+    }
+    if (studentName) {
+      const { error: errName } = await supabase.from('students').delete().eq('name', studentName);
+      if (!errName) success = true;
+    }
+    return success;
   } catch (err) {
     console.warn('Supabase delete student error:', err);
     return false;

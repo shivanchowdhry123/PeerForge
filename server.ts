@@ -321,6 +321,17 @@ app.put('/api/students/:id', (req: Request, res: Response) => {
   res.json(updated);
 });
 
+app.delete('/api/students/:id', (req: Request, res: Response) => {
+  const target = req.params.id.toLowerCase();
+  const initialLen = db.students.length;
+  db.students = db.students.filter(
+    s => s.id.toLowerCase() !== target &&
+         s.name.toLowerCase() !== target &&
+         s.email.toLowerCase() !== target
+  );
+  res.json({ success: true, removedCount: initialLen - db.students.length });
+});
+
 // --- AI STUDENT DISCOVERY & SEMANTIC MATCHER (WITH QUOTA RESILIENCE) ---
 
 app.post('/api/ai/match-students', async (req: Request, res: Response) => {

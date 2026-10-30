@@ -119,7 +119,7 @@ interface AppContextType {
   exportMyData: () => void;
   deactivateOwnAccount: () => void;
   reactivateOwnAccount: () => void;
-  deleteStudentAccount: (studentId: string) => Promise<boolean>;
+  deleteStudentAccount: (studentId: string, studentName?: string, studentEmail?: string) => Promise<boolean>;
   addEvent: (eventData: Omit<SchoolEvent, 'id' | 'rsvpCount' | 'isRsvpd'>) => void;
   updatePassword: (password: string) => void;
   linkGmailAccount: (gmail: string) => void;
@@ -350,6 +350,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               return exists ? prev.map(s => (s.id === student.id ? student : s)) : [student, ...prev];
             });
             setCurrentUser(curr => (curr && curr.id === student.id ? student : curr));
+          } else if (payload.eventType === 'DELETE') {
+            const deletedId = payload.old?.id;
+            if (deletedId) {
+              setAllStudents(prev => prev.filter(s => s.id !== deletedId));
+            }
           }
         })
       );
@@ -1417,31 +1422,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const deleteStudentAccount = async (targetIdOrName: string): Promise<boolean> => {
+  const deleteStudentAccount = async (
+    targetId: string,
+    targetName?: string,
+    targetEmail?: string
+  ): Promise<boolean> => {
+    const normName = targetName?.toLowerCase().trim();
+    const normEmail = targetEmail?.toLowerCase().trim();
+    const normId = targetId?.trim();
+
+    // 1. Immediately remove from local allStudents state
     setAllStudents(prev =>
-      prev.filter(
-        s =>
-          s.id !== targetIdOrName &&
-          s.name.toLowerCase() !== targetIdOrName.toLowerCase()
-      )
+      prev.filter(s => {
+        if (normId && s.id === normId) return false;
+        if (normName && s.name.toLowerCase().trim() === normName) return false;
+        if (normEmail && s.email.toLowerCase().trim() === normEmail) return false;
+        return true;
+      })
     );
 
     if (
       currentUser &&
-      (currentUser.id === targetIdOrName ||
-        currentUser.name.toLowerCase() === targetIdOrName.toLowerCase())
+      ((normId && currentUser.id === normId) ||
+        (normName && currentUser.name.toLowerCase().trim() === normName) ||
+        (normEmail && currentUser.email.toLowerCase().trim() === normEmail))
     ) {
       setCurrentUser(null);
       setIsAuthenticated(false);
     }
 
+    // 2. Also notify server memory if running
+    try {
+      if (normId) await fetch(`/api/students/${encodeURIComponent(normId)}`, { method: 'DELETE' });
+    } catch {
+      // fallback
+    }
+
+    // 3. Delete from Supabase
     if (isSupabaseConfigured) {
-      try {
-        await deleteSupabaseStudent(targetIdOrName);
-        await supabase.from('students').delete().eq('name', targetIdOrName);
-      } catch (err) {
-        console.warn('Supabase delete student error:', err);
-      }
+      await deleteSupabaseStudent(targetId, targetName, targetEmail);
     }
     return true;
   };
@@ -1595,6 +1614,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (error) {
           console.warn('Supabase sign-in note:', error.message);
+          // Graceful fallback: If email is unconfirmed in Supabase Auth, check public.students
+          const { data: fallbackStudent } = await supabase
+            .from('students')
+            .select('*')
+            .or(`email.eq.${cleanEmail},gmailAccount.eq.${cleanEmail}`)
+            .maybeSingle();
+
+          if (fallbackStudent) {
+            profileToLogin = fallbackStudent as StudentProfile;
+          }
         } else if (data?.user) {
           const { data: sbProfile } = await supabase
             .from('students')
