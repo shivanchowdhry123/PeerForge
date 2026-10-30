@@ -33,6 +33,7 @@ import {
   supabase,
   isSupabaseConfigured,
   saveSupabaseStudent,
+  deleteSupabaseStudent,
   saveSupabaseProject,
   deleteSupabaseProject,
   saveSupabaseQuestion,
@@ -118,6 +119,7 @@ interface AppContextType {
   exportMyData: () => void;
   deactivateOwnAccount: () => void;
   reactivateOwnAccount: () => void;
+  deleteStudentAccount: (studentId: string) => Promise<boolean>;
   addEvent: (eventData: Omit<SchoolEvent, 'id' | 'rsvpCount' | 'isRsvpd'>) => void;
   updatePassword: (password: string) => void;
   linkGmailAccount: (gmail: string) => void;
@@ -139,6 +141,8 @@ interface AppContextType {
   setActiveSearchQuery: (q: string) => void;
   inviteStudentModal: { isOpen: boolean; student: StudentProfile | null };
   setInviteStudentModal: (state: { isOpen: boolean; student: StudentProfile | null }) => void;
+  isSidebarVisible: boolean;
+  toggleSidebar: () => void;
   isAuthenticated: boolean;
   loginWithGmail: (gmail: string, password?: string) => Promise<{ success: boolean; message: string; user?: StudentProfile }>;
   signUpWithGmail: (data: {
@@ -210,6 +214,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isOpen: false,
     student: null
   });
+  const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
+  const toggleSidebar = () => setIsSidebarVisible(prev => !prev);
 
   const [isDeveloperMode, setIsDeveloperMode] = useState<boolean>(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
@@ -445,7 +451,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  // Theme Sync
+  // Theme Sync & Default Load
+  useEffect(() => {
+    if (!currentUser) {
+      setTheme('light'); // If logged out keep it light mode
+    } else if (currentUser.defaultTheme) {
+      setTheme(currentUser.defaultTheme);
+    }
+  }, [currentUser?.id, currentUser?.defaultTheme]);
+
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -455,7 +469,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+    setTheme(prev => {
+      const next = prev === 'light' ? 'dark' : 'light';
+      if (currentUser) {
+        updateCurrentUserProfile({ defaultTheme: next });
+      }
+      return next;
+    });
   };
 
   const switchUser = (studentId: string) => {
@@ -1397,6 +1417,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const deleteStudentAccount = async (targetIdOrName: string): Promise<boolean> => {
+    setAllStudents(prev =>
+      prev.filter(
+        s =>
+          s.id !== targetIdOrName &&
+          s.name.toLowerCase() !== targetIdOrName.toLowerCase()
+      )
+    );
+
+    if (
+      currentUser &&
+      (currentUser.id === targetIdOrName ||
+        currentUser.name.toLowerCase() === targetIdOrName.toLowerCase())
+    ) {
+      setCurrentUser(null);
+      setIsAuthenticated(false);
+    }
+
+    if (isSupabaseConfigured) {
+      try {
+        await deleteSupabaseStudent(targetIdOrName);
+        await supabase.from('students').delete().eq('name', targetIdOrName);
+      } catch (err) {
+        console.warn('Supabase delete student error:', err);
+      }
+    }
+    return true;
+  };
+
   const addEvent = (eventData: Omit<SchoolEvent, 'id' | 'rsvpCount' | 'isRsvpd'>) => {
     const newEvent: SchoolEvent = {
       ...eventData,
@@ -1898,6 +1947,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         exportMyData,
         deactivateOwnAccount,
         reactivateOwnAccount,
+        deleteStudentAccount,
         addEvent,
         updatePassword,
         linkGmailAccount,
@@ -1926,7 +1976,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         closeAuthModal,
         uploadFile,
         deleteUploadedFile,
-        refreshUploadedFiles
+        refreshUploadedFiles,
+        isSidebarVisible,
+        toggleSidebar
       }}
     >
       {children}

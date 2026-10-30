@@ -111,6 +111,12 @@ export const SettingsView: React.FC = () => {
     setTimeout(() => setSavedSuccess(false), 2000);
   };
 
+  const handleThemePreferenceChange = (mode: 'light' | 'dark') => {
+    updateCurrentUserProfile({ defaultTheme: mode });
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 2000);
+  };
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -129,6 +135,55 @@ export const SettingsView: React.FC = () => {
             <span>Preferences saved</span>
           </div>
         )}
+      </div>
+
+      {/* Default Theme Appearance */}
+      <div className="p-6 rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-color)] space-y-4 shadow-xs">
+        <h2 className="text-base font-bold text-[var(--text-primary)] flex items-center gap-2">
+          <Sun className="w-4 h-4 text-amber-500" />
+          <span>Default Account Appearance (Light / Dark Mode)</span>
+        </h2>
+        <p className="text-xs text-[var(--text-muted)]">
+          Select whether your account loads in Light Mode or Dark Mode by default when you log in. (Logged-out sessions default strictly to Light Mode).
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => handleThemePreferenceChange('light')}
+            className={`flex items-center gap-3 p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+              (currentUser.defaultTheme || 'light') === 'light'
+                ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 ring-2 ring-blue-500/20'
+                : 'border-[var(--border-color)] bg-[var(--bg-subtle)] hover:border-blue-400'
+            }`}
+          >
+            <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center shrink-0">
+              <Sun className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-xs font-bold text-[var(--text-primary)] block">Light Mode Default</span>
+              <span className="text-[11px] text-[var(--text-muted)]">Clean, bright daytime interface</span>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleThemePreferenceChange('dark')}
+            className={`flex items-center gap-3 p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+              currentUser.defaultTheme === 'dark'
+                ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 ring-2 ring-blue-500/20'
+                : 'border-[var(--border-color)] bg-[var(--bg-subtle)] hover:border-blue-400'
+            }`}
+          >
+            <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 flex items-center justify-center shrink-0">
+              <Moon className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-xs font-bold text-[var(--text-primary)] block">Dark Mode Default</span>
+              <span className="text-[11px] text-[var(--text-muted)]">Low-light comfortable night interface</span>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Profile Visibility Controls */}

@@ -55,7 +55,7 @@ const AmbientBackground: React.FC = () => {
 };
 
 const MainLayout: React.FC = () => {
-  const { activeTab, setActiveTab, unreadMessagesCount, currentUser, reactivateOwnAccount } = useApp();
+  const { activeTab, setActiveTab, unreadMessagesCount, currentUser, reactivateOwnAccount, isSidebarVisible } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const renderActiveView = () => {
@@ -103,9 +103,11 @@ const MainLayout: React.FC = () => {
 
       <div className="flex-1 flex max-w-7xl w-full mx-auto relative z-10">
         {/* Desktop Left Sidebar */}
-        <div className="hidden md:block">
-          <Sidebar />
-        </div>
+        {isSidebarVisible && (
+          <div className="hidden md:block">
+            <Sidebar />
+          </div>
+        )}
 
         {/* Mobile Drawer Menu */}
         {mobileMenuOpen && (

@@ -43,6 +43,37 @@ export const AISkillFinderView: React.FC = () => {
     'Video editor and audio composer for our Shakespeare school play teaser.'
   ];
 
+  const extractKeywords = (text: string): string[] => {
+    const lower = text.toLowerCase();
+    const stopWords = new Set([
+      'i', 'need', 'two', 'students', 'who', 'know', 'and', 'one', 'student', 'can', 
+      'for', 'our', 'find', 'looking', 'a', 'an', 'the', 'in', 'on', 'with', 'is', 
+      'are', 'help', 'some', 'any', 'want', 'that', 'to', 'of', 'at', 'by', 'from', 
+      'as', 'or', 'be', 'has', 'have', 'we', 'they', 'their', 'my', 'your', 'his', 
+      'her', 'it', 'its', 'us', 'me', 'them', 'this', 'that', 'these', 'those'
+    ]);
+
+    const knownPhrases = [
+      'design a logo', 'science project', 'autonomous rover challenge', 
+      'content writer', 'mun delegation', 'peer tutoring', 'video editor', 
+      'audio composer', 'school play teaser'
+    ];
+
+    const foundPhrases: string[] = [];
+    knownPhrases.forEach(phrase => {
+      if (lower.includes(phrase)) {
+        const capitalized = phrase.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        foundPhrases.push(capitalized);
+      }
+    });
+
+    const words = lower.replace(/[^\w\s]/gi, '').split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
+    const capitalizedWords = words.map(w => w.charAt(0).toUpperCase() + w.slice(1));
+
+    const combined = Array.from(new Set([...foundPhrases, ...capitalizedWords]));
+    return combined.slice(0, 4);
+  };
+
   const handleSearch = async (searchQuery: string = query) => {
     if (!searchQuery.trim()) return;
     setLoading(true);
@@ -50,7 +81,10 @@ export const AISkillFinderView: React.FC = () => {
 
     // Simulate slight natural delay for polish, then execute deterministic heuristic matching
     setTimeout(() => {
-      const words = searchQuery.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+      const tags = extractKeywords(searchQuery);
+      setExtractedTags(tags);
+      const queryKeywords = tags.map(t => t.toLowerCase());
+
       const matchedResults: AIMatchResult[] = allStudents
         .filter(s => s.role === 'student' && !s.isDeactivated)
         .map(student => {
@@ -58,14 +92,14 @@ export const AISkillFinderView: React.FC = () => {
           const matched: string[] = [];
           
           student.skills.forEach(s => {
-            if (words.some(w => s.name.toLowerCase().includes(w) || w.includes(s.name.toLowerCase()))) {
+            if (queryKeywords.some(qWord => s.name.toLowerCase().includes(qWord) || qWord.includes(s.name.toLowerCase()))) {
               score += 25;
               matched.push(s.name);
             }
           });
 
           student.academicStrengths.forEach(str => {
-            if (words.some(w => str.toLowerCase().includes(w))) {
+            if (queryKeywords.some(qWord => str.toLowerCase().includes(qWord))) {
               score += 15;
             }
           });
@@ -79,7 +113,7 @@ export const AISkillFinderView: React.FC = () => {
             matchScore: Math.min(98, Math.max(55, score)),
             rationale: matched.length > 0 
               ? `Strong proficiency match in ${matched.join(', ')} with verified OPG World School record.`
-              : `Compliant student profile with active collaboration availability.`,
+              : `Compliant student profile matching extracted keywords: ${tags.join(', ')}.`,
             matchingSkills: matched.length > 0 ? matched : [student.skills[0]?.name || 'Collaboration'],
             complementaryRole: `${student.skills[0]?.name || 'Core'} Contributor`
           };
@@ -87,7 +121,6 @@ export const AISkillFinderView: React.FC = () => {
 
       matchedResults.sort((a, b) => b.matchScore - a.matchScore);
       setResults(matchedResults.slice(0, 4));
-      setExtractedTags(words.slice(0, 4));
       setLoading(false);
     }, 400);
   };

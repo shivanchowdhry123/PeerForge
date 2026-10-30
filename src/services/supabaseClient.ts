@@ -65,6 +65,18 @@ export async function saveSupabaseStudent(student: StudentProfile): Promise<bool
   }
 }
 
+export async function deleteSupabaseStudent(studentId: string): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const { error } = await supabase.from('students').delete().eq('id', studentId);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase delete student error:', err);
+    return false;
+  }
+}
+
 // --- PROJECTS ---
 export async function fetchSupabaseProjects(): Promise<Project[] | null> {
   if (!isSupabaseConfigured) return null;

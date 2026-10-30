@@ -12,7 +12,8 @@ import {
   LogOut,
   ChevronDown,
   User,
-  GraduationCap
+  GraduationCap,
+  PanelLeft
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -29,7 +30,9 @@ export const Navbar: React.FC = () => {
     currentUser,
     isAuthenticated,
     openAuthModal,
-    logout
+    logout,
+    isSidebarVisible,
+    toggleSidebar
   } = useApp();
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -69,6 +72,16 @@ export const Navbar: React.FC = () => {
             </div>
           </button>
         </div>
+
+        {/* Desktop Sidebar Toggle Button */}
+        <button
+          onClick={toggleSidebar}
+          aria-label="Toggle sidebar"
+          className="hidden md:flex p-2 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] border border-transparent hover:border-[var(--border-color)] transition-all cursor-pointer items-center justify-center shrink-0"
+          title={isSidebarVisible ? 'Hide Sidebar' : 'Show Sidebar'}
+        >
+          <PanelLeft className={`w-4 h-4 ${isSidebarVisible ? 'text-blue-600 dark:text-blue-400' : 'text-[var(--text-muted)]'}`} />
+        </button>
 
         {/* Zone 2: Navigation Links or Global Search */}
         <form onSubmit={handleSearchSubmit} className="hidden md:flex flex-1 max-w-md mx-4">

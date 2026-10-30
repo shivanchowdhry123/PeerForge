@@ -44,6 +44,7 @@ export interface StudentProfile {
   isVerified: boolean;
   isApproved: boolean;
   isDeactivated?: boolean;
+  defaultTheme?: 'light' | 'dark';
   joinedDate: string;
 }
 

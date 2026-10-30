@@ -32,7 +32,6 @@ export const HomeView: React.FC = () => {
     projects,
     questions,
     events,
-    activities = [],
     setActiveTab,
     setSelectedStudentForProfile,
     setSelectedProjectForDetail,
@@ -40,8 +39,6 @@ export const HomeView: React.FC = () => {
     isAuthenticated,
     openAuthModal
   } = useApp();
-
-  const [activityFilter, setActivityFilter] = useState<'all' | 'project_posted' | 'team_accepted' | 'milestone_reached'>('all');
 
   const activeProfiles = (allStudents || []).filter(s => s && !s.isDeactivated);
   const totalActiveProfiles = activeProfiles.length;
@@ -62,22 +59,6 @@ export const HomeView: React.FC = () => {
 
   // Upcoming events
   const upcomingEvents = events.slice(0, 2);
-
-  // Filtered activities for live campus feed
-  const filteredActivities = (activities || []).filter(act => {
-    if (activityFilter === 'all') return true;
-    return act.type === activityFilter;
-  });
-
-  const handleActivityClick = (act: ActivityEvent) => {
-    if (act.projectId) {
-      const proj = projects.find(p => p.id === act.projectId);
-      if (proj) {
-        setSelectedProjectForDetail(proj);
-        setActiveTab('projects');
-      }
-    }
-  };
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
@@ -290,149 +271,6 @@ export const HomeView: React.FC = () => {
           <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">Browse Directory</h3>
           <p className="text-[11px] text-[var(--text-muted)] mt-1">Verified abilities & grades</p>
         </button>
-      </div>
-
-      {/* Live Campus Activity Feed Section */}
-      <div className="p-6 rounded-3xl bg-[var(--bg-surface)]/85 border border-[var(--border-color)] space-y-4 shadow-xs backdrop-blur-md">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-xs shrink-0">
-              <Activity className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-[var(--text-primary)]">
-                  Live Campus Activity Feed
-                </h3>
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                </span>
-              </div>
-              <p className="text-xs text-[var(--text-muted)]">
-                Real-time updates on project postings, team acceptances, and milestone completions
-              </p>
-            </div>
-          </div>
-
-          {/* Filter Tabs */}
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] self-start sm:self-center overflow-x-auto max-w-full">
-            <button
-              onClick={() => setActivityFilter('all')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                activityFilter === 'all'
-                  ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-2xs border border-[var(--border-color)]'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setActivityFilter('project_posted')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                activityFilter === 'project_posted'
-                  ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              <Rocket className="w-3.5 h-3.5" />
-              <span>Projects</span>
-            </button>
-            <button
-              onClick={() => setActivityFilter('team_accepted')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                activityFilter === 'team_accepted'
-                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              <Handshake className="w-3.5 h-3.5" />
-              <span>Acceptances</span>
-            </button>
-            <button
-              onClick={() => setActivityFilter('milestone_reached')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                activityFilter === 'milestone_reached'
-                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              <Trophy className="w-3.5 h-3.5" />
-              <span>Milestones</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Feed List */}
-        <div className="space-y-3">
-          {filteredActivities.length === 0 ? (
-            <div className="py-8 text-center text-xs text-[var(--text-muted)]">
-              No recent activity recorded for this filter option.
-            </div>
-          ) : (
-            filteredActivities.map(act => {
-              const isProject = act.type === 'project_posted';
-              const isAcceptance = act.type === 'team_accepted';
-              const isMilestone = act.type === 'milestone_reached';
-
-              return (
-                <div
-                  key={act.id}
-                  onClick={() => handleActivityClick(act)}
-                  className={`p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-subtle)]/60 hover:bg-[var(--bg-subtle)] border border-[var(--border-color)] transition-all ${
-                    act.projectId ? 'cursor-pointer hover:border-blue-400/40 group' : ''
-                  } flex items-start gap-3.5`}
-                >
-                  <img
-                    src={act.actorAvatar}
-                    alt={act.actorName}
-                    className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900 object-cover shrink-0 mt-0.5"
-                    referrerPolicy="no-referrer"
-                  />
-
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-bold text-[var(--text-primary)]">
-                          {act.actorName}
-                        </span>
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                          isProject
-                            ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                            : isAcceptance
-                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                            : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                        }`}>
-                          {isProject && <Rocket className="w-3 h-3" />}
-                          {isAcceptance && <Handshake className="w-3 h-3" />}
-                          {isMilestone && <CheckCircle2 className="w-3 h-3" />}
-                          <span>
-                            {isProject ? 'New Project' : isAcceptance ? 'Team Member' : 'Milestone Completed'}
-                          </span>
-                        </span>
-                      </div>
-
-                      <span className="text-[11px] text-[var(--text-muted)] num-tabular shrink-0">
-                        {act.timestamp}
-                      </span>
-                    </div>
-
-                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                      {act.description}
-                    </p>
-
-                    {act.projectTitle && (
-                      <div className="pt-1 flex items-center gap-1.5 text-[11px] text-blue-600 dark:text-blue-400 font-medium group-hover:underline">
-                        <span>View project: {act.projectTitle}</span>
-                        <ArrowUpRight className="w-3 h-3" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
       </div>
 
       {/* Main 2-Column Split */}
