@@ -134,6 +134,7 @@ export interface ProjectApplication {
   status: 'pending' | 'accepted' | 'rejected';
   createdAt: string;
   approvedBy?: string;
+  declineReason?: string;
 }
 
 export interface ContactInquiry {

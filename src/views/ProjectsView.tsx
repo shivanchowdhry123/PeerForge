@@ -33,6 +33,7 @@ export const ProjectsView: React.FC = () => {
     selectedProjectForDetail,
     setSelectedProjectForDetail,
     createProject,
+    deleteProject,
     applyToProject,
     handleProjectApplication,
     developerAcceptApplication,
@@ -47,6 +48,19 @@ export const ProjectsView: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Delete project modal state
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
+
+  // Decline application modal state
+  const [declineAppModal, setDeclineAppModal] = useState<{
+    projectId: string;
+    appId: string;
+    candidateName: string;
+    roleTitle: string;
+  } | null>(null);
+  const [declineReasonInput, setDeclineReasonInput] = useState('');
 
   // Collect all pending applications across all projects for Developer review
   const allPendingApplications = (projects || []).flatMap(p =>
@@ -211,7 +225,18 @@ export const ProjectsView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                {currentUser && (selectedProjectForDetail.ownerId === currentUser.id || currentUser.role === 'developer' || currentUser.role === 'admin' || currentUser.role === 'teacher') && (
+                  <button
+                    onClick={() => setProjectToDelete(selectedProjectForDetail)}
+                    className="px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs shrink-0"
+                    title="Delete project as creator or lead"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Project</span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => {
                     setActiveTab('messages');
@@ -381,21 +406,31 @@ export const ProjectsView: React.FC = () => {
                             </p>
                           )}
 
+                          {app.status === 'rejected' && app.declineReason && (
+                            <p className="text-[11px] text-red-600 dark:text-red-400 font-medium">
+                              ✕ Declined: {app.declineReason}
+                            </p>
+                          )}
+
                           {app.status === 'pending' && (
                             <div className="flex items-center justify-end gap-2 pt-1">
                               <button
-                                onClick={() =>
-                                  handleProjectApplication(
-                                    selectedProjectForDetail.id,
-                                    app.id,
-                                    'rejected'
-                                  )
-                                }
-                                className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                type="button"
+                                onClick={() => {
+                                  setDeclineAppModal({
+                                    projectId: selectedProjectForDetail.id,
+                                    appId: app.id,
+                                    candidateName: app.studentName,
+                                    roleTitle: app.roleTitle
+                                  });
+                                  setDeclineReasonInput('Position filled or candidate requirements updated.');
+                                }}
+                                className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer"
                               >
                                 Decline
                               </button>
                               <button
+                                type="button"
                                 onClick={() =>
                                   currentUser && currentUser.role === 'developer' && selectedProjectForDetail.ownerId !== currentUser.id
                                     ? developerAcceptApplication(selectedProjectForDetail.id, app.id)
@@ -405,7 +440,7 @@ export const ProjectsView: React.FC = () => {
                                         'accepted'
                                       )
                                 }
-                                className="px-4 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors shadow-2xs flex items-center gap-1.5"
+                                className="px-4 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" />
                                 <span>
@@ -533,27 +568,43 @@ export const ProjectsView: React.FC = () => {
                         return (
                           <div
                             key={task.id}
-                            className="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-[var(--bg-subtle)] transition-all group"
+                            className="flex items-center justify-between gap-2 transition-all group"
                           >
                             <button
                               type="button"
                               onClick={() => toggleProjectTask(selectedProjectForDetail.id, task.id)}
-                              className="flex-1 text-left flex items-start gap-2.5 cursor-pointer min-w-0"
+                              className={`flex-1 text-left flex items-center gap-3 p-2.5 rounded-2xl border transition-all duration-200 cursor-pointer min-w-0 group/item active:scale-[0.99] ${
+                                task.completed
+                                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-900 dark:text-emerald-200 shadow-2xs'
+                                  : 'bg-[var(--bg-subtle)]/70 hover:bg-[var(--bg-subtle)] border-[var(--border-color)] hover:border-blue-400/50 text-[var(--text-primary)]'
+                              }`}
+                              title={task.completed ? "Click to mark milestone as unreached" : "Click to mark milestone as reached"}
                             >
-                              {task.completed ? (
-                                <CheckSquare className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                              ) : (
-                                <Square className="w-4 h-4 text-[var(--text-muted)] shrink-0 mt-0.5 group-hover:text-blue-500 transition-colors" />
-                              )}
-                              <span
-                                className={`text-xs leading-snug ${
+                              <div
+                                className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 border transition-all duration-200 ${
                                   task.completed
-                                    ? 'line-through text-[var(--text-muted)]'
-                                    : 'text-[var(--text-primary)] font-medium'
+                                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-2xs scale-105'
+                                    : 'border-[var(--border-color)] group-hover/item:border-blue-500 group-hover/item:bg-blue-500/10 text-transparent'
+                                }`}
+                              >
+                                <Check className={`w-3.5 h-3.5 stroke-[3] transition-all duration-200 ${task.completed ? 'scale-100 opacity-100' : 'scale-75 opacity-0 group-hover/item:opacity-60 group-hover/item:text-blue-500'}`} />
+                              </div>
+
+                              <span
+                                className={`text-xs leading-snug flex-1 ${
+                                  task.completed
+                                    ? 'line-through text-emerald-800 dark:text-emerald-300/80 font-medium'
+                                    : 'text-[var(--text-primary)] font-semibold'
                                 }`}
                               >
                                 {task.title}
                               </span>
+
+                              {task.completed && (
+                                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-md border border-emerald-500/20 shrink-0">
+                                  Reached
+                                </span>
+                              )}
                             </button>
 
                             {isProjectLeader && (
@@ -565,7 +616,7 @@ export const ProjectsView: React.FC = () => {
                                     setEditingTaskId(task.id);
                                     setEditingTaskTitle(task.title);
                                   }}
-                                  className="p-1 rounded-lg text-[var(--text-muted)] hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-500/10 transition-colors cursor-pointer"
+                                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-500/10 transition-colors cursor-pointer"
                                   title="Edit milestone title"
                                   aria-label="Edit milestone"
                                 >
@@ -577,7 +628,7 @@ export const ProjectsView: React.FC = () => {
                                     e.stopPropagation();
                                     deleteProjectMilestone(selectedProjectForDetail.id, task.id);
                                   }}
-                                  className="p-1 rounded-lg text-[var(--text-muted)] hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                  className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
                                   title="Delete milestone"
                                   aria-label="Delete milestone"
                                 >
@@ -770,12 +821,22 @@ export const ProjectsView: React.FC = () => {
 
                         <div className="flex items-center gap-2 shrink-0 self-end md:self-auto">
                           <button
-                            onClick={() => handleProjectApplication(project.id, app.id, 'rejected')}
-                            className="px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors"
+                            type="button"
+                            onClick={() => {
+                              setDeclineAppModal({
+                                projectId: project.id,
+                                appId: app.id,
+                                candidateName: app.studentName,
+                                roleTitle: app.roleTitle
+                              });
+                              setDeclineReasonInput('Position filled or candidate requirements updated.');
+                            }}
+                            className="px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors cursor-pointer"
                           >
                             Decline
                           </button>
                           <button
+                            type="button"
                             onClick={() =>
                               developerAcceptApplication(
                                 project.id,
@@ -783,7 +844,7 @@ export const ProjectsView: React.FC = () => {
                                 'Approved via Developer Console'
                               )
                             }
-                            className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors"
+                            className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                           >
                             <CheckCircle2 className="w-4 h-4" />
                             <span>
@@ -911,12 +972,28 @@ export const ProjectsView: React.FC = () => {
                     <span className="num-tabular">{project.members.length} Members</span>
                   </span>
 
-                  <button
-                    onClick={() => setSelectedProjectForDetail(project)}
-                    className="py-1.5 px-4 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-2xs transition-colors"
-                  >
-                    View Project & Apply →
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {currentUser && (project.ownerId === currentUser.id || currentUser.role === 'developer' || currentUser.role === 'admin' || currentUser.role === 'teacher') && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setProjectToDelete(project);
+                        }}
+                        className="p-2 rounded-xl text-rose-600 dark:text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 transition-all cursor-pointer"
+                        title="Delete project"
+                        aria-label="Delete project"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => setSelectedProjectForDetail(project)}
+                      className="py-1.5 px-4 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-2xs transition-colors"
+                    >
+                      View Project & Apply →
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -1165,6 +1242,124 @@ export const ProjectsView: React.FC = () => {
                   className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs"
                 >
                   Submit Application
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Project Modal */}
+      {projectToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[var(--bg-surface)] rounded-3xl max-w-md w-full p-6 border border-[var(--border-color)] shadow-2xl space-y-4 animate-in fade-in zoom-in-95 backdrop-blur-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/25">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-[var(--text-primary)]">Delete Project?</h3>
+                <p className="text-xs text-[var(--text-muted)]">This will permanently delete this initiative and its milestone data.</p>
+              </div>
+            </div>
+            <div className="p-3.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-xs space-y-1">
+              <p className="font-bold text-[var(--text-primary)]">&quot;{projectToDelete.title}&quot;</p>
+              <p className="text-[11px] text-[var(--text-muted)]">Lead: {projectToDelete.ownerName} · {projectToDelete.members.length} Members</p>
+            </div>
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={isDeletingProject}
+                onClick={() => setProjectToDelete(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-subtle)] border border-[var(--border-color)] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingProject}
+                onClick={async () => {
+                  setIsDeletingProject(true);
+                  try {
+                    await deleteProject(projectToDelete.id);
+                  } finally {
+                    setIsDeletingProject(false);
+                    setProjectToDelete(null);
+                  }
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 shadow-xs cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isDeletingProject ? 'Deleting...' : 'Delete Permanently'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Decline Application Modal with Reason */}
+      {declineAppModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[var(--bg-surface)] rounded-3xl max-w-md w-full p-6 border border-[var(--border-color)] shadow-2xl space-y-4 animate-in fade-in zoom-in-95 backdrop-blur-xl">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--border-color)]">
+              <div>
+                <h3 className="text-base font-bold text-[var(--text-primary)]">Decline Application</h3>
+                <p className="text-xs text-[var(--text-muted)]">
+                  Candidate: <strong>{declineAppModal.candidateName}</strong> · Role: {declineAppModal.roleTitle}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeclineAppModal(null)}
+                className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleProjectApplication(
+                  declineAppModal.projectId,
+                  declineAppModal.appId,
+                  'rejected',
+                  declineReasonInput
+                );
+                setDeclineAppModal(null);
+              }}
+              className="space-y-3"
+            >
+              <div>
+                <label className="text-xs font-semibold text-[var(--text-primary)] block mb-1">
+                  Reason / Feedback for Candidate:
+                </label>
+                <textarea
+                  rows={3}
+                  value={declineReasonInput}
+                  onChange={e => setDeclineReasonInput(e.target.value)}
+                  placeholder="Explain why this application was declined..."
+                  className="w-full p-3 text-xs rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-red-500"
+                  required
+                />
+                <p className="text-[11px] text-[var(--text-muted)] mt-1">
+                  This note will be delivered to {declineAppModal.candidateName} via in-app notification.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeclineAppModal(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-subtle)] border border-[var(--border-color)] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-red-600 hover:bg-red-700 shadow-xs cursor-pointer"
+                >
+                  Confirm Decline
                 </button>
               </div>
             </form>

@@ -90,6 +90,18 @@ export async function saveSupabaseProject(project: Project): Promise<boolean> {
   }
 }
 
+export async function deleteSupabaseProject(projectId: string): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const { error } = await supabase.from('projects').delete().eq('id', projectId);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase delete project error:', err);
+    return false;
+  }
+}
+
 // --- QUESTIONS ---
 export async function fetchSupabaseQuestions(): Promise<Question[] | null> {
   if (!isSupabaseConfigured) return null;

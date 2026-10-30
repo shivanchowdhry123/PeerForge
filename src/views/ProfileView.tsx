@@ -16,7 +16,8 @@ import {
   EyeOff,
   ShieldCheck,
   Check,
-  User
+  User,
+  FolderKanban
 } from 'lucide-react';
 
 export const ProfileView: React.FC = () => {
@@ -31,11 +32,87 @@ export const ProfileView: React.FC = () => {
     removeSkillFromCurrent,
     openDirectMessageWith,
     setIsOnboardingOpen,
-    openAuthModal
+    openAuthModal,
+    questions,
+    answers,
+    projects,
+    setSelectedQuestionForDetail,
+    setSelectedProjectForDetail,
+    setActiveTab
   } = useApp();
 
   const student = selectedStudentForProfile || currentUser;
   const isOwnProfile = student && currentUser ? student.id === currentUser.id : false;
+
+  // Answered questions and contributions
+  const studentAnswers = (answers || []).filter(a => a.authorId === student?.id);
+  const studentAnsweredQuestions = studentAnswers
+    .map(ans => ({
+      answer: ans,
+      question: (questions || []).find(q => q.id === ans.questionId)
+    }))
+    .filter((item): item is { answer: typeof studentAnswers[0]; question: NonNullable<typeof questions>[0] } => item.question !== undefined);
+
+  // Projects & Initiatives where student is owner or member
+  const allStudentInitiatives = (() => {
+    const map = new Map<string, {
+      id: string;
+      title: string;
+      description: string;
+      role: string;
+      status: 'completed' | 'in-progress';
+      category?: string;
+      isOwner: boolean;
+      rawProject?: typeof projects[0];
+    }>();
+
+    // 1. Add platform projects where student is owner or member
+    (projects || []).forEach(p => {
+      if (p.ownerId === student?.id) {
+        map.set(p.id, {
+          id: p.id,
+          title: p.title,
+          description: p.description,
+          role: 'Project Leader & Creator',
+          status: p.status === 'completed' ? 'completed' : 'in-progress',
+          category: p.category,
+          isOwner: true,
+          rawProject: p
+        });
+      } else {
+        const member = p.members.find(m => m.studentId === student?.id);
+        if (member) {
+          map.set(p.id, {
+            id: p.id,
+            title: p.title,
+            description: p.description,
+            role: member.role || 'Team Member',
+            status: p.status === 'completed' ? 'completed' : 'in-progress',
+            category: p.category,
+            isOwner: false,
+            rawProject: p
+          });
+        }
+      }
+    });
+
+    // 2. Fallback to student.projects for static entries
+    (student?.projects || []).forEach((proj, idx) => {
+      const key = proj.id || `static-proj-${idx}`;
+      if (!map.has(key) && !Array.from(map.values()).some(item => item.title.toLowerCase() === proj.title.toLowerCase())) {
+        map.set(key, {
+          id: key,
+          title: proj.title,
+          description: proj.description,
+          role: proj.role || 'Contributor',
+          status: proj.status === 'completed' ? 'completed' : 'in-progress',
+          isOwner: proj.role?.toLowerCase().includes('owner') || proj.role?.toLowerCase().includes('lead') || false
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  })();
 
   // Add skill local form
   const [isAddingSkill, setIsAddingSkill] = useState(false);
@@ -405,43 +482,158 @@ export const ProfileView: React.FC = () => {
             </div>
           </div>
 
-          {/* Projects Showcased */}
-          <div className="p-6 rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-color)] space-y-4">
-            <h2 className="text-base font-bold text-[var(--text-primary)]">
-              Projects & Contributions
-            </h2>
+          {/* Projects & Peer Contributions */}
+          <div className="p-6 rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-color)] space-y-5 shadow-xs">
+            <div>
+              <h2 className="text-base font-bold text-[var(--text-primary)]">
+                Projects & Peer Contributions
+              </h2>
+              <p className="text-xs text-[var(--text-muted)]">
+                Collaborative initiatives and answered peer academic solutions
+              </p>
+            </div>
 
+            {/* Listed Projects & Initiatives */}
             <div className="space-y-3">
-              {student.projects.length === 0 ? (
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+                  <FolderKanban className="w-3.5 h-3.5 text-blue-500" />
+                  <span>Initiatives & Led Projects ({allStudentInitiatives.length})</span>
+                </h3>
+                {allStudentInitiatives.some(p => p.isOwner) && (
+                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
+                    Project Leader
+                  </span>
+                )}
+              </div>
+
+              {allStudentInitiatives.length === 0 ? (
                 <p className="text-xs text-[var(--text-muted)] italic">
-                  No projects listed yet.
+                  No project initiatives listed yet. {isOwnProfile && 'Click "Create Project" in the Projects section to launch your own initiative!'}
                 </p>
               ) : (
-                student.projects.map(proj => (
+                allStudentInitiatives.map(proj => (
                   <div
                     key={proj.id}
-                    className="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] space-y-1.5"
+                    onClick={() => {
+                      if (proj.rawProject) {
+                        setSelectedProjectForDetail(proj.rawProject);
+                        setActiveTab('projects');
+                      }
+                    }}
+                    className={`p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] space-y-2 transition-all ${
+                      proj.rawProject ? 'hover:border-blue-400/60 cursor-pointer group' : ''
+                    }`}
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">
-                        {proj.title}
-                      </h3>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            {proj.title}
+                          </h3>
+                          {proj.isOwner && (
+                            <span className="text-[10px] font-extrabold px-2 py-0.2 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
+                              👑 Project Owner & Lead
+                            </span>
+                          )}
+                          {proj.category && (
+                            <span className="text-[10px] font-semibold px-2 py-0.2 rounded-md bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border-color)]">
+                              {proj.category}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
                       <span
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
                           proj.status === 'completed'
                             ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
                             : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
                         }`}
                       >
-                        {proj.status === 'completed' ? 'Completed' : 'In Progress'}
+                        {proj.status === 'completed' ? 'Completed' : 'Active Initiative'}
                       </span>
                     </div>
-                    <p className="text-xs text-[var(--text-secondary)]">{proj.description}</p>
-                    <div className="text-[11px] font-medium text-purple-700 dark:text-purple-300 pt-1">
-                      Role: {proj.role}
+
+                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{proj.description}</p>
+
+                    <div className="flex items-center justify-between pt-1 text-[11px]">
+                      <span className="font-semibold text-purple-700 dark:text-purple-300">
+                        Role: {proj.role}
+                      </span>
+                      {proj.rawProject && (
+                        <span className="font-medium text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
+                          Manage & View Team →
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))
+              )}
+            </div>
+
+            {/* Answered Peer Questions & Contributions */}
+            <div className="space-y-3 pt-3 border-t border-[var(--border-color)]/70">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-blue-500" />
+                  <span>Answered Forum Questions ({studentAnsweredQuestions.length})</span>
+                </h3>
+                {studentAnsweredQuestions.length > 0 && (
+                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full border border-blue-500/20">
+                    Peer Helper
+                  </span>
+                )}
+              </div>
+
+              {studentAnsweredQuestions.length === 0 ? (
+                <p className="text-xs text-[var(--text-muted)] italic">
+                  No answered questions yet. Visit the Q&A Peer Forum to contribute solutions!
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {studentAnsweredQuestions.map(({ answer, question }) => (
+                    <div
+                      key={answer.id}
+                      onClick={() => {
+                        setSelectedQuestionForDetail(question);
+                        setActiveTab('qa');
+                      }}
+                      className="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] hover:border-blue-400/60 transition-all cursor-pointer space-y-2 group"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-bold text-[var(--text-primary)] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            {question.title}
+                          </span>
+                          <span className="text-[10px] font-semibold px-2 py-0.2 rounded-md bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                            {question.topic}
+                          </span>
+                        </div>
+
+                        {answer.isAccepted ? (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 shrink-0 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>Accepted Solution</span>
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-medium text-[var(--text-muted)] shrink-0">
+                            ▲ {answer.upvotes} {answer.upvotes === 1 ? 'Upvote' : 'Upvotes'}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-[var(--text-secondary)] italic bg-[var(--bg-surface)] p-2.5 rounded-xl border border-[var(--border-color)] line-clamp-2">
+                        &quot;{answer.body}&quot;
+                      </p>
+
+                      <div className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 flex items-center justify-between">
+                        <span>Answered by {student.name} · {answer.createdAt}</span>
+                        <span className="group-hover:translate-x-0.5 transition-transform">View Solution →</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
@@ -451,18 +643,69 @@ export const ProfileView: React.FC = () => {
         <div className="space-y-6">
           {/* Achievements */}
           <div className="p-5 rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-color)] space-y-4">
-            <div className="flex items-center gap-2">
-              <Award className="w-4 h-4 text-amber-500" />
-              <h2 className="text-base font-bold text-[var(--text-primary)]">
-                School Achievements
-              </h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-amber-500" />
+                <h2 className="text-base font-bold text-[var(--text-primary)]">
+                  School Achievements & Recognition
+                </h2>
+              </div>
+              <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                {(student.achievements || []).length + (studentAnswers.length > 0 ? 1 : 0) + studentAnswers.filter(a => a.isAccepted).length} Total
+              </span>
             </div>
 
             <div className="space-y-3">
+              {/* Dynamic Q&A Peer Forum Contributor Badge */}
+              {studentAnswers.length > 0 && (
+                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-purple-500/5 to-transparent border border-amber-500/30 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-[var(--text-primary)] flex items-center gap-1.5">
+                      <Award className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Peer Forum Knowledge Contributor</span>
+                    </span>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  </div>
+                  <div className="text-[11px] text-[var(--text-secondary)]">
+                    Answered {studentAnswers.length} peer academic {studentAnswers.length === 1 ? 'question' : 'questions'} on OPG Connect
+                  </div>
+                  <div className="text-[10px] text-[var(--text-muted)] flex items-center justify-between pt-0.5">
+                    <span>Issuer: OPG World School Q&A</span>
+                    <span className="font-semibold text-amber-600 dark:text-amber-400">Verified Contributor</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamic Accepted Solution Badges */}
+              {studentAnsweredQuestions
+                .filter(item => item.answer.isAccepted)
+                .map(({ answer, question }) => (
+                  <div
+                    key={`ach-ans-${answer.id}`}
+                    onClick={() => {
+                      setSelectedQuestionForDetail(question);
+                      setActiveTab('qa');
+                    }}
+                    className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-1 cursor-pointer hover:border-emerald-500/60 transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        <span>Accepted Solution: &quot;{question.title}&quot;</span>
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-[var(--text-muted)] flex items-center justify-between">
+                      <span>Issuer: OPG Academic Peer Forum</span>
+                      <span className="num-tabular font-medium text-emerald-600 dark:text-emerald-400">Verified Solution</span>
+                    </div>
+                  </div>
+                ))}
+
+              {/* Static School Achievements */}
               {(student.achievements || []).map((ach, idx) => (
                 <div
                   key={idx}
-                  className="p-3 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] space-y-1"
+                  className="p-3.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] space-y-1"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="text-xs font-bold text-[var(--text-primary)]">

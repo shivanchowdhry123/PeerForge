@@ -11,7 +11,8 @@ import {
   Message,
   ContentReport,
   ContactInquiry,
-  UploadedFile
+  UploadedFile,
+  ProjectApplication
 } from '../types';
 import {
   INITIAL_STUDENTS,
@@ -31,6 +32,7 @@ import {
   isSupabaseConfigured,
   saveSupabaseStudent,
   saveSupabaseProject,
+  deleteSupabaseProject,
   saveSupabaseQuestion,
   deleteSupabaseQuestion,
   saveSupabaseAnswer,
@@ -93,8 +95,9 @@ interface AppContextType {
   createGroupConversation: (name: string, participantIds: string[], topic?: string) => string;
   reactToMessage: (messageId: string, emoji: string) => void;
   createProject: (newProject: Partial<Project>) => void;
+  deleteProject: (projectId: string) => Promise<boolean>;
   applyToProject: (projectId: string, roleId: string, roleTitle: string, note: string) => void;
-  handleProjectApplication: (projectId: string, appId: string, action: 'accepted' | 'rejected') => void;
+  handleProjectApplication: (projectId: string, appId: string, action: 'accepted' | 'rejected', declineReason?: string) => void;
   toggleProjectTask: (projectId: string, taskId: string) => void;
   addProjectMilestone: (projectId: string, title: string) => void;
   editProjectMilestone: (projectId: string, taskId: string, newTitle: string) => void;
@@ -712,9 +715,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const handleProjectApplication = (projectId: string, appId: string, action: 'accepted' | 'rejected') => {
+  const handleProjectApplication = (
+    projectId: string,
+    appId: string,
+    action: 'accepted' | 'rejected',
+    declineReason?: string
+  ) => {
     if (!currentUser) return;
-    let updatedProject: Project | undefined;
+
+    let targetApp: ProjectApplication | undefined;
+    let targetProj: Project | undefined;
 
     setProjects(prev =>
       prev.map(p => {
@@ -724,154 +734,236 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ? `Lead Developer (${currentUser.name})`
             : p.ownerName;
 
+          const foundApp = p.applications.find(a => a.id === appId);
+          if (foundApp) targetApp = foundApp;
+
           const updatedApps = p.applications.map(a =>
             a.id === appId
               ? {
                   ...a,
                   status: action,
-                  approvedBy: action === 'accepted' ? approvedByNote : undefined
+                  approvedBy: action === 'accepted' ? approvedByNote : undefined,
+                  declineReason: action === 'rejected' ? (declineReason || 'Position filled or candidate selection completed.') : undefined
                 }
               : a
           );
+
           let updatedMembers = [...p.members];
           let updatedRoles = [...p.openRoles];
 
-          if (action === 'accepted') {
-            const targetApp = p.applications.find(a => a.id === appId);
-            if (targetApp) {
-              if (!updatedMembers.some(m => m.studentId === targetApp.studentId)) {
-                updatedMembers.push({
-                  studentId: targetApp.studentId,
-                  role: targetApp.roleTitle,
-                  name: targetApp.studentName,
-                  avatar: targetApp.studentAvatar
-                });
-              }
-              updatedRoles = updatedRoles.map(r =>
-                r.id === targetApp.roleId
-                  ? { ...r, status: 'filled' as const, assigneeId: targetApp.studentId, assigneeName: targetApp.studentName }
-                  : r
-              );
+          if (action === 'accepted' && foundApp) {
+            if (!updatedMembers.some(m => m.studentId === foundApp.studentId)) {
+              updatedMembers.push({
+                studentId: foundApp.studentId,
+                role: foundApp.roleTitle,
+                name: foundApp.studentName,
+                avatar: foundApp.studentAvatar
+              });
             }
+            updatedRoles = updatedRoles.map(r =>
+              r.id === foundApp.roleId || r.title.toLowerCase() === foundApp.roleTitle.toLowerCase()
+                ? { ...r, status: 'filled' as const, assigneeId: foundApp.studentId, assigneeName: foundApp.studentName }
+                : r
+            );
           }
 
-          updatedProject = {
+          const updated = {
             ...p,
             applications: updatedApps,
             members: updatedMembers,
             openRoles: updatedRoles
           };
-          return updatedProject;
+          targetProj = updated;
+          return updated;
         }
         return p;
       })
     );
 
-    if (isSupabaseConfigured && updatedProject) {
-      saveSupabaseProject(updatedProject);
+    const proj = targetProj || projects.find(p => p.id === projectId);
+    const app = targetApp || proj?.applications.find(a => a.id === appId);
+
+    if (proj && app) {
+      const isDev = currentUser.role === 'developer';
+      const approvedByNote = isDev && proj.ownerId !== currentUser.id
+        ? `Lead Developer (${currentUser.name})`
+        : proj.ownerName;
+
+      const updatedApps = proj.applications.map(a =>
+        a.id === appId
+          ? {
+              ...a,
+              status: action,
+              approvedBy: action === 'accepted' ? approvedByNote : undefined,
+              declineReason: action === 'rejected' ? (declineReason || 'Position filled or candidate selection completed.') : undefined
+            }
+          : a
+      );
+
+      let updatedMembers = [...proj.members];
+      let updatedRoles = [...proj.openRoles];
+
+      if (action === 'accepted') {
+        if (!updatedMembers.some(m => m.studentId === app.studentId)) {
+          updatedMembers.push({
+            studentId: app.studentId,
+            role: app.roleTitle,
+            name: app.studentName,
+            avatar: app.studentAvatar
+          });
+        }
+        updatedRoles = updatedRoles.map(r =>
+          r.id === app.roleId || r.title.toLowerCase() === app.roleTitle.toLowerCase()
+            ? { ...r, status: 'filled' as const, assigneeId: app.studentId, assigneeName: app.studentName }
+            : r
+        );
+      }
+
+      const updatedProjObj: Project = {
+        ...proj,
+        applications: updatedApps,
+        members: updatedMembers,
+        openRoles: updatedRoles
+      };
+
+      setSelectedProjectForDetail(prev => (prev?.id === projectId ? updatedProjObj : prev));
+
+      if (isSupabaseConfigured) {
+        saveSupabaseProject(updatedProjObj);
+      }
+
+      if (action === 'accepted') {
+        // Add candidate to team chat conversation
+        let teamConv = conversations.find(c => c.projectId === projectId || c.id === `conv-proj-${projectId}`);
+        if (teamConv) {
+          const newParticipants = Array.from(new Set([...teamConv.participantIds, app.studentId]));
+          const updatedConv: Conversation = {
+            ...teamConv,
+            participantIds: newParticipants,
+            lastMessage: {
+              text: `🎉 ${app.studentName} joined the team as ${app.roleTitle}!`,
+              senderId: currentUser.id,
+              timestamp: 'Just now'
+            },
+            updatedAt: new Date().toISOString()
+          };
+          setConversations(prev => prev.map(c => (c.id === teamConv!.id ? updatedConv : c)));
+          if (isSupabaseConfigured) saveSupabaseConversation(updatedConv);
+
+          const welcomeMsg: Message = {
+            id: `msg-welcome-${Date.now()}`,
+            conversationId: teamConv.id,
+            senderId: currentUser.id,
+            senderName: currentUser.name,
+            senderAvatar: currentUser.avatar,
+            text: `🎉 ${app.studentName} has been accepted into the team as ${app.roleTitle}! Welcome to the team!`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            reactions: {},
+            readBy: [currentUser.id]
+          };
+          setMessages(prev => [...prev, welcomeMsg]);
+          if (isSupabaseConfigured) saveSupabaseMessage(welcomeMsg);
+        }
+
+        // Add project to student profile
+        setAllStudents(prev =>
+          prev.map(s => {
+            if (s.id === app.studentId) {
+              const existingProjs = s.projects || [];
+              const newProjObj = {
+                id: proj.id,
+                title: proj.title,
+                description: proj.description,
+                role: app.roleTitle,
+                status: 'in-progress' as const
+              };
+              const updatedProjs = existingProjs.some(p => p.id === proj.id)
+                ? existingProjs.map(p => (p.id === proj.id ? { ...p, role: app.roleTitle } : p))
+                : [...existingProjs, newProjObj];
+              const updatedStudent: StudentProfile = { ...s, projects: updatedProjs };
+              if (isSupabaseConfigured) saveSupabaseStudent(updatedStudent);
+              return updatedStudent;
+            }
+            return s;
+          })
+        );
+
+        // Send acceptance notification to candidate
+        const acceptNotif: AppNotification = {
+          id: `notif-app-accept-${Date.now()}`,
+          userId: app.studentId,
+          type: 'invite',
+          title: `🎉 Application Accepted: ${proj.title}`,
+          description: `Congratulations! Your application for "${app.roleTitle}" was accepted by ${approvedByNote}. You have been added to the team chat and project showcase!`,
+          read: false,
+          timestamp: 'Just now',
+          actionTab: 'projects'
+        };
+        setNotifications(prev => [acceptNotif, ...prev]);
+        if (isSupabaseConfigured) saveSupabaseNotification(acceptNotif);
+      } else {
+        // REJECTED: Send decline notification to candidate
+        const reasonText = declineReason || 'Position filled or candidate selection completed.';
+        const declineNotif: AppNotification = {
+          id: `notif-app-decline-${Date.now()}`,
+          userId: app.studentId,
+          type: 'system',
+          title: `Application Update: ${proj.title}`,
+          description: `Your application for "${app.roleTitle}" was declined. Reason: "${reasonText}"`,
+          read: false,
+          timestamp: 'Just now',
+          actionTab: 'projects'
+        };
+        setNotifications(prev => [declineNotif, ...prev]);
+        if (isSupabaseConfigured) saveSupabaseNotification(declineNotif);
+      }
     }
+  };
+
+  const deleteProject = async (projectId: string): Promise<boolean> => {
+    if (!currentUser) return false;
+
+    setProjects(prev => prev.filter(p => p.id !== projectId));
+    setSelectedProjectForDetail(prev => (prev?.id === projectId ? null : prev));
+
+    if (isSupabaseConfigured) {
+      await deleteSupabaseProject(projectId);
+    }
+    return true;
   };
 
   const developerAcceptApplication = (projectId: string, appId: string, devNote?: string) => {
-    if (!currentUser) return;
-    let acceptedApplicantName = '';
-    let roleName = '';
-    let projectTitle = '';
-    let updatedProject: Project | undefined;
-
-    setProjects(prev =>
-      prev.map(p => {
-        if (p.id === projectId) {
-          projectTitle = p.title;
-          const targetApp = p.applications.find(a => a.id === appId);
-          if (!targetApp) return p;
-
-          acceptedApplicantName = targetApp.studentName;
-          roleName = targetApp.roleTitle;
-
-          const updatedApps = p.applications.map(a =>
-            a.id === appId
-              ? {
-                  ...a,
-                  status: 'accepted' as const,
-                  approvedBy: `Developer Authority (${currentUser.name})${devNote ? ` - ${devNote}` : ''}`
-                }
-              : a
-          );
-
-          let updatedMembers = [...p.members];
-          if (!updatedMembers.some(m => m.studentId === targetApp.studentId)) {
-            updatedMembers.push({
-              studentId: targetApp.studentId,
-              role: targetApp.roleTitle,
-              name: targetApp.studentName,
-              avatar: targetApp.studentAvatar
-            });
-          }
-
-          const updatedRoles = p.openRoles.map(r =>
-            r.id === targetApp.roleId
-              ? { ...r, status: 'filled' as const, assigneeId: targetApp.studentId, assigneeName: targetApp.studentName }
-              : r
-          );
-
-          updatedProject = {
-            ...p,
-            applications: updatedApps,
-            members: updatedMembers,
-            openRoles: updatedRoles
-          };
-          return updatedProject;
-        }
-        return p;
-      })
-    );
-
-    const devNotif: AppNotification = {
-      id: `notif-${Date.now()}`,
-      userId: currentUser.id,
-      type: 'system',
-      title: `Developer Approved: ${acceptedApplicantName || 'Candidate'}`,
-      description: `Accepted application for "${roleName}" on project "${projectTitle}". Granted cross-role developer & teacher authority.`,
-      read: false,
-      timestamp: 'Just now',
-      actionTab: 'projects'
-    };
-
-    setNotifications(prev => [devNotif, ...prev]);
-
-    if (isSupabaseConfigured) {
-      if (updatedProject) saveSupabaseProject(updatedProject);
-      saveSupabaseNotification(devNotif);
-    }
+    handleProjectApplication(projectId, appId, 'accepted', devNote);
   };
 
   const toggleProjectTask = (projectId: string, taskId: string) => {
-    let updatedProject: Project | undefined;
     setProjects(prev =>
       prev.map(p => {
         if (p.id === projectId) {
-          updatedProject = {
+          return {
             ...p,
             tasks: p.tasks.map(t => (t.id === taskId ? { ...t, completed: !t.completed } : t))
           };
-          return updatedProject;
         }
         return p;
       })
     );
 
-    if (updatedProject) {
-      const targetProj = updatedProject;
-      setSelectedQuestionForDetail(null);
-      setSelectedProjectForDetail(prev => (prev?.id === projectId ? targetProj : prev));
-      if (isSupabaseConfigured) saveSupabaseProject(targetProj);
-    }
+    setSelectedProjectForDetail(prev => {
+      if (prev?.id === projectId) {
+        const updated = {
+          ...prev,
+          tasks: prev.tasks.map(t => (t.id === taskId ? { ...t, completed: !t.completed } : t))
+        };
+        if (isSupabaseConfigured) saveSupabaseProject(updated);
+        return updated;
+      }
+      return prev;
+    });
   };
 
   const addProjectMilestone = (projectId: string, title: string) => {
     if (!title.trim()) return;
-    let updatedProject: Project | undefined;
     const newTask = {
       id: `task-${Date.now()}`,
       title: title.trim(),
@@ -881,68 +973,80 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setProjects(prev =>
       prev.map(p => {
         if (p.id === projectId) {
-          updatedProject = {
+          return {
             ...p,
             tasks: [...p.tasks, newTask]
           };
-          return updatedProject;
         }
         return p;
       })
     );
 
-    if (updatedProject) {
-      const targetProj = updatedProject;
-      setSelectedProjectForDetail(prev => (prev?.id === projectId ? targetProj : prev));
-      if (isSupabaseConfigured) saveSupabaseProject(targetProj);
-    }
+    setSelectedProjectForDetail(prev => {
+      if (prev?.id === projectId) {
+        const updated = {
+          ...prev,
+          tasks: [...prev.tasks, newTask]
+        };
+        if (isSupabaseConfigured) saveSupabaseProject(updated);
+        return updated;
+      }
+      return prev;
+    });
   };
 
   const editProjectMilestone = (projectId: string, taskId: string, newTitle: string) => {
     if (!newTitle.trim()) return;
-    let updatedProject: Project | undefined;
 
     setProjects(prev =>
       prev.map(p => {
         if (p.id === projectId) {
-          updatedProject = {
+          return {
             ...p,
             tasks: p.tasks.map(t => (t.id === taskId ? { ...t, title: newTitle.trim() } : t))
           };
-          return updatedProject;
         }
         return p;
       })
     );
 
-    if (updatedProject) {
-      const targetProj = updatedProject;
-      setSelectedProjectForDetail(prev => (prev?.id === projectId ? targetProj : prev));
-      if (isSupabaseConfigured) saveSupabaseProject(targetProj);
-    }
+    setSelectedProjectForDetail(prev => {
+      if (prev?.id === projectId) {
+        const updated = {
+          ...prev,
+          tasks: prev.tasks.map(t => (t.id === taskId ? { ...t, title: newTitle.trim() } : t))
+        };
+        if (isSupabaseConfigured) saveSupabaseProject(updated);
+        return updated;
+      }
+      return prev;
+    });
   };
 
   const deleteProjectMilestone = (projectId: string, taskId: string) => {
-    let updatedProject: Project | undefined;
-
     setProjects(prev =>
       prev.map(p => {
         if (p.id === projectId) {
-          updatedProject = {
+          return {
             ...p,
             tasks: p.tasks.filter(t => t.id !== taskId)
           };
-          return updatedProject;
         }
         return p;
       })
     );
 
-    if (updatedProject) {
-      const targetProj = updatedProject;
-      setSelectedProjectForDetail(prev => (prev?.id === projectId ? targetProj : prev));
-      if (isSupabaseConfigured) saveSupabaseProject(targetProj);
-    }
+    setSelectedProjectForDetail(prev => {
+      if (prev?.id === projectId) {
+        const updated = {
+          ...prev,
+          tasks: prev.tasks.filter(t => t.id !== taskId)
+        };
+        if (isSupabaseConfigured) saveSupabaseProject(updated);
+        return updated;
+      }
+      return prev;
+    });
   };
 
   const askQuestion = async (newQ: Partial<Question>): Promise<Question> => {
@@ -1716,6 +1820,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createGroupConversation,
         reactToMessage,
         createProject,
+        deleteProject,
         applyToProject,
         handleProjectApplication,
         developerAcceptApplication,
