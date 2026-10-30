@@ -251,3 +251,16 @@ export interface UploadedFile {
   description?: string;
   projectId?: string;
 }
+
+export interface ActivityEvent {
+  id: string;
+  type: 'project_posted' | 'team_accepted' | 'milestone_reached';
+  title: string;
+  description: string;
+  actorName: string;
+  actorAvatar: string;
+  projectId?: string;
+  projectTitle?: string;
+  timestamp: string;
+  rawTimestamp: number;
+}

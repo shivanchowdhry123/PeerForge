@@ -217,9 +217,9 @@ export const ContactUsView: React.FC = () => {
               All messages submitted through this channel are stored securely and delivered exclusively to active App Developers on PeerForge.
             </p>
             <div className="pt-1 text-[11px] text-[var(--text-muted)] space-y-1">
-              <p>• Lead App Developer: Aakriti Narayan</p>
+              <p>• Lead App Developers: OPG Student Tech Team</p>
               <p>• Response window: Within 24 school hours</p>
-              <p>• Faculty Advisor: Dr. Anita Rao</p>
+              <p>• Faculty Advisor: School Administration & Mentors</p>
             </div>
           </div>
         </div>

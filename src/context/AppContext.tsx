@@ -12,7 +12,8 @@ import {
   ContentReport,
   ContactInquiry,
   UploadedFile,
-  ProjectApplication
+  ProjectApplication,
+  ActivityEvent
 } from '../types';
 import {
   INITIAL_STUDENTS,
@@ -25,7 +26,8 @@ import {
   INITIAL_NOTIFICATIONS,
   INITIAL_REPORTS,
   INITIAL_CONTACT_INQUIRIES,
-  INITIAL_UPLOADED_FILES
+  INITIAL_UPLOADED_FILES,
+  INITIAL_ACTIVITIES
 } from '../data/initialData';
 import {
   supabase,
@@ -72,6 +74,7 @@ interface AppContextType {
   reports: ContentReport[];
   contactInquiries: ContactInquiry[];
   uploadedFiles: UploadedFile[];
+  activities: ActivityEvent[];
   unreadNotifsCount: number;
   unreadMessagesCount: number;
   activeTab: string;
@@ -183,6 +186,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [reports, setReports] = useState<ContentReport[]>(() => (isSupabaseConfigured ? [] : INITIAL_REPORTS));
   const [contactInquiries, setContactInquiries] = useState<ContactInquiry[]>(() => (isSupabaseConfigured ? [] : INITIAL_CONTACT_INQUIRIES));
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>(() => (isSupabaseConfigured ? [] : INITIAL_UPLOADED_FILES));
+  const [activities, setActivities] = useState<ActivityEvent[]>(INITIAL_ACTIVITIES);
+
+  const addActivityEvent = (act: Omit<ActivityEvent, 'id' | 'timestamp' | 'rawTimestamp'>) => {
+    const newAct: ActivityEvent = {
+      ...act,
+      id: `act-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      timestamp: 'Just now',
+      rawTimestamp: Date.now()
+    };
+    setActivities(prev => [newAct, ...prev]);
+  };
 
   // Navigation & UI States
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -675,6 +689,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       saveSupabaseProject(project);
       saveSupabaseConversation(groupConv);
     }
+
+    addActivityEvent({
+      type: 'project_posted',
+      title: '🚀 New Project Posted',
+      description: `${currentUser.name} launched "${project.title}" under ${project.category}`,
+      actorName: currentUser.name,
+      actorAvatar: currentUser.avatar,
+      projectId: project.id,
+      projectTitle: project.title
+    });
   };
 
   const applyToProject = (projectId: string, roleId: string, roleTitle: string, note: string) => {
@@ -901,6 +925,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
         setNotifications(prev => [acceptNotif, ...prev]);
         if (isSupabaseConfigured) saveSupabaseNotification(acceptNotif);
+
+        addActivityEvent({
+          type: 'team_accepted',
+          title: '🤝 Team Role Accepted',
+          description: `${app.studentName} joined "${proj.title}" as ${app.roleTitle}`,
+          actorName: app.studentName,
+          actorAvatar: app.studentAvatar,
+          projectId: proj.id,
+          projectTitle: proj.title
+        });
       } else {
         // REJECTED: Send decline notification to candidate
         const reasonText = declineReason || 'Position filled or candidate selection completed.';
@@ -937,9 +971,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleProjectTask = (projectId: string, taskId: string) => {
+    let toggledToCompleted = false;
+    let milestoneTitle = '';
+    let targetProjTitle = '';
+
     setProjects(prev =>
       prev.map(p => {
         if (p.id === projectId) {
+          targetProjTitle = p.title;
+          const targetTask = p.tasks.find(t => t.id === taskId);
+          if (targetTask && !targetTask.completed) {
+            toggledToCompleted = true;
+            milestoneTitle = targetTask.title;
+          }
           return {
             ...p,
             tasks: p.tasks.map(t => (t.id === taskId ? { ...t, completed: !t.completed } : t))
@@ -960,6 +1004,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return prev;
     });
+
+    if (toggledToCompleted && milestoneTitle) {
+      addActivityEvent({
+        type: 'milestone_reached',
+        title: '🎉 Milestone Reached',
+        description: `Reached milestone "${milestoneTitle}" on "${targetProjTitle || 'Project'}"`,
+        actorName: currentUser?.name || 'Project Lead',
+        actorAvatar: currentUser?.avatar || 'https://api.dicebear.com/7.x/adventurer/svg?seed=Leader',
+        projectId,
+        projectTitle: targetProjTitle
+      });
+    }
   };
 
   const addProjectMilestone = (projectId: string, title: string) => {
@@ -1429,7 +1485,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const devNotif: AppNotification = {
       id: `notif-${Date.now()}`,
-      userId: 'user-aakriti',
+      userId: 'all',
       type: 'system',
       title: `Developer Alert: Contact Inquiry from ${inquiryData.name}`,
       description: `"${inquiryData.subject}" - Categorized under ${inquiryData.category}. Routed strictly to Developers.`,
@@ -1797,6 +1853,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         reports,
         contactInquiries,
         uploadedFiles,
+        activities,
         unreadNotifsCount,
         unreadMessagesCount,
         activeTab,

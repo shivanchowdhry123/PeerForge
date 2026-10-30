@@ -29,9 +29,9 @@ export const AdminView: React.FC = () => {
   }
 
   const auditEvents = [
-    { id: '1', action: 'Lead Developer Account Verification', actor: 'PeerForge System', target: 'Aakriti Narayan (Grade 11 Developer)', time: 'Oct 25, 2026' },
-    { id: '2', action: 'Faculty Mentor Verification', actor: 'OPG Administration', target: 'Mr. Rajesh Sharma (Faculty Mentor)', time: 'Oct 24, 2026' },
-    { id: '3', action: 'Project Architecture Review', actor: 'Aakriti Narayan', target: 'PeerForge Academic Portal & Doubt Solver', time: 'Today 10:15 AM' }
+    { id: '1', action: 'Developer Account Verification', actor: 'PeerForge System', target: 'Verified Developer Account', time: 'Oct 25, 2026' },
+    { id: '2', action: 'Faculty Mentor Verification', actor: 'OPG Administration', target: 'Verified Faculty Mentor', time: 'Oct 24, 2026' },
+    { id: '3', action: 'Database Roster Sync', actor: 'PeerForge System', target: 'Supabase Realtime Tables', time: 'Today 10:15 AM' }
   ];
 
   return (
