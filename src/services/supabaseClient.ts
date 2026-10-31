@@ -35,6 +35,25 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 /**
+ * Resend Supabase signup confirmation email to user.
+ */
+export async function resendSupabaseConfirmation(email: string): Promise<{ success: boolean; error?: string }> {
+  if (!isSupabaseConfigured) return { success: true };
+  try {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim().toLowerCase()
+    });
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Failed to resend confirmation email.' };
+  }
+}
+
+/**
  * Supabase Data Service Layer for PeerForge OPG World School Platform
  * Handles table synchronization, real-time channels, and fallback handling.
  */
@@ -45,7 +64,11 @@ export async function fetchSupabaseStudents(): Promise<StudentProfile[] | null> 
   try {
     const { data, error } = await supabase.from('students').select('*');
     if (error) throw error;
-    return data as StudentProfile[];
+    if (!data) return [];
+    return data.map((row: any) => ({
+      ...row,
+      defaultTheme: row.defaultTheme || row.default_theme || row.privacySettings?.defaultTheme || 'light'
+    })) as StudentProfile[];
   } catch (err) {
     console.warn('Supabase fetch students error:', err);
     return null;
@@ -54,11 +77,30 @@ export async function fetchSupabaseStudents(): Promise<StudentProfile[] | null> 
 
 export async function saveSupabaseStudent(student: StudentProfile): Promise<boolean> {
   if (!isSupabaseConfigured) return false;
+  const cleanStudent = sanitizeStudentForDb(student);
+
+  // Attempt 1: Standard PostgreSQL snake_case 'default_theme'
   try {
-    const cleanStudent = sanitizeStudentForDb(student);
-    const { error } = await supabase.from('students').upsert(cleanStudent);
-    if (error) throw error;
-    return true;
+    const { defaultTheme, ...withSnakeCase } = cleanStudent;
+    const { error: errSnake } = await supabase.from('students').upsert(withSnakeCase);
+    if (!errSnake) return true;
+
+    // Attempt 2: If default_theme column does not exist, try camelCase 'defaultTheme'
+    if (errSnake.message?.includes('default_theme') || errSnake.code === 'PGRST204') {
+      const { default_theme, ...withCamelCase } = cleanStudent;
+      const { error: errCamel } = await supabase.from('students').upsert(withCamelCase);
+      if (!errCamel) return true;
+
+      // Attempt 3: If neither root column exists yet, omit both and persist inside privacySettings JSONB
+      if (errCamel.message?.includes('defaultTheme') || errCamel.code === 'PGRST204') {
+        const { default_theme, defaultTheme, ...safeFallback } = cleanStudent;
+        const { error: errFallback } = await supabase.from('students').upsert(safeFallback);
+        if (!errFallback) return true;
+      }
+    }
+
+    console.warn('Supabase save student error:', errSnake);
+    return false;
   } catch (err) {
     console.warn('Supabase save student error:', err);
     return false;

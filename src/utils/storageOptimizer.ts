@@ -80,11 +80,20 @@ export function validateFileUploadLimits(file: { size: number; name: string }): 
 
 /**
  * Projects a clean, optimized StudentProfile payload for Supabase upsert.
- * Ensures avatars are URL strings and trims array fields.
+ * Ensures avatars are URL strings, trims array fields, and stores defaultTheme
+ * safely inside privacySettings (JSONB) so PostgREST schema cache does not error on missing columns.
  */
-export function sanitizeStudentForDb(student: StudentProfile): StudentProfile {
+export function sanitizeStudentForDb(student: StudentProfile): Record<string, any> {
+  const themeVal = student.defaultTheme || (student as any).default_theme || student.privacySettings?.defaultTheme || 'light';
+
   return {
     ...student,
+    default_theme: themeVal,
+    defaultTheme: themeVal,
+    privacySettings: {
+      ...(student.privacySettings || {}),
+      defaultTheme: themeVal
+    },
     avatar: sanitizeAvatarUrl(student.avatar, student.name),
     bio: student.bio ? student.bio.trim().substring(0, 1000) : '',
     skills: (student.skills || []).slice(0, 20),

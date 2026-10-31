@@ -249,21 +249,26 @@ export const DiscoverStudentsView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Status indicator with explicit label (no hue-only signaling) */}
+                {/* Status indicator with explicit label */}
                 <span
-                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border shrink-0 ${
+                  title={student.availability}
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border shrink-0 max-w-[110px] truncate ${
                     student.availability === 'Active & Seeking Projects'
                       ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
                       : student.availability === 'Open to Collaborate'
                       ? 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20'
-                      : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20'
+                      : student.availability === 'Focusing on Studies / Busy'
+                      ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20'
+                      : 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20'
                   }`}
                 >
                   {student.availability === 'Active & Seeking Projects'
                     ? 'Seeking'
                     : student.availability === 'Open to Collaborate'
                     ? 'Open'
-                    : 'Studies'}
+                    : student.availability === 'Focusing on Studies / Busy'
+                    ? 'Studies'
+                    : student.availability || 'Active'}
                 </span>
               </div>
 

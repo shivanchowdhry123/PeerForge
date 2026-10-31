@@ -59,7 +59,8 @@ import {
   fetchSupabaseReports,
   fetchSupabaseContactInquiries,
   fetchSupabaseUploads,
-  subscribeToSupabaseRealtime
+  subscribeToSupabaseRealtime,
+  resendSupabaseConfirmation
 } from '../services/supabaseClient';
 
 interface AppContextType {
@@ -86,9 +87,9 @@ interface AppContextType {
   setSelectedQuestionForDetail: (q: Question | null) => void;
   selectedProjectForDetail: Project | null;
   setSelectedProjectForDetail: (p: Project | null) => void;
-  activeConversationId: string | null;
-  setActiveConversationId: (id: string | null) => void;
+  themeMode: 'light' | 'dark' | 'system';
   theme: 'light' | 'dark';
+  setThemeMode: (mode: 'light' | 'dark' | 'system') => void;
   toggleTheme: () => void;
   switchUser: (studentId: string) => void;
   updateCurrentUserProfile: (updated: Partial<StudentProfile>) => void;
@@ -144,7 +145,13 @@ interface AppContextType {
   isSidebarVisible: boolean;
   toggleSidebar: () => void;
   isAuthenticated: boolean;
-  loginWithGmail: (gmail: string, password?: string) => Promise<{ success: boolean; message: string; user?: StudentProfile }>;
+  loginWithGmail: (gmail: string, password?: string) => Promise<{
+    success: boolean;
+    message: string;
+    user?: StudentProfile;
+    isEmailUnconfirmed?: boolean;
+    unconfirmedEmail?: string;
+  }>;
   signUpWithGmail: (data: {
     name: string;
     email: string;
@@ -155,7 +162,14 @@ interface AppContextType {
     password?: string;
     bio?: string;
     skills?: string[];
-  }) => Promise<{ success: boolean; message: string; user?: StudentProfile }>;
+  }) => Promise<{
+    success: boolean;
+    message: string;
+    user?: StudentProfile;
+    requiresEmailConfirmation?: boolean;
+    email?: string;
+  }>;
+  resendVerificationEmail: (email: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
@@ -172,7 +186,17 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+export const normalizeStudentProfile = (raw: any): StudentProfile => {
+  if (!raw) return raw;
+  const theme = raw.defaultTheme || raw.default_theme || raw.privacySettings?.defaultTheme || 'light';
+  return {
+    ...raw,
+    defaultTheme: theme
+  };
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [themeMode, setThemeModeState] = useState<'light' | 'dark' | 'system'>('system');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   // Application Data States
@@ -289,8 +313,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             .maybeSingle();
 
           if (sbStudent) {
-            setCurrentUser(sbStudent as StudentProfile);
+            const student = normalizeStudentProfile(sbStudent);
+            setCurrentUser(student);
             setIsAuthenticated(true);
+            setTheme(student.defaultTheme || 'light');
           }
         }
       });
@@ -299,6 +325,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (event === 'SIGNED_OUT') {
           setIsAuthenticated(false);
           setCurrentUser(null);
+          setTheme('light');
         } else if (session?.user) {
           const { data: sbStudent } = await supabase
             .from('students')
@@ -307,8 +334,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             .maybeSingle();
 
           if (sbStudent) {
-            setCurrentUser(sbStudent as StudentProfile);
+            const student = normalizeStudentProfile(sbStudent);
+            setCurrentUser(student);
             setIsAuthenticated(true);
+            setTheme(student.defaultTheme || 'light');
           }
         }
       });
@@ -344,7 +373,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       unsubscribes.push(
         subscribeToSupabaseRealtime('students', (payload) => {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            const student = payload.new as StudentProfile;
+            const student = normalizeStudentProfile(payload.new);
             setAllStudents(prev => {
               const exists = prev.some(s => s.id === student.id);
               return exists ? prev.map(s => (s.id === student.id ? student : s)) : [student, ...prev];
@@ -459,35 +488,89 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Theme Sync & Default Load
   useEffect(() => {
     if (!currentUser) {
-      setTheme('light'); // If logged out keep it light mode
-    } else if (currentUser.defaultTheme) {
-      setTheme(currentUser.defaultTheme);
-    }
-  }, [currentUser?.id, currentUser?.defaultTheme]);
-
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
+      setThemeModeState('system');
     } else {
-      document.documentElement.classList.remove('dark');
+      const preferred =
+        currentUser.defaultTheme ||
+        (currentUser as any).default_theme ||
+        currentUser.privacySettings?.defaultTheme ||
+        'system';
+      setThemeModeState(preferred as 'light' | 'dark' | 'system');
     }
-  }, [theme]);
+  }, [
+    currentUser?.id,
+    currentUser?.defaultTheme,
+    (currentUser as any)?.default_theme,
+    currentUser?.privacySettings?.defaultTheme
+  ]);
+
+  // Resolve active visual theme (light or dark) based on themeMode & system preference
+  useEffect(() => {
+    const applyResolvedTheme = () => {
+      let resolved: 'light' | 'dark' = 'light';
+      if (themeMode === 'light') {
+        resolved = 'light';
+      } else if (themeMode === 'dark') {
+        resolved = 'dark';
+      } else {
+        const isSystemDark = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        resolved = isSystemDark ? 'dark' : 'light';
+      }
+
+      setTheme(resolved);
+      if (resolved === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    };
+
+    applyResolvedTheme();
+
+    if (themeMode === 'system' && typeof window !== 'undefined' && window.matchMedia) {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+        const resolved = e.matches ? 'dark' : 'light';
+        setTheme(resolved);
+        if (e.matches) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      };
+
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener('change', handleSystemThemeChange);
+        return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
+      } else if ((mediaQuery as any).addListener) {
+        (mediaQuery as any).addListener(handleSystemThemeChange);
+        return () => (mediaQuery as any).removeListener(handleSystemThemeChange);
+      }
+    }
+  }, [themeMode]);
+
+  const setThemeMode = (mode: 'light' | 'dark' | 'system') => {
+    setThemeModeState(mode);
+    if (currentUser) {
+      updateCurrentUserProfile({ defaultTheme: mode });
+    }
+  };
 
   const toggleTheme = () => {
-    setTheme(prev => {
-      const next = prev === 'light' ? 'dark' : 'light';
-      if (currentUser) {
-        updateCurrentUserProfile({ defaultTheme: next });
-      }
-      return next;
-    });
+    const modes: ('light' | 'dark' | 'system')[] = ['light', 'dark', 'system'];
+    const currentIndex = modes.indexOf(themeMode);
+    const nextMode = modes[(currentIndex + 1) % modes.length];
+    setThemeMode(nextMode);
   };
 
   const switchUser = (studentId: string) => {
     const s = allStudents.find(item => item.id === studentId);
     if (s) {
-      setCurrentUser(s);
+      const normalized = normalizeStudentProfile(s);
+      setCurrentUser(normalized);
       setIsAuthenticated(true);
+      const pref = normalized.defaultTheme || 'system';
+      setThemeModeState(pref as 'light' | 'dark' | 'system');
     }
   };
 
@@ -1614,15 +1697,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (error) {
           console.warn('Supabase sign-in note:', error.message);
-          // Graceful fallback: If email is unconfirmed in Supabase Auth, check public.students
-          const { data: fallbackStudent } = await supabase
-            .from('students')
-            .select('*')
-            .or(`email.eq.${cleanEmail},gmailAccount.eq.${cleanEmail}`)
-            .maybeSingle();
-
-          if (fallbackStudent) {
-            profileToLogin = fallbackStudent as StudentProfile;
+          if (error.message.toLowerCase().includes('not confirmed')) {
+            return {
+              success: false,
+              isEmailUnconfirmed: true,
+              unconfirmedEmail: cleanEmail,
+              message: `Your email address (${cleanEmail}) has not been confirmed yet. Please check your inbox for the confirmation email from Supabase and click the verification link before signing in.`
+            };
           }
         } else if (data?.user) {
           const { data: sbProfile } = await supabase
@@ -1632,7 +1713,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             .maybeSingle();
 
           if (sbProfile) {
-            profileToLogin = sbProfile as StudentProfile;
+            profileToLogin = normalizeStudentProfile(sbProfile);
           }
 
           if (!profileToLogin) {
@@ -1709,6 +1790,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setCurrentUser(profileToLogin);
     setIsAuthenticated(true);
+    setTheme(profileToLogin.defaultTheme || 'light');
     setAllStudents(prev => {
       const exists = prev.some(s => s.id === profileToLogin!.id);
       return exists ? prev.map(s => (s.id === profileToLogin!.id ? profileToLogin! : s)) : [profileToLogin!, ...prev];
@@ -1832,12 +1914,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (isSupabaseConfigured) {
       await saveSupabaseStudent(newProfile);
+      return {
+        success: true,
+        requiresEmailConfirmation: true,
+        email: cleanEmail,
+        message: `Account created! We've sent a verification email to ${cleanEmail}. Please check your inbox and click the confirmation link, then sign in to your account.`,
+        user: newProfile
+      };
     }
 
     setCurrentUser(newProfile);
     setIsAuthenticated(true);
 
     return { success: true, message: `Account created successfully! Welcome to PeerForge, ${cleanName}.`, user: newProfile };
+  };
+
+  const resendVerificationEmail = async (email: string): Promise<{ success: boolean; message: string }> => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      return { success: false, message: 'Please provide an email address.' };
+    }
+    const res = await resendSupabaseConfirmation(cleanEmail);
+    if (res.success) {
+      return {
+        success: true,
+        message: `Confirmation email resent to ${cleanEmail}! Please check your inbox and spam folder.`
+      };
+    } else {
+      return {
+        success: false,
+        message: res.error || 'Failed to resend confirmation email. Please try again in a few moments.'
+      };
+    }
   };
 
   const logout = async () => {
@@ -1944,7 +2052,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedProjectForDetail,
         activeConversationId,
         setActiveConversationId,
+        themeMode,
         theme,
+        setThemeMode,
         toggleTheme,
         switchUser,
         updateCurrentUserProfile,
@@ -1994,6 +2104,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isAuthenticated,
         loginWithGmail,
         signUpWithGmail,
+        resendVerificationEmail,
         logout,
         isAuthModalOpen,
         setIsAuthModalOpen,

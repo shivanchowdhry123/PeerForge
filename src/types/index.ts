@@ -34,7 +34,7 @@ export interface StudentProfile {
     date: string;
     verified: boolean;
   }>;
-  availability: 'Active & Seeking Projects' | 'Open to Collaborate' | 'Focusing on Studies / Busy';
+  availability: 'Active & Seeking Projects' | 'Open to Collaborate' | 'Focusing on Studies / Busy' | (string & {});
   privacySettings: {
     showGradeToAll: boolean;
     allowDirectMessages: 'anyone' | 'project_partners' | 'verified_only';
@@ -44,7 +44,7 @@ export interface StudentProfile {
   isVerified: boolean;
   isApproved: boolean;
   isDeactivated?: boolean;
-  defaultTheme?: 'light' | 'dark';
+  defaultTheme?: 'light' | 'dark' | 'system';
   joinedDate: string;
 }
 

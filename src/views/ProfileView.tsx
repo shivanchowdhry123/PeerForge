@@ -17,7 +17,9 @@ import {
   ShieldCheck,
   Check,
   User,
-  FolderKanban
+  FolderKanban,
+  Edit2,
+  X
 } from 'lucide-react';
 
 export const ProfileView: React.FC = () => {
@@ -204,10 +206,25 @@ export const ProfileView: React.FC = () => {
     setIsAddingSkill(false);
   };
 
-  const handleAvailabilityChange = (av: StudentProfile['availability']) => {
+  const PREDETERMINED_STATUSES = [
+    'Active & Seeking Projects',
+    'Open to Collaborate',
+    'Focusing on Studies / Busy'
+  ];
+  const [isEditingCustomStatus, setIsEditingCustomStatus] = useState(false);
+  const [customStatusInput, setCustomStatusInput] = useState('');
+
+  const handleAvailabilityChange = (av: string) => {
     if (isOwnProfile) {
       updateCurrentUserProfile({ availability: av });
     }
+  };
+
+  const handleSaveCustomStatus = () => {
+    const trimmed = customStatusInput.trim();
+    if (!trimmed) return;
+    updateCurrentUserProfile({ availability: trimmed });
+    setIsEditingCustomStatus(false);
   };
 
   return (
@@ -287,20 +304,112 @@ export const ProfileView: React.FC = () => {
               </div>
 
               {/* Availability selector or badge */}
-              <div className="pt-2 flex items-center gap-2">
+              <div className="pt-2 flex items-center gap-2 flex-wrap">
                 {isOwnProfile ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-[var(--text-secondary)]">Status:</span>
-                    <select
-                      value={currentUser?.availability || 'Open to Collaborate'}
-                      onChange={e => handleAvailabilityChange(e.target.value as any)}
-                      className="px-2.5 py-1 text-xs font-medium rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none"
-                    >
-                      <option value="Active & Seeking Projects">Active & Seeking Projects</option>
-                      <option value="Open to Collaborate">Open to Collaborate</option>
-                      <option value="Focusing on Studies / Busy">Focusing on Studies / Busy</option>
-                    </select>
-                  </div>
+                  isEditingCustomStatus ? (
+                    <div className="flex items-center gap-1.5 flex-wrap animate-in fade-in">
+                      <span className="text-xs font-medium text-[var(--text-secondary)]">Custom Status:</span>
+                      <input
+                        type="text"
+                        placeholder="e.g. Building an autonomous rover..."
+                        value={customStatusInput}
+                        onChange={e => setCustomStatusInput(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSaveCustomStatus();
+                          } else if (e.key === 'Escape') {
+                            setIsEditingCustomStatus(false);
+                          }
+                        }}
+                        maxLength={60}
+                        className="px-2.5 py-1 text-xs rounded-lg bg-[var(--bg-subtle)] border border-blue-500 text-[var(--text-primary)] focus:outline-none w-52 sm:w-64"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveCustomStatus}
+                        disabled={!customStatusInput.trim()}
+                        className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1 transition-all shadow-xs cursor-pointer"
+                        title="Set Custom Status"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Set</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingCustomStatus(false)}
+                        className="p-1 rounded-lg bg-[var(--bg-subtle)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] text-xs transition-all cursor-pointer"
+                        title="Cancel"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            currentUser?.availability === 'Active & Seeking Projects'
+                              ? 'bg-emerald-500'
+                              : currentUser?.availability === 'Open to Collaborate'
+                              ? 'bg-blue-500'
+                              : currentUser?.availability === 'Focusing on Studies / Busy'
+                              ? 'bg-amber-500'
+                              : 'bg-purple-500'
+                          }`}
+                        />
+                        <span className="text-xs font-medium text-[var(--text-secondary)]">Status:</span>
+                      </div>
+                      <select
+                        value={
+                          PREDETERMINED_STATUSES.includes(currentUser?.availability || '')
+                            ? currentUser?.availability
+                            : '__custom_active__'
+                        }
+                        onChange={e => {
+                          if (e.target.value === '__custom_new__') {
+                            setCustomStatusInput('');
+                            setIsEditingCustomStatus(true);
+                          } else if (e.target.value === '__custom_active__') {
+                            setCustomStatusInput(currentUser?.availability || '');
+                            setIsEditingCustomStatus(true);
+                          } else {
+                            handleAvailabilityChange(e.target.value);
+                          }
+                        }}
+                        className="px-2.5 py-1 text-xs font-medium rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none cursor-pointer max-w-[220px] truncate"
+                      >
+                        <option value="Active & Seeking Projects">Active & Seeking Projects</option>
+                        <option value="Open to Collaborate">Open to Collaborate</option>
+                        <option value="Focusing on Studies / Busy">Focusing on Studies / Busy</option>
+                        {!PREDETERMINED_STATUSES.includes(currentUser?.availability || '') && currentUser?.availability && (
+                          <option value="__custom_active__">
+                            Custom: {currentUser.availability}
+                          </option>
+                        )}
+                        <option value="__custom_new__">
+                          + Add Custom Status...
+                        </option>
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomStatusInput(
+                            PREDETERMINED_STATUSES.includes(currentUser?.availability || '')
+                              ? ''
+                              : currentUser?.availability || ''
+                          );
+                          setIsEditingCustomStatus(true);
+                        }}
+                        className="p-1.5 rounded-lg bg-[var(--bg-subtle)] hover:bg-[var(--border-color)] text-[var(--text-muted)] hover:text-blue-600 transition-colors cursor-pointer"
+                        title="Type a custom status"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )
                 ) : (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--bg-subtle)] text-xs font-medium text-[var(--text-secondary)] border border-[var(--border-color)]">
                     <div
@@ -309,7 +418,9 @@ export const ProfileView: React.FC = () => {
                           ? 'bg-emerald-500'
                           : student.availability === 'Open to Collaborate'
                           ? 'bg-blue-500'
-                          : 'bg-amber-500'
+                          : student.availability === 'Focusing on Studies / Busy'
+                          ? 'bg-amber-500'
+                          : 'bg-purple-500'
                       }`}
                     />
                     <span>{student.availability}</span>

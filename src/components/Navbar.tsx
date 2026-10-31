@@ -4,6 +4,8 @@ import {
   Bell,
   Sun,
   Moon,
+  Monitor,
+  Check,
   Search,
   Sparkles,
   Shield,
@@ -20,7 +22,9 @@ export const Navbar: React.FC = () => {
   const {
     activeTab,
     setActiveTab,
+    themeMode,
     theme,
+    setThemeMode,
     toggleTheme,
     notifications,
     unreadNotifsCount,
@@ -37,6 +41,7 @@ export const Navbar: React.FC = () => {
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,19 +117,103 @@ export const Navbar: React.FC = () => {
             <span>Match Finder</span>
           </button>
 
-          {/* Theme Toggle Button */}
-          <button
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            className="p-2 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] border border-transparent hover:border-[var(--border-color)] transition-all cursor-pointer"
-            title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
-          >
-            {theme === 'light' ? (
-              <Moon className="w-4 h-4" />
-            ) : (
-              <Sun className="w-4 h-4 text-amber-400" />
+          {/* Theme Toggle Button & 3-Way Default Theme Menu */}
+          <div className="relative">
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle theme mode"
+              className="p-2 rounded-xl text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] border border-transparent hover:border-[var(--border-color)] transition-all cursor-pointer flex items-center gap-1 group"
+              title={`Default Theme: ${themeMode === 'system' ? `System Default (${theme.toUpperCase()})` : themeMode === 'light' ? 'Light Mode' : 'Dark Mode'}. Click to cycle (Light -> Dark -> System), or click arrow for options.`}
+            >
+              {themeMode === 'light' && <Sun className="w-4 h-4 text-amber-500" />}
+              {themeMode === 'dark' && <Moon className="w-4 h-4 text-indigo-400" />}
+              {themeMode === 'system' && (
+                <div className="relative flex items-center justify-center">
+                  <Monitor className="w-4 h-4 text-blue-500" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-blue-500 ring-1 ring-[var(--bg-surface)]" />
+                </div>
+              )}
+              <span
+                onClick={e => {
+                  e.stopPropagation();
+                  setIsThemeMenuOpen(!isThemeMenuOpen);
+                }}
+                className="p-0.5 rounded hover:bg-[var(--bg-muted)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                title="Theme Options"
+              >
+                <ChevronDown className="w-3 h-3" />
+              </span>
+            </button>
+
+            {isThemeMenuOpen && (
+              <div className="absolute right-0 mt-2 w-52 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-2xl z-50 p-2 animate-in fade-in zoom-in-95 backdrop-blur-xl">
+                <div className="px-2 py-1 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider border-b border-[var(--border-color)] mb-1">
+                  Default Account Theme
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setThemeMode('light');
+                    setIsThemeMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                    themeMode === 'light'
+                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Sun className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Light Mode</span>
+                  </div>
+                  {themeMode === 'light' && <Check className="w-3.5 h-3.5 text-amber-500" />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setThemeMode('dark');
+                    setIsThemeMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                    themeMode === 'dark'
+                      ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-semibold'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Moon className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Dark Mode</span>
+                  </div>
+                  {themeMode === 'dark' && <Check className="w-3.5 h-3.5 text-indigo-500" />}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setThemeMode('system');
+                    setIsThemeMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+                    themeMode === 'system'
+                      ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold'
+                      : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Monitor className="w-3.5 h-3.5 text-blue-500" />
+                    <div className="flex flex-col text-left">
+                      <span>System Default</span>
+                      <span className="text-[9px] text-[var(--text-muted)] font-normal">
+                        Auto ({theme === 'dark' ? 'Dark' : 'Light'})
+                      </span>
+                    </div>
+                  </div>
+                  {themeMode === 'system' && <Check className="w-3.5 h-3.5 text-blue-500" />}
+                </button>
+              </div>
             )}
-          </button>
+          </div>
 
           {/* Notifications Popover */}
           <div className="relative">
