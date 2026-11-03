@@ -1,0 +1,11 @@
+OPG WORLD SCHOOL - PEERFORGE RESOURCE HUB
+Platform: PeerForge (Student Networking & Talent Hub)
+Accredited CBSE Senior Secondary School, Sector 19B, Dwarka, New Delhi - 110077
+
+This directory (/uploads) houses shared school collaboration files, competition rubrics,
+project architectures, and peer doubt-solving reference materials.
+
+Guidelines for Students:
+1. Ensure shared files comply with OPG World School IT & DPDP code of conduct.
+2. Max file size recommended: 25MB.
+3. Attach shared files in Projects, Q&A answers, or direct team messages.

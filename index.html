@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PeerForge - Student Networking & Talent Hub | OPG World School</title>
+    <meta name="description" content="Secure, AI-powered student networking, talent discovery, doubt solving, and project collaboration platform for OPG World School." />
+    <meta property="og:title" content="PeerForge - Student Networking & Talent Hub | OPG World School" />
+    <meta property="og:description" content="Secure, AI-powered student networking, talent discovery, doubt solving, and project collaboration platform for OPG World School." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+      (function() {
+        // Intercept unhandled WebSocket rejections in the cloud preview iframe
+        window.addEventListener('unhandledrejection', function(e) {
+          var err = e && e.reason;
+          var msg = (err && (err.message || String(err))) || '';
+          var stack = (err && err.stack) || '';
+          if (
+            msg.indexOf('WebSocket') !== -1 ||
+            msg.indexOf('websocket') !== -1 ||
+            stack.indexOf('@vite/client') !== -1
+          ) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+          }
+        }, true);
+
+        // Intercept window error events for WebSocket
+        window.addEventListener('error', function(e) {
+          var msg = (e && (e.message || '')) || '';
+          var filename = (e && e.filename) || '';
+          if (
+            msg.indexOf('WebSocket') !== -1 ||
+            msg.indexOf('websocket') !== -1 ||
+            filename.indexOf('@vite/client') !== -1
+          ) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+          }
+        }, true);
+
+        // Filter out Vite HMR WebSocket connection failure notices in console
+        var origConsoleError = console.error;
+        console.error = function() {
+          var firstArg = arguments[0];
+          if (typeof firstArg === 'string' && (
+            firstArg.indexOf('[vite] failed to connect to websocket') !== -1 ||
+            firstArg.indexOf('WebSocket closed without opened') !== -1
+          )) {
+            return;
+          }
+          return origConsoleError.apply(console, arguments);
+        };
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
