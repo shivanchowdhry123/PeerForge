@@ -51,7 +51,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-[var(--border-color)] bg-[var(--bg-surface)]/85 dark:bg-[var(--bg-surface)]/80 backdrop-blur-md px-3 sm:px-6 py-2 sm:py-2.5 transition-colors overflow-x-clip">
-      <div className="flex items-center justify-between gap-2 sm:gap-4 max-w-7xl mx-auto w-full">
+      <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
         {/* Zone 1: Brand Wordmark (Left) */}
         <div className="flex items-center shrink-0">
           <button

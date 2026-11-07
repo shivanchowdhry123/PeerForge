@@ -103,10 +103,10 @@ const MainLayout: React.FC = () => {
       {/* Top Navbar */}
       <Navbar />
 
-      <div className="flex-1 flex max-w-7xl w-full mx-auto relative z-10">
-        {/* Desktop Left Sidebar */}
+      <div className="flex-1 flex w-full relative z-10">
+        {/* Desktop Left Sidebar (Sticks to far left edge of screen) */}
         {isSidebarVisible && (
-          <div className="hidden md:block">
+          <div className="hidden md:block shrink-0">
             <Sidebar />
           </div>
         )}
@@ -140,8 +140,8 @@ const MainLayout: React.FC = () => {
           </div>
         )}
 
-        {/* Central Content Viewport */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        {/* Central Content Viewport (Expands across full remaining width beside sidebar) */}
+        <main className="flex-1 w-full min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           {/* Mobile Top Header Indicator */}
           <div className="md:hidden flex items-center justify-between pb-3 mb-4 border-b border-[var(--border-color)]">
             <button
