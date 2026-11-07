@@ -51,6 +51,8 @@ import {
   updateSupabaseFacultyApproval,
   convertSupabaseTeacherToStudent,
   saveSupabaseNotification,
+  deleteSupabaseNotification,
+  clearSupabaseNotifications,
   saveSupabaseReport,
   saveSupabaseContactInquiry,
   saveSupabaseUpload,
@@ -125,6 +127,8 @@ interface AppContextType {
   submitContentReport: (report: Partial<ContentReport>) => void;
   resolveReport: (reportId: string, action: 'dismiss' | 'action_taken', note?: string) => void;
   markNotificationsAsRead: () => void;
+  deleteNotification: (notificationId: string) => Promise<boolean>;
+  clearAllNotifications: () => Promise<boolean>;
   exportMyData: () => void;
   deactivateOwnAccount: () => void;
   reactivateOwnAccount: () => void;
@@ -201,7 +205,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const normalizeStudentProfile = (raw: any): StudentProfile => {
   if (!raw) return raw;
-  const theme = raw.defaultTheme || raw.default_theme || raw.privacySettings?.defaultTheme || 'light';
+  const theme = raw.defaultTheme || raw.default_theme || raw.privacySettings?.defaultTheme || undefined;
   const isApproved =
     typeof raw.is_approved === 'boolean'
       ? raw.is_approved
@@ -235,8 +239,22 @@ const getInitialStoredUser = (): StudentProfile | null => {
   return null;
 };
 
+const THEME_MODE_KEY = 'peerforge_theme_mode';
+
+const getInitialThemeMode = (): 'light' | 'dark' | 'system' => {
+  try {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(THEME_MODE_KEY);
+      if (stored === 'light' || stored === 'dark' || stored === 'system') {
+        return stored;
+      }
+    }
+  } catch (e) {}
+  return 'system';
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [themeMode, setThemeModeState] = useState<'light' | 'dark' | 'system'>('system');
+  const [themeMode, setThemeModeState] = useState<'light' | 'dark' | 'system'>(getInitialThemeMode);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   // Application Data States & Persistent Session
@@ -376,15 +394,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setCurrentUser(student);
             setIsAuthenticated(true);
             persistSession(student);
-            const resolvedTheme =
-              student.defaultTheme === 'dark'
-                ? 'dark'
-                : student.defaultTheme === 'light'
-                ? 'light'
-                : typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
-                ? 'dark'
-                : 'light';
-            setTheme(resolvedTheme);
+            const storedMode = typeof window !== 'undefined' ? localStorage.getItem(THEME_MODE_KEY) : null;
+            if (!storedMode && student.defaultTheme) {
+              setThemeModeState(student.defaultTheme);
+            }
           }
         }
       });
@@ -397,7 +410,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (!localStored) {
             setIsAuthenticated(false);
             setCurrentUser(null);
-            setTheme('light');
+            // Retain user's current visual theme; do not force reset to light on signout
           }
         } else if (session?.user) {
           const cleanEmail = (session.user.email || '').trim().toLowerCase();
@@ -412,15 +425,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setCurrentUser(student);
             setIsAuthenticated(true);
             persistSession(student);
-            const resolvedTheme =
-              student.defaultTheme === 'dark'
-                ? 'dark'
-                : student.defaultTheme === 'light'
-                ? 'light'
-                : typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches
-                ? 'dark'
-                : 'light';
-            setTheme(resolvedTheme);
+            const storedMode = typeof window !== 'undefined' ? localStorage.getItem(THEME_MODE_KEY) : null;
+            if (!storedMode && student.defaultTheme) {
+              setThemeModeState(student.defaultTheme);
+            }
           } else {
             const cached = getInitialStoredUser();
             if (cached && (cached.email.toLowerCase() === cleanEmail || cached.id === session.user.id)) {
@@ -620,24 +628,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, []);
 
-  // Theme Sync & Default Load
+  // Theme Sync on user account load
   useEffect(() => {
-    if (!currentUser) {
-      setThemeModeState('system');
-    } else {
-      const preferred =
-        currentUser.defaultTheme ||
-        (currentUser as any).default_theme ||
-        currentUser.privacySettings?.defaultTheme ||
-        'system';
-      setThemeModeState(preferred as 'light' | 'dark' | 'system');
+    if (currentUser) {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem(THEME_MODE_KEY) : null;
+      if (!stored) {
+        const preferred =
+          currentUser.defaultTheme ||
+          (currentUser as any).default_theme ||
+          currentUser.privacySettings?.defaultTheme;
+        if (preferred === 'light' || preferred === 'dark' || preferred === 'system') {
+          setThemeModeState(preferred);
+        }
+      }
     }
-  }, [
-    currentUser?.id,
-    currentUser?.defaultTheme,
-    (currentUser as any)?.default_theme,
-    currentUser?.privacySettings?.defaultTheme
-  ]);
+  }, [currentUser?.id]);
 
   // Resolve active visual theme (light or dark) based on themeMode & system preference
   useEffect(() => {
@@ -686,6 +691,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setThemeMode = (mode: 'light' | 'dark' | 'system') => {
     setThemeModeState(mode);
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(THEME_MODE_KEY, mode);
+      }
+    } catch (e) {}
     if (currentUser) {
       updateCurrentUserProfile({ defaultTheme: mode });
     }
@@ -1629,6 +1639,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  const deleteNotification = async (notificationId: string): Promise<boolean> => {
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    if (isSupabaseConfigured) {
+      await deleteSupabaseNotification(notificationId);
+    }
+    return true;
+  };
+
+  const clearAllNotifications = async (): Promise<boolean> => {
+    if (!currentUser) return false;
+    const currentUserId = currentUser.id;
+    setNotifications(prev =>
+      prev.filter(n => {
+        if (!n) return false;
+        // Keep notifications not intended specifically for this user
+        if (n.userId === currentUserId) return false;
+        return true;
+      })
+    );
+    if (isSupabaseConfigured) {
+      await clearSupabaseNotifications(currentUserId);
+    }
+    return true;
+  };
+
   const exportMyData = () => {
     if (!currentUser) return;
     const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(currentUser, null, 2));
@@ -1771,6 +1806,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         body: JSON.stringify({ isApproved: true, is_approved: true })
       }).catch(() => {});
     }
+
+    const approvedNotif: AppNotification = {
+      id: `notif-faculty-approved-${Date.now()}`,
+      userId: teacherId,
+      type: 'system',
+      title: 'Faculty Mentor Account Approved!',
+      description:
+        'Your faculty mentor account has been approved by school administration. You now have full access to faculty tools, notices, and student mentorship.',
+      read: false,
+      timestamp: 'Just now',
+      actionTab: 'admin'
+    };
+    setNotifications(prev => [approvedNotif, ...prev]);
+    if (isSupabaseConfigured) {
+      saveSupabaseNotification(approvedNotif);
+    }
+
     return true;
   };
 
@@ -1816,6 +1868,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         body: JSON.stringify({ role: 'student', isApproved: true, is_approved: true, grade: 'Grade 11', section: 'A' })
       }).catch(() => {});
     }
+
+    const convertedNotif: AppNotification = {
+      id: `notif-faculty-converted-${Date.now()}`,
+      userId: teacherId,
+      type: 'system',
+      title: 'Account Status: Registered as Student',
+      description:
+        'You are not approved right now and so to limit your abilities you are registered as a student. To approve your account contact any registered peer teacher/ PeerForge Team.',
+      read: false,
+      timestamp: 'Just now',
+      actionTab: 'contact'
+    };
+    setNotifications(prev => [convertedNotif, ...prev]);
+    if (isSupabaseConfigured) {
+      saveSupabaseNotification(convertedNotif);
+    }
+
     return true;
   };
 
@@ -1880,6 +1949,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const ticketId = `OPG-DEV-${Math.floor(100000 + Math.random() * 900000)}`;
     const newInquiry: ContactInquiry = {
       id: ticketId,
+      userId: currentUser?.id,
       name: inquiryData.name,
       email: inquiryData.email,
       category: inquiryData.category,
@@ -1891,21 +1961,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setContactInquiries(prev => [newInquiry, ...prev]);
 
+    // Developer-scoped notification (only shown to developer / admin roles)
     const devNotif: AppNotification = {
-      id: `notif-${Date.now()}`,
-      userId: 'all',
+      id: `notif-dev-${Date.now()}`,
+      userId: 'developer',
       type: 'system',
       title: `Developer Alert: Contact Inquiry from ${inquiryData.name}`,
-      description: `"${inquiryData.subject}" - Categorized under ${inquiryData.category}. Routed strictly to Developers.`,
+      description: `"${inquiryData.subject}" - Categorized under ${inquiryData.category}. Ticket #${ticketId}`,
       read: false,
       timestamp: 'Just now',
       actionTab: 'contact'
     };
-    setNotifications(prev => [devNotif, ...prev]);
+
+    // User-scoped confirmation notification (shown strictly to the submitter)
+    const userTargetId = currentUser?.id || `email-${inquiryData.email.toLowerCase()}`;
+    const userConfirmNotif: AppNotification = {
+      id: `notif-user-inquiry-${Date.now()}`,
+      userId: userTargetId,
+      type: 'system',
+      title: `Inquiry Submitted (Ticket #${ticketId})`,
+      description: `Your developer support request regarding "${inquiryData.subject}" was received and routed to dev staff.`,
+      read: false,
+      timestamp: 'Just now',
+      actionTab: 'contact'
+    };
+
+    setNotifications(prev => [devNotif, userConfirmNotif, ...prev]);
 
     if (isSupabaseConfigured) {
       saveSupabaseContactInquiry(newInquiry);
       saveSupabaseNotification(devNotif);
+      saveSupabaseNotification(userConfirmNotif);
     }
 
     return ticketId;
@@ -1929,8 +2015,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
 
-    if (isSupabaseConfigured && updatedInquiry) {
-      saveSupabaseContactInquiry(updatedInquiry);
+    if (updatedInquiry) {
+      const targetUser = allStudents.find(
+        s => (updatedInquiry?.userId && s.id === updatedInquiry.userId) ||
+             (updatedInquiry?.email && s.email.toLowerCase() === updatedInquiry.email.toLowerCase())
+      );
+      const targetUserId = targetUser?.id || updatedInquiry.userId || `email-${updatedInquiry.email.toLowerCase()}`;
+
+      const replyNotif: AppNotification = {
+        id: `notif-dev-reply-${Date.now()}`,
+        userId: targetUserId,
+        type: 'message',
+        title: `Developer Reply (Ticket #${inquiryId})`,
+        description: `Developer ${currentUser.name} updated your inquiry status to "${status}". ${developerNotes ? `Note: "${developerNotes}"` : ''}`,
+        read: false,
+        timestamp: 'Just now',
+        actionTab: 'contact'
+      };
+
+      setNotifications(prev => [replyNotif, ...prev]);
+
+      if (isSupabaseConfigured) {
+        saveSupabaseContactInquiry(updatedInquiry);
+        saveSupabaseNotification(replyNotif);
+      }
     }
   };
 
@@ -2091,6 +2199,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return exists ? prev.map(s => (s.id === profileToLogin!.id ? profileToLogin! : s)) : [profileToLogin!, ...prev];
     });
 
+    if (profileToLogin.role === 'teacher' && !profileToLogin.isApproved) {
+      setNotifications(prev => {
+        const alreadyHas = prev.some(
+          n => n.userId === profileToLogin!.id && n.title.includes('Pending Approval')
+        );
+        if (alreadyHas) return prev;
+        const pendingNotif: AppNotification = {
+          id: `notif-pending-teacher-${Date.now()}`,
+          userId: profileToLogin!.id,
+          type: 'system',
+          title: 'Faculty Account Pending Approval — Registered as Student',
+          description:
+            'You are not approved right now and so to limit your abilities you are registered as a student. To approve your account contact any registered peer teacher/ PeerForge Team.',
+          read: false,
+          timestamp: 'Just now',
+          actionTab: 'contact'
+        };
+        if (isSupabaseConfigured) {
+          saveSupabaseNotification(pendingNotif);
+        }
+        return [pendingNotif, ...prev];
+      });
+    }
+
     const welcomeMsg =
       profileToLogin.role === 'teacher' && !profileToLogin.isApproved
         ? `Welcome, ${profileToLogin.name}! Faculty verification is currently in progress. You have full student access while awaiting admin approval.`
@@ -2220,6 +2352,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setAllStudents(prev => [newProfile, ...prev]);
 
+    if (data.role === 'teacher') {
+      const pendingTeacherNotif: AppNotification = {
+        id: `notif-pending-teacher-${Date.now()}`,
+        userId: newProfile.id,
+        type: 'system',
+        title: 'Faculty Account Pending Approval — Registered as Student',
+        description:
+          'You are not approved right now and so to limit your abilities you are registered as a student. To approve your account contact any registered peer teacher/ PeerForge Team.',
+        read: false,
+        timestamp: 'Just now',
+        actionTab: 'contact'
+      };
+      setNotifications(prev => [pendingTeacherNotif, ...prev]);
+      if (isSupabaseConfigured) {
+        saveSupabaseNotification(pendingTeacherNotif);
+      }
+    }
+
     if (isSupabaseConfigured) {
       await saveSupabaseStudent(newProfile);
     }
@@ -2229,7 +2379,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       requiresEmailConfirmation: true,
       email: cleanEmail,
       message: data.role === 'teacher'
-        ? `Faculty account registered! Your account is pending verification by an existing faculty member. Administrative features will unlock once approved.`
+        ? `Faculty account registered! Your account is pending verification. To limit your abilities you are registered as a student. To approve your account contact any registered peer teacher/ PeerForge Team.`
         : `Account created! We've sent a verification email to ${cleanEmail}. Please check your inbox and click the confirmation link, then sign in to your account.`,
       user: newProfile
     };
@@ -2325,7 +2475,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const unreadNotifsCount = isAuthenticated && currentUser
-    ? notifications.filter(n => !n.read && (n.userId === currentUser.id || n.userId === 'all')).length
+    ? notifications.filter(n => {
+        if (!n || n.read) return false;
+        if (n.userId === currentUser.id) return true;
+        if (n.userId === 'developer' && (currentUser.role === 'developer' || currentUser.role === 'admin')) return true;
+        if (n.userId === 'teacher' && currentUser.role === 'teacher') return true;
+        if (n.userId === 'all') return true;
+        return false;
+      }).length
     : 0;
   const unreadMessagesCount = currentUser
     ? messages.filter(m => m.senderId !== currentUser.id && !m.readBy?.includes(currentUser.id)).length
@@ -2406,6 +2563,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         submitContentReport,
         resolveReport,
         markNotificationsAsRead,
+        deleteNotification,
+        clearAllNotifications,
         exportMyData,
         deactivateOwnAccount,
         reactivateOwnAccount,

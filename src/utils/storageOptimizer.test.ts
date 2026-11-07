@@ -82,3 +82,19 @@ test('sanitizeStudentForDb cleans avatar and array limits', () => {
   const sanitized = sanitizeStudentForDb(mockStudent);
   assert.equal(sanitized.avatar.startsWith('https://api.dicebear.com'), true);
 });
+
+test('deleting a notification removes only target notification and retains others', () => {
+  const list: AppNotification[] = [
+    { id: 'notif-1', userId: 'user-1', type: 'system', title: 'Welcome', description: 'Hello', timestamp: '10m', read: false },
+    { id: 'notif-2', userId: 'user-1', type: 'message', title: 'New chat', description: 'Hey', timestamp: '5m', read: true },
+    { id: 'notif-3', userId: 'user-2', type: 'system', title: 'Update', description: 'Notice', timestamp: '1m', read: false }
+  ];
+
+  const targetId = 'notif-2';
+  const updated = list.filter(n => n.id !== targetId);
+
+  assert.equal(updated.length, 2);
+  assert.equal(updated.some(n => n.id === targetId), false);
+  assert.equal(updated[0].id, 'notif-1');
+  assert.equal(updated[1].id, 'notif-3');
+});

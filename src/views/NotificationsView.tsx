@@ -8,22 +8,31 @@ import {
   FolderKanban,
   Users,
   ShieldAlert,
-  ChevronRight
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
 
 export const NotificationsView: React.FC = () => {
   const {
     notifications,
     currentUser,
+    isAuthenticated,
     markNotificationsAsRead,
+    deleteNotification,
+    clearAllNotifications,
     setActiveTab
   } = useApp();
 
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
-  const userNotifications = (notifications || []).filter(
-    n => n && (n.userId === currentUser?.id || n.userId === 'all')
-  );
+  const userNotifications = (notifications || []).filter(n => {
+    if (!n || !isAuthenticated || !currentUser) return false;
+    if (n.userId === currentUser.id) return true;
+    if (n.userId === 'developer' && (currentUser.role === 'developer' || currentUser.role === 'admin')) return true;
+    if (n.userId === 'teacher' && currentUser.role === 'teacher') return true;
+    if (n.userId === 'all') return true;
+    return false;
+  });
 
   const filtered = userNotifications.filter(n => {
     if (filter === 'unread') return !n.read;
@@ -57,13 +66,24 @@ export const NotificationsView: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={markNotificationsAsRead}
-          className="px-4 py-2 rounded-xl bg-[var(--bg-subtle)] hover:bg-[var(--border-color)]/60 text-[var(--text-primary)] border border-[var(--border-color)] text-xs font-semibold flex items-center gap-1.5 transition-colors self-start sm:self-auto"
-        >
-          <CheckCheck className="w-3.5 h-3.5" />
-          <span>Mark All Read</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {userNotifications.length > 0 && (
+            <button
+              onClick={clearAllNotifications}
+              className="px-3.5 py-2 rounded-xl bg-[var(--bg-subtle)] hover:bg-red-500/10 text-[var(--text-muted)] hover:text-red-500 border border-[var(--border-color)] text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Clear All</span>
+            </button>
+          )}
+          <button
+            onClick={markNotificationsAsRead}
+            className="px-4 py-2 rounded-xl bg-[var(--bg-subtle)] hover:bg-[var(--border-color)]/60 text-[var(--text-primary)] border border-[var(--border-color)] text-xs font-semibold flex items-center gap-1.5 transition-colors"
+          >
+            <CheckCheck className="w-3.5 h-3.5" />
+            <span>Mark All Read</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter tabs */}
@@ -109,7 +129,7 @@ export const NotificationsView: React.FC = () => {
               onClick={() => {
                 if (notif.actionTab) setActiveTab(notif.actionTab);
               }}
-              className={`p-4 sm:p-5 flex items-start justify-between gap-4 transition-colors cursor-pointer hover:bg-[var(--bg-subtle)] ${
+              className={`group p-4 sm:p-5 flex items-start justify-between gap-4 transition-colors cursor-pointer hover:bg-[var(--bg-subtle)] ${
                 !notif.read ? 'bg-blue-50/40 dark:bg-blue-950/20' : ''
               }`}
             >
@@ -136,11 +156,24 @@ export const NotificationsView: React.FC = () => {
                 </div>
               </div>
 
-              {notif.actionTab && (
-                <div className="text-[var(--text-muted)] shrink-0 self-center">
-                  <ChevronRight className="w-4 h-4" />
-                </div>
-              )}
+              <div className="flex items-center gap-2 shrink-0 self-center">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteNotification(notif.id);
+                  }}
+                  aria-label="Delete notification"
+                  title="Delete notification"
+                  className="opacity-70 sm:opacity-0 group-hover:opacity-100 p-2 text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all cursor-pointer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                {notif.actionTab && (
+                  <div className="text-[var(--text-muted)]">
+                    <ChevronRight className="w-4 h-4" />
+                  </div>
+                )}
+              </div>
             </div>
           ))
         )}

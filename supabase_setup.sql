@@ -1,22 +1,14 @@
 -- ==============================================================================
 -- SUPABASE SCHEMA GUIDE: PeerForge (OPG World School Platform)
--- Default Theme Column & Full Students Table Schema
+-- Master Reference Schema (All 12 Tables, RLS, Indexes & Realtime)
 -- ==============================================================================
-
--- ------------------------------------------------------------------------------
--- OPTION 1: FASTEST METHOD (If your 'students' table already exists)
--- ------------------------------------------------------------------------------
--- 1. Open your Supabase Dashboard: https://supabase.com/dashboard/project/_
--- 2. Click on "SQL Editor" in the left navigation sidebar.
--- 3. Click "+ New query", paste the following SQL, and click "RUN":
-
-ALTER TABLE students 
-ADD COLUMN IF NOT EXISTS default_theme TEXT DEFAULT 'light';
-
--- (Optional) If any existing rows have null, set them to 'light':
-UPDATE students 
-SET default_theme = 'light' 
-WHERE default_theme IS NULL;
+-- NOTE: The full, self-contained master schema for your entire database
+-- is saved in:
+--   /supabase_master_schema.sql
+--
+-- You can run the entire /supabase_master_schema.sql in the Supabase SQL Editor
+-- to provision or update every table, column, and policy without errors!
+-- ==============================================================================
 
 
 -- ------------------------------------------------------------------------------
@@ -179,5 +171,129 @@ DROP POLICY IF EXISTS "Allow public update access to students" ON students;
 CREATE POLICY "Allow public update access to students" 
 ON students FOR UPDATE 
 USING (true) 
+WITH CHECK (true);
+
+-- ------------------------------------------------------------------------------
+-- 7. 'notifications' TABLE & TARGETED NOTIFICATIONS RLS POLICIES
+-- ------------------------------------------------------------------------------
+-- NOTE: In PostgreSQL, camelCase columns used by the frontend ("userId", "actionTab")
+-- require double quotes ("userId"). Unquoted user_id causes error 42703.
+-- This script creates or alters the table safely.
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id TEXT PRIMARY KEY,
+  "userId" TEXT NOT NULL,
+  type TEXT DEFAULT 'system',
+  title TEXT NOT NULL,
+  description TEXT,
+  read BOOLEAN DEFAULT false,
+  timestamp TEXT DEFAULT 'Just now',
+  "actionTab" TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Ensure "userId" and "created_at" columns exist if table already existed without them
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS "userId" TEXT;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+
+-- If a legacy snake_case user_id column existed, sync data into "userId"
+DO $$ 
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'notifications' AND column_name = 'user_id'
+  ) THEN
+    EXECUTE 'UPDATE notifications SET "userId" = user_id WHERE "userId" IS NULL';
+  END IF;
+END $$;
+
+-- Create index on "userId" (with double quotes)
+CREATE INDEX IF NOT EXISTS idx_notifications_target_user 
+ON notifications ("userId");
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+-- Allow reading notifications
+DROP POLICY IF EXISTS "Allow public read access to notifications" ON notifications;
+CREATE POLICY "Allow public read access to notifications" 
+ON notifications FOR SELECT 
+USING (true);
+
+-- Allow inserting notifications
+DROP POLICY IF EXISTS "Allow insert notifications" ON notifications;
+CREATE POLICY "Allow insert notifications" 
+ON notifications FOR INSERT 
+WITH CHECK (true);
+
+-- Allow updating notifications (mark as read)
+DROP POLICY IF EXISTS "Allow update notifications" ON notifications;
+CREATE POLICY "Allow update notifications" 
+ON notifications FOR UPDATE 
+USING (true)
+WITH CHECK (true);
+
+-- Allow deleting notifications (auto-pruning old read items)
+DROP POLICY IF EXISTS "Allow delete notifications" ON notifications;
+CREATE POLICY "Allow delete notifications" 
+ON notifications FOR DELETE 
+USING (true);
+
+
+-- ------------------------------------------------------------------------------
+-- 8. 'contact_inquiries' TABLE & DEVELOPER TICKETS
+-- ------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS contact_inquiries (
+  id TEXT PRIMARY KEY,
+  "userId" TEXT,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  category TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  message TEXT NOT NULL,
+  "submittedAt" TEXT DEFAULT 'Just now',
+  status TEXT DEFAULT 'new',
+  "developerNotes" TEXT,
+  "assignedDeveloper" TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Ensure "userId" and "created_at" columns exist on contact_inquiries
+ALTER TABLE contact_inquiries ADD COLUMN IF NOT EXISTS "userId" TEXT;
+ALTER TABLE contact_inquiries ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+
+-- If a legacy snake_case user_id column existed, sync data into "userId"
+DO $$ 
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'contact_inquiries' AND column_name = 'user_id'
+  ) THEN
+    EXECUTE 'UPDATE contact_inquiries SET "userId" = user_id WHERE "userId" IS NULL';
+  END IF;
+END $$;
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE contact_inquiries ENABLE ROW LEVEL SECURITY;
+
+-- Allow public insert of contact inquiries
+DROP POLICY IF EXISTS "Allow public insert to contact_inquiries" ON contact_inquiries;
+CREATE POLICY "Allow public insert to contact_inquiries" 
+ON contact_inquiries FOR INSERT 
+WITH CHECK (true);
+
+-- Allow reading contact inquiries
+DROP POLICY IF EXISTS "Allow read access to contact_inquiries" ON contact_inquiries;
+CREATE POLICY "Allow read access to contact_inquiries" 
+ON contact_inquiries FOR SELECT 
+USING (true);
+
+-- Allow updating contact inquiries (status, developer notes)
+DROP POLICY IF EXISTS "Allow update access to contact_inquiries" ON contact_inquiries;
+CREATE POLICY "Allow update access to contact_inquiries" 
+ON contact_inquiries FOR UPDATE 
+USING (true)
 WITH CHECK (true);
 

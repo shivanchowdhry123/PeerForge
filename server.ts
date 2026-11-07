@@ -1093,9 +1093,16 @@ app.delete('/api/event-registrations/:eventId/:userId', (req: Request, res: Resp
 
 app.get('/api/notifications', (req: Request, res: Response) => {
   const userId = req.query.userId as string;
+  const userRole = req.query.role as string;
   let list = db.notifications;
   if (userId && userId !== 'undefined') {
-    list = list.filter(n => n.userId === userId || n.userId === 'all');
+    list = list.filter(n => {
+      if (n.userId === userId) return true;
+      if (n.userId === 'developer' && (userRole === 'developer' || userRole === 'admin')) return true;
+      if (n.userId === 'teacher' && userRole === 'teacher') return true;
+      if (n.userId === 'all') return true;
+      return false;
+    });
   }
   res.json(list);
 });

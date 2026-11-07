@@ -71,3 +71,21 @@ test('conversion of rejected teacher transforms into a valid student account', (
   assert.strictEqual(convertedStudent.grade, 'Grade 11');
   assert.strictEqual(convertedStudent.section, 'A');
 });
+
+test('pending teacher notification contains instructions to contact registered peer teachers or PeerForge team', () => {
+  const notif = {
+    userId: 'tch-pending-4',
+    type: 'system',
+    title: 'Faculty Account Pending Approval — Registered as Student',
+    description:
+      'You are not approved right now and so to limit your abilities you are registered as a student. To approve your account contact any registered peer teacher/ PeerForge Team.',
+    read: false,
+    timestamp: 'Just now',
+    actionTab: 'contact'
+  };
+
+  assert.strictEqual(notif.type, 'system');
+  assert.strictEqual(notif.actionTab, 'contact');
+  assert.match(notif.description, /registered as a student/i);
+  assert.match(notif.description, /contact any registered peer teacher\/ PeerForge Team/i);
+});

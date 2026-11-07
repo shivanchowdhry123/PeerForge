@@ -141,6 +141,7 @@ export interface ProjectApplication {
 
 export interface ContactInquiry {
   id: string;
+  userId?: string;
   name: string;
   email: string;
   category: string;

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { StudentProfile } from '../types';
 import {
@@ -31,6 +31,17 @@ export const DiscoverStudentsView: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedAvailability, setSelectedAvailability] = useState<string>('All');
   const [selectedSkillTag, setSelectedSkillTag] = useState<string>('All');
+
+  // Auto-focus search input when directory opens
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const input = document.getElementById('discover-search-input');
+      if (input) {
+        input.focus();
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Filter students
   const filteredStudents = useMemo(() => {
@@ -124,6 +135,7 @@ export const DiscoverStudentsView: React.FC = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
             <input
+              id="discover-search-input"
               type="text"
               placeholder="Search by student name, skill, interest, or academic subject..."
               value={activeSearchQuery}

@@ -557,12 +557,19 @@ export async function deleteSupabaseEventRegistration(eventId: string, userId: s
 }
 
 // --- NOTIFICATIONS ---
-export async function fetchSupabaseNotifications(userId?: string): Promise<AppNotification[] | null> {
+export async function fetchSupabaseNotifications(userId?: string, userRole?: string): Promise<AppNotification[] | null> {
   if (!isSupabaseConfigured) return null;
   try {
     let query = supabase.from('notifications').select('*');
     if (userId) {
-      query = query.or(`userId.eq.${userId},userId.eq.all`);
+      let matchStr = `userId.eq.${userId},userId.eq.all`;
+      if (userRole === 'developer' || userRole === 'admin') {
+        matchStr += `,userId.eq.developer`;
+      }
+      if (userRole === 'teacher') {
+        matchStr += `,userId.eq.teacher`;
+      }
+      query = query.or(matchStr);
     }
     const { data, error } = await query;
     if (error) throw error;
@@ -601,6 +608,30 @@ export async function pruneSupabaseNotifications(userId: string): Promise<void> 
     }
   } catch (err) {
     console.warn('Supabase prune notifications error:', err);
+  }
+}
+
+export async function deleteSupabaseNotification(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const { error } = await supabase.from('notifications').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase delete notification error:', err);
+    return false;
+  }
+}
+
+export async function clearSupabaseNotifications(userId: string): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const { error } = await supabase.from('notifications').delete().eq('userId', userId);
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.warn('Supabase clear notifications error:', err);
+    return false;
   }
 }
 
