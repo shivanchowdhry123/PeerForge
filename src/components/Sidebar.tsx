@@ -256,7 +256,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, isMobileDrawer 
         {!effectiveCompact && (
           <div className="pt-1 text-[10px] text-[var(--text-muted)] flex items-center justify-between px-1">
             <p className="font-bold text-[var(--text-secondary)]">PeerForge OPG</p>
-            <span className="font-mono text-[9px]">v2.5</span>
           </div>
         )}
       </div>
