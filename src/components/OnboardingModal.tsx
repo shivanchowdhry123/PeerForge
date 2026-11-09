@@ -210,10 +210,10 @@ export const OnboardingModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs"
+                className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs shrink-0 cursor-pointer"
               >
                 <span>Next: Skills & Hobbies</span>
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-4 h-4 shrink-0" />
               </button>
             </div>
           </div>
@@ -406,11 +406,11 @@ export const OnboardingModal: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t border-[var(--border-color)]">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[var(--border-color)]">
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] shrink-0 cursor-pointer"
               >
                 ← Back
               </button>
@@ -418,7 +418,7 @@ export const OnboardingModal: React.FC = () => {
               <button
                 type="button"
                 onClick={handleFinish}
-                className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs"
+                className="px-6 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs shrink-0 cursor-pointer"
               >
                 Save & Complete Profile
               </button>

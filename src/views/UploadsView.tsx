@@ -368,8 +368,8 @@ export const UploadsView: React.FC = () => {
           {/* Search & Filter Toolbar */}
           <div className="bg-[var(--bg-surface)] p-4 rounded-2xl border border-[var(--border-color)] shadow-xs space-y-3">
             <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+              <div className="relative flex-1 min-w-[220px]">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] shrink-0" />
                 <input
                   type="text"
                   value={searchQuery}
@@ -379,12 +379,12 @@ export const UploadsView: React.FC = () => {
                 />
               </div>
 
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none shrink-0">
                 {['All', ...categories].map(cat => (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap transition-colors ${
+                    className={`px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap transition-colors shrink-0 cursor-pointer ${
                       selectedCategory === cat
                         ? 'bg-blue-600 text-white shadow-2xs font-semibold'
                         : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -432,11 +432,11 @@ export const UploadsView: React.FC = () => {
                           <h4 className="text-sm font-bold text-[var(--text-primary)] truncate max-w-md">
                             {file.originalName}
                           </h4>
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/40">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/50 dark:border-blue-800/40 shrink-0">
                             {file.category}
                           </span>
                           {associatedProject && (
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/50">
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/50 shrink-0">
                               📌 {associatedProject.title}
                             </span>
                           )}
@@ -449,15 +449,15 @@ export const UploadsView: React.FC = () => {
                         )}
 
                         <div className="flex flex-wrap items-center gap-3 text-[11px] text-[var(--text-muted)] pt-0.5">
-                          <span className="font-mono">{formatSize(file.size)}</span>
+                          <span className="font-mono shrink-0">{formatSize(file.size)}</span>
                           <span>•</span>
-                          <span>{file.uploadedAt}</span>
+                          <span className="shrink-0">{file.uploadedAt}</span>
                           <span>•</span>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0">
                             <img
                               src={file.uploadedBy.avatar}
                               alt={file.uploadedBy.name}
-                              className="w-3.5 h-3.5 rounded-full"
+                              className="w-3.5 h-3.5 rounded-full shrink-0"
                             />
                             <span>{file.uploadedBy.name}</span>
                           </div>
@@ -466,21 +466,21 @@ export const UploadsView: React.FC = () => {
                     </div>
 
                     {/* Right: Actions */}
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    <div className="flex items-center gap-2 shrink-0 flex-wrap self-end sm:self-center">
                       {/* Copy Link Button */}
                       <button
                         onClick={() => handleCopyLink(file)}
                         title="Copy direct file URL"
-                        className="px-2.5 py-1.5 rounded-xl bg-[var(--bg-subtle)] hover:bg-[var(--border-color)] text-[var(--text-secondary)] text-xs font-medium flex items-center gap-1.5 transition-colors border border-[var(--border-color)]"
+                        className="px-2.5 py-1.5 rounded-xl bg-[var(--bg-subtle)] hover:bg-[var(--border-color)] text-[var(--text-secondary)] text-xs font-medium flex items-center gap-1.5 transition-colors border border-[var(--border-color)] shrink-0 cursor-pointer"
                       >
                         {isCopied ? (
                           <>
-                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                             <span className="text-emerald-600 font-semibold">Copied!</span>
                           </>
                         ) : (
                           <>
-                            <Copy className="w-3.5 h-3.5" />
+                            <Copy className="w-3.5 h-3.5 shrink-0" />
                             <span>Copy Link</span>
                           </>
                         )}
@@ -493,9 +493,9 @@ export const UploadsView: React.FC = () => {
                         rel="noreferrer"
                         download={file.originalName}
                         title="Download or preview file"
-                        className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs"
+                        className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs shrink-0 cursor-pointer"
                       >
-                        <Download className="w-3.5 h-3.5" />
+                        <Download className="w-3.5 h-3.5 shrink-0" />
                         <span>Download</span>
                       </a>
 
@@ -507,9 +507,9 @@ export const UploadsView: React.FC = () => {
                         <button
                           onClick={() => handleDelete(file)}
                           title="Delete file"
-                          className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                          className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors shrink-0 cursor-pointer"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4 shrink-0" />
                         </button>
                       )}
                     </div>

@@ -241,9 +241,9 @@ export const ProjectsView: React.FC = () => {
                   onClick={() => {
                     setActiveTab('messages');
                   }}
-                  className="px-4 py-2 rounded-xl bg-[var(--bg-subtle)] hover:bg-[var(--border-color)]/60 text-[var(--text-primary)] border border-[var(--border-color)] text-xs font-semibold flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-[var(--bg-subtle)] hover:bg-[var(--border-color)]/60 text-[var(--text-primary)] border border-[var(--border-color)] text-xs font-semibold flex items-center gap-1.5 shrink-0"
                 >
-                  <MessageSquare className="w-3.5 h-3.5" />
+                  <MessageSquare className="w-3.5 h-3.5 shrink-0" />
                   <span>Team Chat</span>
                 </button>
 
@@ -251,9 +251,9 @@ export const ProjectsView: React.FC = () => {
                   onClick={() => {
                     setActiveTab('ai-finder');
                   }}
-                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs"
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs shrink-0"
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
+                  <Sparkles className="w-3.5 h-3.5 shrink-0" />
                   <span>AI Match Candidates</span>
                 </button>
               </div>
@@ -295,15 +295,15 @@ export const ProjectsView: React.FC = () => {
                   {selectedProjectForDetail.openRoles.map(role => (
                     <div
                       key={role.id}
-                      className="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex items-center justify-between gap-3"
+                      className="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                     >
-                      <div>
-                        <div className="flex items-center gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">
                             {role.title}
                           </span>
                           <span
-                            className={`text-[10px] font-semibold px-2 py-0.2 rounded-full ${
+                            className={`text-[10px] font-semibold px-2 py-0.2 rounded-full shrink-0 ${
                               role.status === 'open'
                                 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
                                 : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
@@ -321,7 +321,7 @@ export const ProjectsView: React.FC = () => {
                       {role.status === 'open' && (
                         <button
                           onClick={() => setApplyModalRole({ role, project: selectedProjectForDetail })}
-                          className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs shrink-0"
+                          className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs shrink-0 self-start sm:self-auto cursor-pointer"
                         >
                           Apply for Role
                         </button>
@@ -336,12 +336,12 @@ export const ProjectsView: React.FC = () => {
                 <div className="p-6 rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-color)] space-y-4 shadow-xs">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h2 className="text-base font-bold text-[var(--text-primary)]">
                           Incoming Candidate Applications ({selectedProjectForDetail.applications.length})
                         </h2>
                         {currentUser.role === 'developer' && selectedProjectForDetail.ownerId !== currentUser.id && (
-                          <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-[10px] font-bold">
+                          <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-[10px] font-bold shrink-0">
                             Developer Rights Active
                           </span>
                         )}
@@ -365,26 +365,26 @@ export const ProjectsView: React.FC = () => {
                           key={app.id}
                           className="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] space-y-2.5"
                         >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-center gap-2.5">
+                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                            <div className="flex items-center gap-2.5 min-w-0">
                               <img
                                 src={app.studentAvatar}
                                 alt={app.studentName}
-                                className="w-9 h-9 rounded-xl bg-blue-100 object-cover"
+                                className="w-9 h-9 rounded-xl bg-blue-100 object-cover shrink-0"
                                 referrerPolicy="no-referrer"
                               />
-                              <div>
-                                <span className="text-xs font-bold text-[var(--text-primary)] block">
+                              <div className="min-w-0">
+                                <span className="text-xs font-bold text-[var(--text-primary)] block truncate">
                                   {app.studentName} ({app.studentGrade})
                                 </span>
-                                <span className="text-[11px] text-blue-600 dark:text-blue-400 font-medium">
+                                <span className="text-[11px] text-blue-600 dark:text-blue-400 font-medium truncate block">
                                   Applied for: {app.roleTitle}
                                 </span>
                               </div>
                             </div>
 
                             <span
-                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 self-start sm:self-auto ${
                                 app.status === 'pending'
                                   ? 'bg-amber-100 text-amber-800'
                                   : app.status === 'accepted'
@@ -413,7 +413,7 @@ export const ProjectsView: React.FC = () => {
                           )}
 
                           {app.status === 'pending' && (
-                            <div className="flex items-center justify-end gap-2 pt-1">
+                            <div className="flex items-center justify-end gap-2 pt-1 flex-wrap">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -425,7 +425,7 @@ export const ProjectsView: React.FC = () => {
                                   });
                                   setDeclineReasonInput('Position filled or candidate requirements updated.');
                                 }}
-                                className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer"
+                                className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer shrink-0"
                               >
                                 Decline
                               </button>
@@ -440,9 +440,9 @@ export const ProjectsView: React.FC = () => {
                                         'accepted'
                                       )
                                 }
-                                className="px-4 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                                className="px-4 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors shadow-2xs flex items-center gap-1.5 cursor-pointer shrink-0"
                               >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                                 <span>
                                   {currentUser && currentUser.role === 'developer' && selectedProjectForDetail.ownerId !== currentUser.id
                                     ? 'Accept as Developer'
@@ -470,14 +470,14 @@ export const ProjectsView: React.FC = () => {
                       <img
                         src={m.avatar}
                         alt={m.name}
-                        className="w-8 h-8 rounded-xl bg-blue-100 object-cover"
+                        className="w-8 h-8 rounded-xl bg-blue-100 object-cover shrink-0"
                         referrerPolicy="no-referrer"
                       />
                       <div className="min-w-0">
                         <span className="text-xs font-bold text-[var(--text-primary)] block truncate">
                           {m.name}
                         </span>
-                        <span className="text-[10px] text-[var(--text-muted)]">{m.role}</span>
+                        <span className="text-[10px] text-[var(--text-muted)] truncate block">{m.role}</span>
                       </div>
                     </div>
                   ))}
@@ -724,9 +724,9 @@ export const ProjectsView: React.FC = () => {
                   setIsCreateModalOpen(true);
                 }
               }}
-              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors self-start sm:self-auto"
+              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors shrink-0 self-start sm:self-auto cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 shrink-0" />
               <span>Create Project</span>
             </button>
           </div>
@@ -736,15 +736,15 @@ export const ProjectsView: React.FC = () => {
             <div className="p-6 rounded-3xl bg-[var(--bg-surface)] border-2 border-blue-500/30 shadow-sm space-y-4 animate-in fade-in">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border-color)]">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
-                    <ShieldCheck className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                    <ShieldCheck className="w-5 h-5 shrink-0" />
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h2 className="text-base font-extrabold text-[var(--text-primary)]">
                         Developer Rights & Cross-Approval Console
                       </h2>
-                      <span className="px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-[10px] font-bold">
+                      <span className="px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-[10px] font-bold shrink-0">
                         Cross-Role Authority Active
                       </span>
                     </div>
@@ -753,7 +753,7 @@ export const ProjectsView: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <div className="text-xs text-[var(--text-secondary)] font-medium">
+                <div className="text-xs text-[var(--text-secondary)] font-medium shrink-0">
                   Pending Applications: <strong className="text-blue-600 dark:text-blue-400">{allPendingApplications.length}</strong>
                 </div>
               </div>
@@ -780,14 +780,14 @@ export const ProjectsView: React.FC = () => {
                         key={app.id}
                         className="p-4 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex flex-col md:flex-row md:items-center justify-between gap-4"
                       >
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-start gap-3 min-w-0">
                           <img
                             src={app.studentAvatar}
                             alt={app.studentName}
                             className="w-10 h-10 rounded-xl bg-blue-100 object-cover shrink-0"
                             referrerPolicy="no-referrer"
                           />
-                          <div>
+                          <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-xs font-bold text-[var(--text-primary)]">
                                 {app.studentName}
@@ -795,22 +795,22 @@ export const ProjectsView: React.FC = () => {
                               <span className="text-[11px] text-[var(--text-muted)]">
                                 ({app.studentGrade})
                               </span>
-                              <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                              <span className="text-[10px] font-semibold px-2 py-0.2 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
                                 Project: {project.title}
                               </span>
                               {isDevRole && (
-                                <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                                <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 shrink-0">
                                   Developer Role
                                 </span>
                               )}
                               {isTeacherRole && (
-                                <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                                <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 shrink-0">
                                   Faculty / Teacher Role
                                 </span>
                               )}
                             </div>
 
-                            <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mt-0.5">
+                            <p className="text-xs font-medium text-blue-600 dark:text-blue-400 mt-0.5 truncate">
                               Applied for: <strong>{app.roleTitle}</strong> · Project Lead: {project.ownerName}
                             </p>
                             <p className="text-xs text-[var(--text-secondary)] italic mt-1 line-clamp-2">
@@ -819,7 +819,7 @@ export const ProjectsView: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0 self-end md:self-auto">
+                        <div className="flex items-center gap-2 shrink-0 flex-wrap self-end md:self-auto">
                           <button
                             type="button"
                             onClick={() => {
@@ -831,7 +831,7 @@ export const ProjectsView: React.FC = () => {
                               });
                               setDeclineReasonInput('Position filled or candidate requirements updated.');
                             }}
-                            className="px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors cursor-pointer"
+                            className="px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-xl transition-colors cursor-pointer shrink-0"
                           >
                             Decline
                           </button>
@@ -844,9 +844,9 @@ export const ProjectsView: React.FC = () => {
                                 'Approved via Developer Console'
                               )
                             }
-                            className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                            className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer shrink-0"
                           >
-                            <CheckCircle2 className="w-4 h-4" />
+                            <CheckCircle2 className="w-4 h-4 shrink-0" />
                             <span>
                               Accept for {isDevRole ? 'Developer' : isTeacherRole ? 'Teacher' : 'Role'}
                             </span>
@@ -863,8 +863,8 @@ export const ProjectsView: React.FC = () => {
           {/* Filters & Search */}
           <div className="p-4 rounded-3xl bg-[var(--bg-surface)] border border-[var(--border-color)] space-y-3 shadow-xs">
             <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+              <div className="relative flex-1 min-w-[240px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] shrink-0" />
                 <input
                   type="text"
                   placeholder="Search projects by title, description, or required skill..."
@@ -874,12 +874,12 @@ export const ProjectsView: React.FC = () => {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-[var(--text-secondary)]">Status:</span>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-medium text-[var(--text-secondary)] shrink-0">Status:</span>
                 <select
                   value={statusFilter}
                   onChange={e => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 text-xs font-medium rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none"
+                  className="px-3 py-2 text-xs font-medium rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none shrink-0"
                 >
                   <option value="All">All Statuses</option>
                   <option value="recruiting">Actively Recruiting</option>
@@ -891,14 +891,14 @@ export const ProjectsView: React.FC = () => {
 
             {/* Category tabs */}
             <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-[var(--border-color)]/70 text-xs">
-              <span className="text-[11px] font-semibold text-[var(--text-muted)] mr-1">Category:</span>
+              <span className="text-[11px] font-semibold text-[var(--text-muted)] mr-1 shrink-0">Category:</span>
               {categories.map(cat => (
                 <button
                   key={cat}
                   onClick={() => setCategoryFilter(cat)}
-                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors shrink-0 cursor-pointer ${
                     categoryFilter === cat
-                      ? 'bg-blue-600 text-white shadow-2xs'
+                      ? 'bg-blue-600 text-white shadow-2xs font-semibold'
                       : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
@@ -917,14 +917,14 @@ export const ProjectsView: React.FC = () => {
               >
                 <div>
                   <div className="flex items-start justify-between gap-3">
-                    <div>
+                    <div className="min-w-0">
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">
                         {project.category}
                       </span>
-                      <h3 className="text-base font-bold text-[var(--text-primary)] mt-0.5">
+                      <h3 className="text-base font-bold text-[var(--text-primary)] mt-0.5 truncate">
                         {project.title}
                       </h3>
-                      <p className="text-[11px] text-[var(--text-muted)]">
+                      <p className="text-[11px] text-[var(--text-muted)] truncate">
                         Lead: {project.ownerName} ({project.ownerGrade})
                       </p>
                     </div>
@@ -953,7 +953,7 @@ export const ProjectsView: React.FC = () => {
                       {project.openRoles.map(r => (
                         <span
                           key={r.id}
-                          className={`text-[11px] px-2 py-0.5 rounded-md border font-medium ${
+                          className={`text-[11px] px-2 py-0.5 rounded-md border font-medium shrink-0 ${
                             r.status === 'open'
                               ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300'
                               : 'bg-[var(--bg-subtle)] text-[var(--text-muted)] border-[var(--border-color)] line-through'
@@ -966,30 +966,30 @@ export const ProjectsView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-[var(--border-color)] flex items-center justify-between">
-                  <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5" />
+                <div className="pt-3 border-t border-[var(--border-color)] flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-xs text-[var(--text-muted)] flex items-center gap-1 shrink-0">
+                    <Users className="w-3.5 h-3.5 shrink-0" />
                     <span className="num-tabular">{project.members.length} Members</span>
                   </span>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
                     {currentUser && (project.ownerId === currentUser.id || currentUser.role === 'developer' || currentUser.role === 'admin' || currentUser.role === 'teacher') && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setProjectToDelete(project);
                         }}
-                        className="p-2 rounded-xl text-rose-600 dark:text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 transition-all cursor-pointer"
+                        className="p-2 rounded-xl text-rose-600 dark:text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 transition-all cursor-pointer shrink-0"
                         title="Delete project"
                         aria-label="Delete project"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-3.5 h-3.5 shrink-0" />
                       </button>
                     )}
 
                     <button
                       onClick={() => setSelectedProjectForDetail(project)}
-                      className="py-1.5 px-4 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-2xs transition-colors"
+                      className="py-1.5 px-4 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-2xs transition-colors shrink-0 cursor-pointer"
                     >
                       View Project & Apply →
                     </button>

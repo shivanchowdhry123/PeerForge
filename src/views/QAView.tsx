@@ -145,10 +145,10 @@ export const QAView: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap shrink-0">
                 {selectedQuestionForDetail.acceptedAnswerId && (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 shrink-0">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                     <span>Verified Solution</span>
                   </span>
                 )}
@@ -156,10 +156,10 @@ export const QAView: React.FC = () => {
                 {currentUser && (currentUser.id === selectedQuestionForDetail.authorId || currentUser.role === 'developer' || currentUser.role === 'admin' || currentUser.role === 'teacher') && (
                   <button
                     onClick={() => setQuestionToDelete(selectedQuestionForDetail)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 transition-all cursor-pointer shadow-xs"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 transition-all cursor-pointer shadow-xs shrink-0"
                     title="Delete your question"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-3.5 h-3.5 shrink-0" />
                     <span>Delete Question</span>
                   </button>
                 )}
@@ -223,40 +223,40 @@ export const QAView: React.FC = () => {
                   }`}
                 >
                   <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <img
                         src={ans.authorAvatar}
                         alt={ans.authorName}
-                        className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900 object-cover"
+                        className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900 object-cover shrink-0"
                         referrerPolicy="no-referrer"
                       />
-                      <div>
+                      <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-bold text-[var(--text-primary)] block">
+                          <span className="text-xs font-bold text-[var(--text-primary)] block truncate">
                             {ans.authorName}
                           </span>
                           {isAnsAuthor && (
-                            <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold border border-blue-500/20">
+                            <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold border border-blue-500/20 shrink-0">
                               Your Answer
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] text-[var(--text-muted)] num-tabular">
+                        <span className="text-[10px] text-[var(--text-muted)] num-tabular truncate block">
                           {ans.authorGrade} · {ans.createdAt}
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap shrink-0">
                       {isAccepted ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-500/30">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-500/30 shrink-0">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                           <span>Accepted Solution</span>
                         </span>
                       ) : canAccept ? (
                         <button
                           onClick={() => acceptAnswer(selectedQuestionForDetail.id, ans.id)}
-                          className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 bg-emerald-500/10 hover:bg-emerald-500/20 px-3.5 py-1.5 rounded-xl border border-emerald-500/30 transition-colors cursor-pointer"
+                          className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 bg-emerald-500/10 hover:bg-emerald-500/20 px-3.5 py-1.5 rounded-xl border border-emerald-500/30 transition-colors cursor-pointer shrink-0"
                         >
                           Accept this Answer
                         </button>
@@ -266,11 +266,11 @@ export const QAView: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setAnswerToDelete(ans)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 transition-all cursor-pointer shadow-2xs active:scale-95"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 transition-all cursor-pointer shadow-2xs active:scale-95 shrink-0"
                           title="Delete your answer"
                           aria-label="Delete answer"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5 shrink-0" />
                           <span>Delete</span>
                         </button>
                       )}
@@ -370,8 +370,8 @@ export const QAView: React.FC = () => {
           {/* Search & Topic Tabs */}
           <div className="p-4 sm:p-5 rounded-3xl bg-[var(--bg-surface)]/85 border border-[var(--border-color)] space-y-3.5 shadow-xs backdrop-blur-md">
             <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+              <div className="relative flex-1 min-w-[240px]">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] shrink-0" />
                 <input
                   type="text"
                   placeholder="Search questions by topic, concept, or keywords..."
@@ -381,12 +381,12 @@ export const QAView: React.FC = () => {
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <span className="text-xs font-medium text-[var(--text-muted)] shrink-0">Sort by:</span>
                 <select
                   value={sortOption}
                   onChange={e => setSortOption(e.target.value as any)}
-                  className="px-3 py-2 text-xs font-medium rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none"
+                  className="px-3 py-2 text-xs font-medium rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none shrink-0"
                 >
                   <option value="newest">Newest First</option>
                   <option value="discussed">Most Discussed</option>
@@ -397,12 +397,12 @@ export const QAView: React.FC = () => {
 
             {/* Topic Filter Tabs */}
             <div className="flex items-center gap-1.5 flex-wrap pt-2.5 border-t border-[var(--border-color)]/70 text-xs">
-              <span className="text-[11px] font-semibold text-[var(--text-muted)] mr-1">Topics:</span>
+              <span className="text-[11px] font-semibold text-[var(--text-muted)] mr-1 shrink-0">Topics:</span>
               {topicsList.map(topic => (
                 <button
                   key={topic}
                   onClick={() => setActiveTopic(topic)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 ${
                     activeTopic === topic
                       ? 'bg-blue-600 text-white shadow-xs font-semibold'
                       : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-muted)]'
@@ -465,10 +465,10 @@ export const QAView: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap shrink-0">
                         {q.acceptedAnswerId && (
-                          <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                          <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-1 shrink-0">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
                             <span>Solved</span>
                           </span>
                         )}
@@ -480,11 +480,11 @@ export const QAView: React.FC = () => {
                               e.stopPropagation();
                               setQuestionToDelete(q);
                             }}
-                            className="p-1.5 sm:px-2.5 sm:py-1 rounded-xl text-rose-600 dark:text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95"
+                            className="p-1.5 sm:px-2.5 sm:py-1 rounded-xl text-rose-600 dark:text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
                             title="Delete this question"
                             aria-label="Delete question"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3.5 h-3.5 shrink-0" />
                             <span className="hidden sm:inline">Delete</span>
                           </button>
                         )}
@@ -499,21 +499,21 @@ export const QAView: React.FC = () => {
                       {q.body}
                     </p>
 
-                    <div className="flex items-center justify-between pt-2.5 border-t border-[var(--border-color)]/60 text-xs">
+                    <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-[var(--border-color)]/60 text-xs flex-wrap">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {q.tags.map((tag, tIdx) => (
                           <span
                             key={tIdx}
-                            className="px-2.5 py-0.5 rounded-lg bg-[var(--bg-subtle)] text-[10px] font-medium text-[var(--text-secondary)] border border-[var(--border-color)]/80 hover:border-blue-400/40 transition-colors"
+                            className="px-2.5 py-0.5 rounded-lg bg-[var(--bg-subtle)] text-[10px] font-medium text-[var(--text-secondary)] border border-[var(--border-color)]/80 hover:border-blue-400/40 transition-colors shrink-0"
                           >
                             #{tag}
                           </span>
                         ))}
                       </div>
 
-                      <div className="flex items-center gap-3 text-[var(--text-muted)] text-xs font-semibold num-tabular">
-                        <span className="flex items-center gap-1.5 group-hover:text-blue-600 transition-colors bg-[var(--bg-subtle)] px-2.5 py-1 rounded-xl border border-[var(--border-color)]/60">
-                          <MessageSquare className="w-3.5 h-3.5 text-blue-500" />
+                      <div className="flex items-center gap-3 text-[var(--text-muted)] text-xs font-semibold num-tabular shrink-0">
+                        <span className="flex items-center gap-1.5 group-hover:text-blue-600 transition-colors bg-[var(--bg-subtle)] px-2.5 py-1 rounded-xl border border-[var(--border-color)]/60 shrink-0">
+                          <MessageSquare className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                           <span>{q.answersCount} {q.answersCount === 1 ? 'answer' : 'answers'}</span>
                         </span>
                       </div>

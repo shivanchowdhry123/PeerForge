@@ -117,9 +117,9 @@ export const EventsView: React.FC = () => {
               setOrganizer(`${currentUser.name} (${roleLabel})`);
               setIsModalOpen(true);
             }}
-            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-xs transition-all self-start sm:self-auto"
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-xs transition-all self-start sm:self-auto shrink-0 cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4 shrink-0" />
             <span>Add Upcoming Event</span>
           </button>
         )}
@@ -131,7 +131,7 @@ export const EventsView: React.FC = () => {
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{successBanner}</span>
           </div>
-          <button onClick={() => setSuccessBanner(null)} className="text-emerald-600 hover:text-emerald-800">
+          <button onClick={() => setSuccessBanner(null)} className="text-emerald-600 hover:text-emerald-800 cursor-pointer">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -143,7 +143,7 @@ export const EventsView: React.FC = () => {
           <button
             key={cat}
             onClick={() => setFilterCategory(cat)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors shrink-0 cursor-pointer ${
               filterCategory === cat
                 ? 'bg-blue-600 text-white shadow-2xs font-semibold'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]'
@@ -204,28 +204,28 @@ export const EventsView: React.FC = () => {
               </div>
 
               {/* Action Buttons: Faculty Delete & RSVP */}
-              <div className="flex items-center gap-2 shrink-0 flex-wrap sm:flex-nowrap">
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
                 {canPublish && (
                   confirmDeleteId === event.id ? (
-                    <div className="flex items-center gap-1.5 p-1 rounded-xl bg-red-50 dark:bg-red-950/70 border border-red-200 dark:border-red-800 animate-in fade-in">
-                      <span className="text-[11px] font-semibold text-red-700 dark:text-red-300 px-1.5 flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3 text-red-500" />
+                    <div className="flex items-center gap-1.5 p-1 rounded-xl bg-red-50 dark:bg-red-950/70 border border-red-200 dark:border-red-800 animate-in fade-in shrink-0">
+                      <span className="text-[11px] font-semibold text-red-700 dark:text-red-300 px-1.5 flex items-center gap-1 shrink-0">
+                        <AlertTriangle className="w-3 h-3 text-red-500 shrink-0" />
                         Delete event?
                       </span>
                       <button
                         type="button"
                         onClick={() => handleDeleteEvent(event.id, event.title)}
                         disabled={isDeletingId === event.id}
-                        className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                        className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer shadow-2xs shrink-0"
                         title="Confirm deletion"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-3 h-3 shrink-0" />
                         <span>{isDeletingId === event.id ? 'Deleting...' : 'Confirm'}</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setConfirmDeleteId(null)}
-                        className="px-2 py-1 rounded-lg bg-[var(--bg-surface)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] text-xs font-medium border border-[var(--border-color)] transition-all cursor-pointer"
+                        className="px-2 py-1 rounded-lg bg-[var(--bg-surface)] hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] text-xs font-medium border border-[var(--border-color)] transition-all cursor-pointer shrink-0"
                         title="Cancel"
                       >
                         Cancel
@@ -235,10 +235,10 @@ export const EventsView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setConfirmDeleteId(event.id)}
-                      className="px-3 py-2 rounded-xl text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 border border-transparent hover:border-red-200 dark:hover:border-red-900 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5"
+                      className="px-3 py-2 rounded-xl text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40 border border-transparent hover:border-red-200 dark:hover:border-red-900 text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
                       title="Delete this event (Faculty access)"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3.5 h-3.5 shrink-0" />
                       <span>Delete</span>
                     </button>
                   )
@@ -259,14 +259,14 @@ export const EventsView: React.FC = () => {
                       setTimeout(() => setSuccessBanner(null), 3500);
                     }
                   }}
-                  className={`px-5 py-2 rounded-xl text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-5 py-2 rounded-xl text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer shrink-0 ${
                     event.isRsvpd
                       ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors'
                       : 'bg-blue-600 hover:bg-blue-700 text-white'
                   }`}
                   title={event.isRsvpd ? 'Click to cancel your registration / deregister' : 'Register for this event'}
                 >
-                  <Bookmark className="w-3.5 h-3.5" />
+                  <Bookmark className="w-3.5 h-3.5 shrink-0" />
                   <span>{event.isRsvpd ? 'Attending ✓ (Deregister)' : 'RSVP / Register'}</span>
                 </button>
               </div>
@@ -276,9 +276,9 @@ export const EventsView: React.FC = () => {
               {event.description}
             </p>
 
-            <div className="pt-3 border-t border-[var(--border-color)]/60 flex items-center justify-between text-xs text-[var(--text-muted)]">
+            <div className="pt-3 border-t border-[var(--border-color)]/60 flex items-center justify-between text-xs text-[var(--text-muted)] gap-2 flex-wrap">
               <span>Organized by: <strong className="text-[var(--text-primary)]">{event.organizer}</strong></span>
-              <span className="num-tabular font-semibold text-[var(--text-secondary)]">
+              <span className="num-tabular font-semibold text-[var(--text-secondary)] shrink-0">
                 {event.rsvpCount === 0
                   ? '0 students registered'
                   : event.rsvpCount === 1

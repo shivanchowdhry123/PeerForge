@@ -69,7 +69,8 @@ import {
   fetchSupabaseContactInquiries,
   fetchSupabaseUploads,
   subscribeToSupabaseRealtime,
-  resendSupabaseConfirmation
+  resendSupabaseConfirmation,
+  SUPABASE_REDIRECT_URL
 } from '../services/supabaseClient';
 
 interface AppContextType {
@@ -734,6 +735,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser(updatedUser);
     persistSession(updatedUser);
     setAllStudents(prev => prev.map(s => (s.id === currentUser.id ? updatedUser : s)));
+    setSelectedStudentForProfile(prev => (prev && prev.id === currentUser.id ? updatedUser : prev));
 
     if (isSupabaseConfigured) {
       saveSupabaseStudent(updatedUser);
@@ -742,14 +744,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addSkillToCurrent = (skill: Skill) => {
     if (!currentUser) return;
-    if (currentUser.skills.some(s => s.name.toLowerCase() === skill.name.toLowerCase())) return;
-    const updatedSkills = [...currentUser.skills, skill];
+    const currentSkills = currentUser.skills || [];
+    const existingIdx = currentSkills.findIndex(
+      s => s.name.toLowerCase() === skill.name.toLowerCase()
+    );
+    let updatedSkills: Skill[];
+    if (existingIdx >= 0) {
+      updatedSkills = [...currentSkills];
+      updatedSkills[existingIdx] = skill;
+    } else {
+      updatedSkills = [...currentSkills, skill];
+    }
     updateCurrentUserProfile({ skills: updatedSkills });
   };
 
   const removeSkillFromCurrent = (skillName: string) => {
     if (!currentUser) return;
-    const updatedSkills = currentUser.skills.filter(s => s.name !== skillName);
+    const currentSkills = currentUser.skills || [];
+    const updatedSkills = currentSkills.filter(
+      s => s.name.toLowerCase() !== skillName.toLowerCase()
+    );
     updateCurrentUserProfile({ skills: updatedSkills });
   };
 
@@ -2271,6 +2285,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         email: cleanEmail,
         password: data.password,
         options: {
+          emailRedirectTo: SUPABASE_REDIRECT_URL,
           data: {
             full_name: cleanName,
             role: data.role

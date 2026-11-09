@@ -70,7 +70,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, isMobileDrawer 
 
   // Secondary Utility Footer Links
   const secondaryNavItems: NavItem[] = [
-    { id: 'profile', label: 'My Profile', icon: User },
     { id: 'settings', label: 'Settings', icon: Settings },
     { id: 'contact', label: 'About & Support', icon: Info }
   ];
@@ -97,14 +96,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, isMobileDrawer 
         isMobileDrawer
           ? 'w-full h-full p-1 bg-transparent border-0'
           : effectiveCompact
-          ? 'w-16 p-2 h-[calc(100vh-61px)] sticky top-[61px] border-r border-[var(--border-color)] bg-[var(--bg-surface)]/75 dark:bg-[var(--bg-surface)]/70 backdrop-blur-md'
-          : 'w-64 p-3.5 h-[calc(100vh-61px)] sticky top-[61px] border-r border-[var(--border-color)] bg-[var(--bg-surface)]/75 dark:bg-[var(--bg-surface)]/70 backdrop-blur-md'
-      } shrink-0 flex flex-col justify-between overflow-y-auto transition-all duration-300 ease-in-out`}
+          ? 'w-16 p-2 h-[calc(100dvh-53px)] sticky top-[53px] border-r border-[var(--border-color)] bg-[var(--bg-surface)]/75 dark:bg-[var(--bg-surface)]/70 backdrop-blur-md'
+          : 'w-64 p-2.5 h-[calc(100dvh-53px)] sticky top-[53px] border-r border-[var(--border-color)] bg-[var(--bg-surface)]/75 dark:bg-[var(--bg-surface)]/70 backdrop-blur-md'
+      } shrink-0 flex flex-col justify-between overflow-hidden transition-all duration-300 ease-in-out`}
     >
-      <div className="space-y-4">
+      <div className="space-y-2">
         {/* Sidebar Header & Compact Toggle */}
         {!isMobileDrawer && (
-          <div className="flex items-center justify-between pb-2 border-b border-[var(--border-color)]/60">
+          <div className="flex items-center justify-between pb-1.5 border-b border-[var(--border-color)]/60">
             {!effectiveCompact && (
               <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider px-1">
                 Menu
@@ -128,7 +127,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, isMobileDrawer 
         )}
 
         {/* Primary Core Menu (5 Clean Buttons) */}
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {primaryNavItems.map(item => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -138,7 +137,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, isMobileDrawer 
                 onClick={() => handleNavClick(item.id)}
                 title={item.label}
                 className={`w-full flex items-center ${
-                  effectiveCompact ? 'justify-center p-2.5' : 'justify-start gap-3 px-3 py-2.5'
+                  effectiveCompact ? 'justify-center p-2' : 'justify-start gap-2.5 px-2.5 py-1.5'
                 } rounded-xl text-xs sm:text-sm font-medium transition-all text-left group cursor-pointer ${
                   isActive
                     ? 'bg-blue-600/10 text-blue-700 dark:text-blue-300 font-semibold border border-blue-500/20 shadow-xs'
@@ -158,7 +157,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, isMobileDrawer 
       </div>
 
       {/* Footer Utility Links & Auth Section */}
-      <div className="pt-3 border-t border-[var(--border-color)] mt-4 space-y-3">
+      <div className="pt-2 border-t border-[var(--border-color)] mt-2 space-y-2">
         {/* Secondary Links */}
         <div className="space-y-0.5">
           {!effectiveCompact && (
@@ -225,18 +224,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, isMobileDrawer 
         ) : effectiveCompact ? (
           <button
             onClick={() => handleNavClick('profile')}
-            className="w-full p-2 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex items-center justify-center cursor-pointer"
+            className="w-full p-1 rounded-xl hover:bg-[var(--bg-subtle)] transition-all flex items-center justify-center cursor-pointer group shrink-0"
             title={`Signed in as ${currentUser.name}`}
           >
-            <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <img
+              src={currentUser.avatar}
+              alt={currentUser.name}
+              className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900 object-cover ring-2 ring-blue-500/30 group-hover:scale-105 transition-transform"
+              referrerPolicy="no-referrer"
+            />
           </button>
         ) : (
-          <div className="px-2 py-1.5 rounded-xl bg-[var(--bg-subtle)]/70 border border-[var(--border-color)] flex items-center justify-between">
-            <span className="text-xs font-medium text-[var(--text-secondary)] truncate max-w-[130px]">
-              {currentUser.name}
-            </span>
+          <button
+            onClick={() => handleNavClick('profile')}
+            className="w-full p-1.5 rounded-xl bg-[var(--bg-subtle)]/70 hover:bg-[var(--bg-subtle)] border border-[var(--border-color)] flex items-center justify-between gap-2 transition-colors cursor-pointer group text-left"
+            title={`View profile of ${currentUser.name}`}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <img
+                src={currentUser.avatar}
+                alt={currentUser.name}
+                className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-900 object-cover ring-1 ring-[var(--border-color)] shrink-0 group-hover:scale-105 transition-transform"
+                referrerPolicy="no-referrer"
+              />
+              <span className="text-xs font-semibold text-[var(--text-primary)] truncate">
+                {currentUser.name}
+              </span>
+            </div>
             <span
-              className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded-md ${
+              className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded-md shrink-0 ${
                 currentUser.role === 'teacher' && !currentUser.isApproved
                   ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20'
                   : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
@@ -250,7 +266,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onCloseMobile, isMobileDrawer 
                 ? 'Dev'
                 : 'Student'}
             </span>
-          </div>
+          </button>
         )}
 
         {!effectiveCompact && (

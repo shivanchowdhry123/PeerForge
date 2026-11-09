@@ -39,6 +39,8 @@ const SUPABASE_ANON_KEY =
   getEnvVar('SUPABASE_PUBLISHABLE_KEY') ||
   'placeholder';
 
+export const SUPABASE_REDIRECT_URL = 'https://peerforgehq.vercel.app';
+
 export const isSupabaseConfigured = Boolean(
   SUPABASE_URL &&
   SUPABASE_ANON_KEY &&
@@ -62,7 +64,10 @@ export async function resendSupabaseConfirmation(email: string): Promise<{ succe
   try {
     const { error } = await supabase.auth.resend({
       type: 'signup',
-      email: email.trim().toLowerCase()
+      email: email.trim().toLowerCase(),
+      options: {
+        emailRedirectTo: SUPABASE_REDIRECT_URL
+      }
     });
     if (error) {
       return { success: false, error: error.message };

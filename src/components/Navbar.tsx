@@ -50,7 +50,7 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-[var(--border-color)] bg-[var(--bg-surface)]/85 dark:bg-[var(--bg-surface)]/80 backdrop-blur-md px-3 sm:px-6 py-2 sm:py-2.5 transition-colors overflow-x-clip">
+    <header className="sticky top-0 z-40 w-full border-b border-[var(--border-color)] bg-[var(--bg-surface)]/85 dark:bg-[var(--bg-surface)]/80 backdrop-blur-md px-3 sm:px-6 py-2 sm:py-2.5 transition-colors overflow-visible relative">
       <div className="flex items-center justify-between gap-2 sm:gap-4 w-full">
         {/* Zone 1: Brand Wordmark (Left) */}
         <div className="flex items-center shrink-0">
@@ -67,18 +67,18 @@ export const Navbar: React.FC = () => {
         </div>
 
         {/* Zone 2: Centered Header Actions */}
-        <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2">
+        <div className="flex-1 min-w-0 flex items-center justify-center flex-wrap sm:flex-nowrap gap-1.5 sm:gap-2 py-0.5">
           {/* Directory Search Button (Redirects & Auto-focuses on PC, Tablet & Mobile) */}
           <button
             onClick={handleSearchRedirect}
             aria-label="Search Student Directory"
-            className={`relative p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center group ${
+            className={`relative p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center group shrink-0 ${
               activeTab === 'discover'
                 ? 'text-blue-600 bg-blue-500/10 border border-blue-500/20 shadow-2xs'
                 : 'text-[var(--text-secondary)] hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-500/10 border border-transparent hover:border-blue-500/20'
             }`}
           >
-            <Search className="w-4 h-4 transition-transform group-hover:scale-110" />
+            <Search className="w-4 h-4 transition-transform group-hover:scale-110 shrink-0" />
 
             {/* Hover Tooltip showing Search */}
             <span className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-lg bg-[var(--bg-surface)] dark:bg-slate-900 text-[var(--text-primary)] text-[11px] font-semibold tracking-tight shadow-xl border border-[var(--border-color)] whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-150 z-50">
@@ -91,13 +91,13 @@ export const Navbar: React.FC = () => {
           <button
             onClick={() => setActiveTab('ai-finder')}
             aria-label="Match Finder"
-            className={`relative p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center group ${
+            className={`relative p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center group shrink-0 ${
               activeTab === 'ai-finder'
                 ? 'text-purple-600 bg-purple-500/10 border border-purple-500/20 shadow-2xs'
                 : 'text-[var(--text-secondary)] hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-500/10 border border-transparent hover:border-purple-500/20'
             }`}
           >
-            <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400 transition-transform group-hover:scale-110" />
+            <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400 transition-transform group-hover:scale-110 shrink-0" />
 
             {/* Hover Tooltip showing Match Finder */}
             <span className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-lg bg-[var(--bg-surface)] dark:bg-slate-900 text-[var(--text-primary)] text-[11px] font-semibold tracking-tight shadow-xl border border-[var(--border-color)] whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-150 z-50">
@@ -107,11 +107,11 @@ export const Navbar: React.FC = () => {
           </button>
 
           {/* Theme Toggle Button (Icon-Only with Tooltip on Hover) */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={toggleTheme}
               aria-label="Toggle theme mode"
-              className={`relative p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center group ${
+              className={`relative p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center group shrink-0 ${
                 themeMode === 'light'
                   ? 'text-amber-500 hover:bg-amber-500/10 border border-transparent hover:border-amber-500/20'
                   : themeMode === 'dark'
@@ -119,11 +119,11 @@ export const Navbar: React.FC = () => {
                   : 'text-blue-500 hover:bg-blue-500/10 border border-transparent hover:border-blue-500/20'
               }`}
             >
-              {themeMode === 'light' && <Sun className="w-4 h-4 text-amber-500 transition-transform group-hover:scale-110" />}
-              {themeMode === 'dark' && <Moon className="w-4 h-4 text-indigo-400 transition-transform group-hover:scale-110" />}
+              {themeMode === 'light' && <Sun className="w-4 h-4 text-amber-500 transition-transform group-hover:scale-110 shrink-0" />}
+              {themeMode === 'dark' && <Moon className="w-4 h-4 text-indigo-400 transition-transform group-hover:scale-110 shrink-0" />}
               {themeMode === 'system' && (
-                <div className="relative flex items-center justify-center transition-transform group-hover:scale-110">
-                  <Monitor className="w-4 h-4 text-blue-500" />
+                <div className="relative flex items-center justify-center transition-transform group-hover:scale-110 shrink-0">
+                  <Monitor className="w-4 h-4 text-blue-500 shrink-0" />
                   <span className="absolute -bottom-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-500 ring-1 ring-[var(--bg-surface)]" />
                 </div>
               )}
@@ -140,15 +140,15 @@ export const Navbar: React.FC = () => {
           <button
             onClick={() => setActiveTab('messages')}
             aria-label="Messages"
-            className={`relative p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center group ${
+            className={`relative p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center group shrink-0 ${
               activeTab === 'messages'
                 ? 'text-blue-600 bg-blue-500/10 border border-blue-500/20 shadow-2xs'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] border border-transparent hover:border-[var(--border-color)]'
             }`}
           >
-            <MessageSquare className="w-4 h-4 transition-transform group-hover:scale-110" />
+            <MessageSquare className="w-4 h-4 transition-transform group-hover:scale-110 shrink-0" />
             {unreadMessagesCount > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-[var(--bg-surface)]" />
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-[var(--bg-surface)] shrink-0" />
             )}
 
             {/* Hover Tooltip showing Messages */}
@@ -159,22 +159,22 @@ export const Navbar: React.FC = () => {
           </button>
 
           {/* Notifications Popover (Icon-Only with Tooltip on Hover) */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={() => {
                 setIsNotifOpen(!isNotifOpen);
                 if (!isNotifOpen) markNotificationsAsRead();
               }}
               aria-label="Notifications"
-              className={`relative p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center group ${
+              className={`relative p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center group shrink-0 ${
                 isNotifOpen || activeTab === 'notifications'
                   ? 'text-blue-600 bg-blue-500/10 border border-blue-500/20 shadow-2xs'
                   : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] border border-transparent hover:border-[var(--border-color)]'
               }`}
             >
-              <Bell className="w-4 h-4 transition-transform group-hover:scale-110" />
+              <Bell className="w-4 h-4 transition-transform group-hover:scale-110 shrink-0" />
               {unreadNotifsCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-[var(--bg-surface)]" />
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-[var(--bg-surface)] shrink-0" />
               )}
 
               {/* Hover Tooltip showing Notifications (hidden when dropdown is open) */}
@@ -285,13 +285,13 @@ export const Navbar: React.FC = () => {
           <button
             onClick={() => setActiveTab('contact')}
             aria-label="Help Desk"
-            className={`relative p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center group ${
+            className={`relative p-1.5 sm:p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center group shrink-0 ${
               activeTab === 'contact'
                 ? 'text-blue-600 bg-blue-500/10 border border-blue-500/20 shadow-2xs'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] border border-transparent hover:border-[var(--border-color)]'
             }`}
           >
-            <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400 transition-transform group-hover:scale-110" />
+            <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400 transition-transform group-hover:scale-110 shrink-0" />
 
             {/* Hover Tooltip showing Help Desk */}
             <span className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-lg bg-[var(--bg-surface)] dark:bg-slate-900 text-[var(--text-primary)] text-[11px] font-semibold tracking-tight shadow-xl border border-[var(--border-color)] whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-all duration-150 z-50">
@@ -305,28 +305,28 @@ export const Navbar: React.FC = () => {
         <div className="flex items-center shrink-0">
           {/* Authentication State */}
           {(!isAuthenticated || !currentUser) ? (
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               <button
                 onClick={() => openAuthModal('login')}
-                className="px-2 sm:px-3 py-1.5 rounded-xl text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] border border-[var(--border-color)] transition-all flex items-center gap-1"
+                className="px-2 sm:px-3 py-1.5 rounded-xl text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] border border-[var(--border-color)] transition-all flex items-center gap-1 shrink-0"
               >
-                <LogIn className="w-3.5 h-3.5" />
+                <LogIn className="w-3.5 h-3.5 shrink-0" />
                 <span className="hidden sm:inline">Log In</span>
               </button>
               <button
                 onClick={() => openAuthModal('signup')}
-                className="px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-all flex items-center gap-1"
+                className="px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-all flex items-center gap-1 shrink-0"
               >
-                <UserPlus className="w-3.5 h-3.5" />
+                <UserPlus className="w-3.5 h-3.5 shrink-0" />
                 <span className="hidden sm:inline">Sign Up</span>
               </button>
             </div>
           ) : (
-            <div className="relative">
+            <div className="relative shrink-0">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 aria-label="Account Menu"
-                className={`relative p-1 rounded-xl transition-all cursor-pointer flex items-center justify-center group ${
+                className={`relative p-1 rounded-xl transition-all cursor-pointer flex items-center justify-center group shrink-0 ${
                   isUserMenuOpen
                     ? 'ring-2 ring-blue-500/50 bg-blue-500/10'
                     : 'hover:bg-[var(--bg-subtle)] border border-transparent hover:border-[var(--border-color)]'

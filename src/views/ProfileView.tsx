@@ -19,8 +19,27 @@ import {
   User,
   FolderKanban,
   Edit2,
-  X
+  X,
+  Camera,
+  Upload,
+  Link,
+  ImageIcon
 } from 'lucide-react';
+
+const PRESET_AVATARS = [
+  'https://api.dicebear.com/7.x/bottts/svg?seed=PeerForgeTech',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=OPGStudent1',
+  'https://api.dicebear.com/7.x/lorelei/svg?seed=ScienceFair',
+  'https://api.dicebear.com/7.x/micah/svg?seed=RoboticsClub',
+  'https://api.dicebear.com/7.x/adventurer/svg?seed=MUNLeader',
+  'https://api.dicebear.com/7.x/big-smile/svg?seed=Class11Leader',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=QuantumCoder',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=DwarkaScholar',
+  'https://api.dicebear.com/7.x/micah/svg?seed=MathOlympiad',
+  'https://api.dicebear.com/7.x/lorelei/svg?seed=DebateCaptain',
+  'https://api.dicebear.com/7.x/adventurer/svg?seed=OPGStar',
+  'https://api.dicebear.com/7.x/big-smile/svg?seed=ChessChampion'
+];
 
 export const ProfileView: React.FC = () => {
   const {
@@ -43,8 +62,31 @@ export const ProfileView: React.FC = () => {
     setActiveTab
   } = useApp();
 
-  const student = selectedStudentForProfile || currentUser;
-  const isOwnProfile = student && currentUser ? student.id === currentUser.id : false;
+  const isOwnProfile = !selectedStudentForProfile || (currentUser ? selectedStudentForProfile.id === currentUser.id : false);
+  const student = (isOwnProfile && currentUser) ? currentUser : (selectedStudentForProfile || currentUser);
+
+  // Avatar Customizer state
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [customAvatarInput, setCustomAvatarInput] = useState('');
+  const [avatarTab, setAvatarTab] = useState<'preset' | 'upload' | 'url'>('preset');
+
+  const handleAvatarFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Please choose an image under 5MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        updateCurrentUserProfile({ avatar: result });
+        setIsAvatarModalOpen(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Answered questions and contributions
   const studentAnswers = (answers || []).filter(a => a.authorId === student?.id);
@@ -247,22 +289,36 @@ export const ProfileView: React.FC = () => {
 
       {/* Main Profile Header Card */}
       <div className="rounded-3xl p-6 sm:p-8 bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-xs relative overflow-hidden">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4 sm:gap-6">
-            <div className="relative">
+            <div className="relative group shrink-0">
               <img
                 src={student.avatar}
                 alt={student.name}
-                className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-blue-100 dark:bg-blue-950/60 object-cover shadow-sm"
+                className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-blue-100 dark:bg-blue-950/60 object-cover shadow-sm transition-transform group-hover:scale-[1.02]"
                 referrerPolicy="no-referrer"
               />
               {student.isVerified && (
                 <div
-                  className="absolute -bottom-1 -right-1 p-1 bg-white dark:bg-slate-900 rounded-full shadow-xs"
+                  className="absolute -bottom-1 -right-1 p-1 bg-white dark:bg-slate-900 rounded-full shadow-xs z-10"
                   title="Verified Student"
                 >
                   <CheckCircle2 className="w-5 h-5 text-blue-500 fill-blue-50" />
                 </div>
+              )}
+              {isOwnProfile && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomAvatarInput(student.avatar);
+                    setIsAvatarModalOpen(true);
+                  }}
+                  className="absolute inset-0 rounded-3xl bg-black/55 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white cursor-pointer z-20 backdrop-blur-[2px]"
+                  title="Customize Avatar Image"
+                >
+                  <Camera className="w-5 h-5 mb-0.5" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Edit</span>
+                </button>
               )}
             </div>
 
@@ -429,31 +485,31 @@ export const ProfileView: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
-            {isOwnProfile ? (
-              <button
-                onClick={() => setIsOnboardingOpen(true)}
-                className="w-full sm:w-auto py-2 px-4 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-1.5 shadow-sm transition-all"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>Edit Profile</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => openDirectMessageWith(student)}
-                className="w-full sm:w-auto py-2 px-4 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-1.5 shadow-sm transition-all"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>Send Message</span>
-              </button>
-            )}
-          </div>
+        {/* Action buttons (Positioned cleanly directly above About Me section) */}
+        <div className="mt-5 pt-4 border-t border-[var(--border-color)]/60 flex items-center justify-end gap-2.5 flex-wrap">
+          {isOwnProfile ? (
+            <button
+              onClick={() => setIsOnboardingOpen(true)}
+              className="w-full sm:w-auto py-2 px-4 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+            >
+              <Edit3 className="w-3.5 h-3.5 shrink-0" />
+              <span>Edit Profile</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => openDirectMessageWith(student)}
+              className="w-full sm:w-auto py-2 px-4 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+            >
+              <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+              <span>Send Message</span>
+            </button>
+          )}
         </div>
 
         {/* Bio */}
-        <div className="mt-6 pt-6 border-t border-[var(--border-color)]/70">
+        <div className="mt-4 pt-4 border-t border-[var(--border-color)]/70">
           <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
             About Me
           </h2>
@@ -475,7 +531,7 @@ export const ProfileView: React.FC = () => {
                   Skills & Proficiencies
                 </h2>
                 <p className="text-xs text-[var(--text-muted)]">
-                  Self-reported proficiencies and verified talents
+                  Student proficiencies and skills
                 </p>
               </div>
 
@@ -549,48 +605,43 @@ export const ProfileView: React.FC = () => {
             )}
 
             {/* Categorized Skills display */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {(student.skills || []).map((skill, idx) => (
-                <div
-                  key={idx}
-                  className="p-3 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex items-center justify-between gap-3 group"
-                >
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-[var(--text-primary)] truncate">
-                        {skill.name}
-                      </span>
-                      {skill.verified ? (
-                        <span
-                          className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold"
-                        >
-                          Verified
+            {(!student.skills || student.skills.length === 0) ? (
+              <div className="p-6 text-center text-xs text-[var(--text-muted)] rounded-2xl bg-[var(--bg-subtle)]/50 border border-dashed border-[var(--border-color)]">
+                No skills listed on profile yet. {isOwnProfile && 'Click "Add Skill" above to showcase your abilities!'}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[500px] overflow-y-auto pr-1">
+                {student.skills.map((skill, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex items-center justify-between gap-3 group hover:border-blue-400/40 transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-[var(--text-primary)] truncate">
+                          {skill.name}
                         </span>
-                      ) : (
-                        <span className="text-[9px] text-[var(--text-muted)] opacity-70">
-                          (Self-Reported)
-                        </span>
-                      )}
+                      </div>
+                      <div className="text-[11px] text-[var(--text-muted)] flex items-center gap-1.5 mt-0.5">
+                        <span className="font-medium text-blue-600 dark:text-blue-400">{skill.level}</span>
+                        <span>·</span>
+                        <span>{skill.category}</span>
+                      </div>
                     </div>
-                    <div className="text-[11px] text-[var(--text-muted)] flex items-center gap-1.5 mt-0.5">
-                      <span className="font-medium text-blue-600 dark:text-blue-400">{skill.level}</span>
-                      <span>·</span>
-                      <span>{skill.category}</span>
-                    </div>
-                  </div>
 
-                  {isOwnProfile && (
-                    <button
-                      onClick={() => removeSkillFromCurrent(skill.name)}
-                      className="text-[var(--text-muted)] hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                      title="Remove skill"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
+                    {isOwnProfile && (
+                      <button
+                        onClick={() => removeSkillFromCurrent(skill.name)}
+                        className="text-[var(--text-muted)] hover:text-red-500 opacity-70 sm:opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer shrink-0"
+                        title="Remove skill"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Projects & Peer Contributions */}
@@ -636,19 +687,19 @@ export const ProfileView: React.FC = () => {
                       proj.rawProject ? 'hover:border-blue-400/60 cursor-pointer group' : ''
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                      <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                             {proj.title}
                           </h3>
                           {proj.isOwner && (
-                            <span className="text-[10px] font-extrabold px-2 py-0.2 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
+                            <span className="text-[10px] font-extrabold px-2 py-0.2 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-300 dark:border-blue-700 shrink-0">
                               👑 Project Owner & Lead
                             </span>
                           )}
                           {proj.category && (
-                            <span className="text-[10px] font-semibold px-2 py-0.2 rounded-md bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border-color)]">
+                            <span className="text-[10px] font-semibold px-2 py-0.2 rounded-md bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border-color)] shrink-0">
                               {proj.category}
                             </span>
                           )}
@@ -656,7 +707,7 @@ export const ProfileView: React.FC = () => {
                       </div>
 
                       <span
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 self-start sm:self-auto ${
                           proj.status === 'completed'
                             ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
                             : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
@@ -668,12 +719,12 @@ export const ProfileView: React.FC = () => {
 
                     <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{proj.description}</p>
 
-                    <div className="flex items-center justify-between pt-1 text-[11px]">
-                      <span className="font-semibold text-purple-700 dark:text-purple-300">
+                    <div className="flex items-center justify-between pt-1 text-[11px] gap-2 flex-wrap">
+                      <span className="font-semibold text-purple-700 dark:text-purple-300 shrink-0">
                         Role: {proj.role}
                       </span>
                       {proj.rawProject && (
-                        <span className="font-medium text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform">
+                        <span className="font-medium text-blue-600 dark:text-blue-400 group-hover:translate-x-0.5 transition-transform shrink-0">
                           Manage & View Team →
                         </span>
                       )}
@@ -1052,6 +1103,169 @@ export const ProfileView: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Avatar Customization Modal */}
+      {isAvatarModalOpen && isOwnProfile && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+          <div className="w-full max-w-md bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-3xl p-6 shadow-2xl space-y-5 animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--border-color)]">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                  <Camera className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[var(--text-primary)]">
+                    Customize Profile Image
+                  </h3>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Pick a preset, upload a photo, or paste an image URL
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAvatarModalOpen(false)}
+                className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Current Preview */}
+            <div className="flex items-center gap-4 p-3.5 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+              <img
+                src={customAvatarInput || student.avatar}
+                alt="Avatar preview"
+                className="w-16 h-16 rounded-2xl bg-blue-100 dark:bg-blue-900 object-cover ring-2 ring-blue-500/40 shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <span className="text-xs font-bold text-[var(--text-primary)] block">Live Preview</span>
+                <span className="text-[11px] text-[var(--text-muted)] block truncate">
+                  {currentUser?.name || student?.name} · {currentUser?.grade || student?.grade}
+                </span>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setAvatarTab('preset')}
+                className={`flex-1 py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                  avatarTab === 'preset'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                Presets
+              </button>
+              <button
+                type="button"
+                onClick={() => setAvatarTab('upload')}
+                className={`flex-1 py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                  avatarTab === 'upload'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                Upload File
+              </button>
+              <button
+                type="button"
+                onClick={() => setAvatarTab('url')}
+                className={`flex-1 py-1.5 rounded-lg transition-all text-center cursor-pointer ${
+                  avatarTab === 'url'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                Image URL
+              </button>
+            </div>
+
+            {/* Tab 1: Presets Grid */}
+            {avatarTab === 'preset' && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-4 gap-2.5 max-h-48 overflow-y-auto p-1">
+                  {PRESET_AVATARS.map((url, pIdx) => (
+                    <button
+                      key={pIdx}
+                      type="button"
+                      onClick={() => setCustomAvatarInput(url)}
+                      className={`p-1.5 rounded-2xl border transition-all cursor-pointer hover:scale-105 ${
+                        customAvatarInput === url
+                          ? 'border-blue-500 bg-blue-500/10 ring-2 ring-blue-500/30'
+                          : 'border-[var(--border-color)] hover:border-blue-400/50 bg-[var(--bg-subtle)]'
+                      }`}
+                    >
+                      <img src={url} alt={`Preset ${pIdx + 1}`} className="w-12 h-12 rounded-xl mx-auto object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tab 2: Upload File */}
+            {avatarTab === 'upload' && (
+              <div className="p-6 rounded-2xl border-2 border-dashed border-[var(--border-color)] hover:border-blue-500/50 text-center space-y-3 bg-[var(--bg-subtle)]/50 transition-colors">
+                <Upload className="w-8 h-8 text-blue-500 mx-auto" />
+                <div>
+                  <label htmlFor="avatar-file-input" className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                    Click to choose photo from device
+                  </label>
+                  <p className="text-[11px] text-[var(--text-muted)] mt-0.5">PNG, JPG, SVG or WebP up to 5MB</p>
+                </div>
+                <input
+                  id="avatar-file-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarFileUpload}
+                  className="hidden"
+                />
+              </div>
+            )}
+
+            {/* Tab 3: Paste URL */}
+            {avatarTab === 'url' && (
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-[var(--text-secondary)] block">
+                  Direct Image Web Address (URL)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://images.unsplash.com/photo-..."
+                  value={customAvatarInput}
+                  onChange={e => setCustomAvatarInput(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border-color)]">
+              <button
+                type="button"
+                onClick={() => setIsAvatarModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (customAvatarInput.trim()) {
+                    updateCurrentUserProfile({ avatar: customAvatarInput.trim() });
+                  }
+                  setIsAvatarModalOpen(false);
+                }}
+                className="px-5 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs cursor-pointer transition-all"
+              >
+                Save Image
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

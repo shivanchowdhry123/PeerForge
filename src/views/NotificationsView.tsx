@@ -66,31 +66,31 @@ export const NotificationsView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap shrink-0">
           {userNotifications.length > 0 && (
             <button
               onClick={clearAllNotifications}
-              className="px-3.5 py-2 rounded-xl bg-[var(--bg-subtle)] hover:bg-red-500/10 text-[var(--text-muted)] hover:text-red-500 border border-[var(--border-color)] text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              className="px-3.5 py-2 rounded-xl bg-[var(--bg-subtle)] hover:bg-red-500/10 text-[var(--text-muted)] hover:text-red-500 border border-[var(--border-color)] text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-3.5 h-3.5 shrink-0" />
               <span>Clear All</span>
             </button>
           )}
           <button
             onClick={markNotificationsAsRead}
-            className="px-4 py-2 rounded-xl bg-[var(--bg-subtle)] hover:bg-[var(--border-color)]/60 text-[var(--text-primary)] border border-[var(--border-color)] text-xs font-semibold flex items-center gap-1.5 transition-colors"
+            className="px-4 py-2 rounded-xl bg-[var(--bg-subtle)] hover:bg-[var(--border-color)]/60 text-[var(--text-primary)] border border-[var(--border-color)] text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer"
           >
-            <CheckCheck className="w-3.5 h-3.5" />
+            <CheckCheck className="w-3.5 h-3.5 shrink-0" />
             <span>Mark All Read</span>
           </button>
         </div>
       </div>
 
       {/* Filter tabs */}
-      <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] w-fit">
+      <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] w-fit flex-wrap">
         <button
           onClick={() => setFilter('all')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
             filter === 'all'
               ? 'bg-white dark:bg-slate-800 text-[var(--text-primary)] shadow-2xs'
               : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -100,7 +100,7 @@ export const NotificationsView: React.FC = () => {
         </button>
         <button
           onClick={() => setFilter('unread')}
-          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
             filter === 'unread'
               ? 'bg-white dark:bg-slate-800 text-[var(--text-primary)] shadow-2xs'
               : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'

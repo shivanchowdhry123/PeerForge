@@ -191,16 +191,16 @@ export const ContactUsView: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center justify-between pt-1 gap-3 flex-wrap">
                   <p className="text-[11px] text-[var(--text-muted)] flex items-center gap-1">
-                    <ShieldAlert className="w-3.5 h-3.5 text-blue-500" />
+                    <ShieldAlert className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                     <span>Dispatched exclusively to developer accounts.</span>
                   </p>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors"
+                    className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors shrink-0 cursor-pointer"
                   >
-                    <Send className="w-3.5 h-3.5" />
+                    <Send className="w-3.5 h-3.5 shrink-0" />
                     <span>Send to Developers</span>
                   </button>
                 </div>
@@ -230,15 +230,15 @@ export const ContactUsView: React.FC = () => {
         <div className="mt-10 p-6 sm:p-8 rounded-3xl bg-[var(--bg-surface)] border-2 border-blue-500/30 shadow-md space-y-6 animate-in fade-in">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border-color)]">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-xs">
-                <Inbox className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                <Inbox className="w-5 h-5 shrink-0" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-base sm:text-lg font-extrabold text-[var(--text-primary)]">
                     Developer Inbox & Submissions Console
                   </h2>
-                  <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-[10px] font-bold">
+                  <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 text-[10px] font-bold shrink-0">
                     Developer Only
                   </span>
                 </div>
@@ -249,10 +249,10 @@ export const ContactUsView: React.FC = () => {
             </div>
 
             {/* Filter buttons */}
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap shrink-0">
               <button
                 onClick={() => setInboxFilter('all')}
-                className={`px-3 py-1 rounded-xl text-xs font-semibold transition-colors ${
+                className={`px-3 py-1 rounded-xl text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
                   inboxFilter === 'all'
                     ? 'bg-blue-600 text-white'
                     : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--border-color)]'
@@ -262,7 +262,7 @@ export const ContactUsView: React.FC = () => {
               </button>
               <button
                 onClick={() => setInboxFilter('new')}
-                className={`px-3 py-1 rounded-xl text-xs font-semibold transition-colors ${
+                className={`px-3 py-1 rounded-xl text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
                   inboxFilter === 'new'
                     ? 'bg-amber-600 text-white'
                     : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--border-color)]'
@@ -272,7 +272,7 @@ export const ContactUsView: React.FC = () => {
               </button>
               <button
                 onClick={() => setInboxFilter('reviewed')}
-                className={`px-3 py-1 rounded-xl text-xs font-semibold transition-colors ${
+                className={`px-3 py-1 rounded-xl text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
                   inboxFilter === 'reviewed'
                     ? 'bg-indigo-600 text-white'
                     : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--border-color)]'
@@ -282,7 +282,7 @@ export const ContactUsView: React.FC = () => {
               </button>
               <button
                 onClick={() => setInboxFilter('resolved')}
-                className={`px-3 py-1 rounded-xl text-xs font-semibold transition-colors ${
+                className={`px-3 py-1 rounded-xl text-xs font-semibold transition-colors shrink-0 cursor-pointer ${
                   inboxFilter === 'resolved'
                     ? 'bg-emerald-600 text-white'
                     : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:bg-[var(--border-color)]'

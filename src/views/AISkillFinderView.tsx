@@ -257,22 +257,22 @@ export const AISkillFinderView: React.FC = () => {
               >
                 <div className="space-y-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
                       <img
                         src={res.student.avatar}
                         alt={res.student.name}
-                        className="w-12 h-12 rounded-2xl object-cover bg-[var(--bg-subtle)] border border-[var(--border-color)]"
+                        className="w-12 h-12 rounded-2xl object-cover bg-[var(--bg-subtle)] border border-[var(--border-color)] shrink-0"
                       />
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h3 className="text-sm font-bold text-[var(--text-primary)] truncate">
                             {res.student.name}
                           </h3>
                           {res.student.isVerified && (
-                            <ShieldCheck className="w-4 h-4 text-blue-500" />
+                            <ShieldCheck className="w-4 h-4 text-blue-500 shrink-0" />
                           )}
                         </div>
-                        <p className="text-xs text-[var(--text-muted)]">
+                        <p className="text-xs text-[var(--text-muted)] truncate">
                           {res.student.grade} · Section {res.student.section}
                         </p>
                       </div>
@@ -309,7 +309,7 @@ export const AISkillFinderView: React.FC = () => {
                         return (
                           <span
                             key={sIdx}
-                            className={`px-2.5 py-1 rounded-xl text-[11px] font-medium border ${
+                            className={`px-2.5 py-1 rounded-xl text-[11px] font-medium border shrink-0 ${
                               isMatch
                                 ? 'bg-purple-600 text-white border-purple-600 shadow-2xs'
                                 : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-[var(--border-color)]'
@@ -323,30 +323,30 @@ export const AISkillFinderView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-[var(--border-color)] flex items-center justify-between gap-2">
+                <div className="pt-3 border-t border-[var(--border-color)] flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
                   <button
                     onClick={() => {
                       setSelectedStudentForProfile(res.student);
                       setActiveTab('profile');
                     }}
-                    className="flex-1 py-2 px-3 rounded-xl bg-[var(--bg-subtle)] hover:bg-[var(--border-color)]/50 text-[var(--text-primary)] font-semibold text-xs transition-colors text-center"
+                    className="flex-1 min-w-[80px] py-2 px-3 rounded-xl bg-[var(--bg-subtle)] hover:bg-[var(--border-color)]/50 text-[var(--text-primary)] font-semibold text-xs transition-colors text-center shrink-0 cursor-pointer"
                   >
                     View Profile
                   </button>
 
                   <button
                     onClick={() => setInviteStudentModal({ isOpen: true, student: res.student })}
-                    className="py-2 px-3 rounded-xl bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 text-purple-700 dark:text-purple-300 font-semibold text-xs transition-colors flex items-center gap-1"
+                    className="py-2 px-3 rounded-xl bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 text-purple-700 dark:text-purple-300 font-semibold text-xs transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
                   >
-                    <UserPlus className="w-3.5 h-3.5" />
+                    <UserPlus className="w-3.5 h-3.5 shrink-0" />
                     <span>Invite</span>
                   </button>
 
                   <button
                     onClick={() => openDirectMessageWith(res.student)}
-                    className="flex-1 py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                    className="flex-1 min-w-[90px] py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-xs shrink-0 cursor-pointer"
                   >
-                    <MessageSquare className="w-3.5 h-3.5" />
+                    <MessageSquare className="w-3.5 h-3.5 shrink-0" />
                     <span>Message</span>
                   </button>
                 </div>

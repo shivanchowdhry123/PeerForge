@@ -105,7 +105,7 @@ export const DiscoverStudentsView: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] mb-1">
+          <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] mb-1 flex-wrap">
             <span>OPG World School</span>
             <span>·</span>
             <span>Student Talent Directory</span>
@@ -122,18 +122,18 @@ export const DiscoverStudentsView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('ai-finder')}
-          className="px-4 py-2.5 rounded-xl bg-purple-600/10 hover:bg-purple-600/20 text-purple-700 dark:text-purple-300 border border-purple-500/20 text-xs font-semibold flex items-center gap-2 self-start sm:self-auto transition-all cursor-pointer backdrop-blur-md"
+          className="px-4 py-2.5 rounded-xl bg-purple-600/10 hover:bg-purple-600/20 text-purple-700 dark:text-purple-300 border border-purple-500/20 text-xs font-semibold flex items-center gap-2 self-start sm:self-auto transition-all cursor-pointer backdrop-blur-md shrink-0"
         >
-          <Sparkles className="w-4 h-4 text-purple-500" />
+          <Sparkles className="w-4 h-4 text-purple-500 shrink-0" />
           <span>AI Match Finder</span>
         </button>
       </div>
 
       {/* Filter and Search Bar */}
       <div className="p-5 rounded-3xl bg-[var(--bg-surface)]/85 border border-[var(--border-color)] space-y-4 shadow-xs backdrop-blur-md">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+        <div className="flex flex-col gap-3">
+          <div className="relative flex-1 min-w-[240px]">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] shrink-0" />
             <input
               id="discover-search-input"
               type="text"
@@ -149,7 +149,7 @@ export const DiscoverStudentsView: React.FC = () => {
             <select
               value={selectedGrade}
               onChange={e => setSelectedGrade(e.target.value)}
-              className="px-3 py-2 text-xs font-medium rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none cursor-pointer"
+              className="px-3 py-2 text-xs font-medium rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none cursor-pointer shrink-0"
             >
               <option value="All">All Grades</option>
               <option value="Grade 9">Grade 9</option>
@@ -162,7 +162,7 @@ export const DiscoverStudentsView: React.FC = () => {
             <select
               value={selectedCategory}
               onChange={e => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 text-xs font-medium rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none cursor-pointer"
+              className="px-3 py-2 text-xs font-medium rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none cursor-pointer shrink-0"
             >
               <option value="All">All Skill Domains</option>
               <option value="Technical">Technical</option>
@@ -175,7 +175,7 @@ export const DiscoverStudentsView: React.FC = () => {
             <select
               value={selectedAvailability}
               onChange={e => setSelectedAvailability(e.target.value)}
-              className="px-3 py-2 text-xs font-medium rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none cursor-pointer"
+              className="px-3 py-2 text-xs font-medium rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-[var(--text-primary)] focus:outline-none cursor-pointer shrink-0"
             >
               <option value="All">All Availabilities</option>
               <option value="Active & Seeking Projects">Seeking Projects</option>
@@ -186,10 +186,10 @@ export const DiscoverStudentsView: React.FC = () => {
             {hasActiveFilters && (
               <button
                 onClick={handleResetFilters}
-                className="p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] border border-[var(--border-color)] transition-colors cursor-pointer"
+                className="p-2 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-subtle)] border border-[var(--border-color)] transition-colors cursor-pointer shrink-0"
                 title="Reset filters"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-4 h-4 shrink-0" />
               </button>
             )}
           </div>
@@ -197,10 +197,10 @@ export const DiscoverStudentsView: React.FC = () => {
 
         {/* Quick Skill Tags Filter */}
         <div className="flex items-center gap-1.5 flex-wrap pt-2.5 border-t border-[var(--border-color)]/70 text-xs">
-          <span className="text-[11px] font-semibold text-[var(--text-muted)] mr-1">Popular Skills:</span>
+          <span className="text-[11px] font-semibold text-[var(--text-muted)] mr-1 shrink-0">Popular Skills:</span>
           <button
             onClick={() => setSelectedSkillTag('All')}
-            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 ${
               selectedSkillTag === 'All'
                 ? 'bg-blue-600 text-white shadow-xs font-semibold'
                 : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -212,7 +212,7 @@ export const DiscoverStudentsView: React.FC = () => {
             <button
               key={tag}
               onClick={() => setSelectedSkillTag(tag)}
-              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 ${
                 selectedSkillTag === tag
                   ? 'bg-blue-600 text-white shadow-xs font-semibold'
                   : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -232,56 +232,32 @@ export const DiscoverStudentsView: React.FC = () => {
             className="rounded-3xl p-6 bg-[var(--bg-surface)]/85 hover:bg-[var(--bg-surface)] border border-[var(--border-color)] hover:border-blue-400/50 dark:hover:border-blue-500/50 transition-all duration-200 shadow-xs hover:shadow-md hover:-translate-y-1 flex flex-col justify-between space-y-4 backdrop-blur-md"
           >
             <div>
-              {/* Top row: Avatar, Name, Grade & Availability */}
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="relative shrink-0">
-                    <img
-                      src={student.avatar}
-                      alt={student.name}
-                      className="w-13 h-13 rounded-2xl bg-blue-100 dark:bg-blue-900 object-cover ring-2 ring-[var(--border-color)]"
-                      referrerPolicy="no-referrer"
-                    />
-                    {student.isVerified && (
-                      <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center ring-2 ring-[var(--bg-surface)]" title="Verified OPG Student">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="min-w-0">
-                    <h3 className="font-bold text-base text-[var(--text-primary)] leading-snug">
-                      {student.name}
-                    </h3>
-                    <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] mt-0.5">
-                      <span>{student.grade}</span>
-                      <span>·</span>
-                      <span>{student.role === 'teacher' ? 'Faculty' : `Sec ${student.section || 'A'}`}</span>
-                    </div>
-                  </div>
+              {/* Top row: Avatar, Name & Grade */}
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="relative shrink-0">
+                  <img
+                    src={student.avatar}
+                    alt={student.name}
+                    className="w-13 h-13 rounded-2xl bg-blue-100 dark:bg-blue-900 object-cover ring-2 ring-[var(--border-color)]"
+                    referrerPolicy="no-referrer"
+                  />
+                  {student.isVerified && (
+                    <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center ring-2 ring-[var(--bg-surface)]" title="Verified OPG Student">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    </span>
+                  )}
                 </div>
 
-                {/* Status indicator with explicit label */}
-                <span
-                  title={student.availability}
-                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border shrink-0 max-w-[110px] truncate ${
-                    student.availability === 'Active & Seeking Projects'
-                      ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
-                      : student.availability === 'Open to Collaborate'
-                      ? 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20'
-                      : student.availability === 'Focusing on Studies / Busy'
-                      ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20'
-                      : 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20'
-                  }`}
-                >
-                  {student.availability === 'Active & Seeking Projects'
-                    ? 'Seeking'
-                    : student.availability === 'Open to Collaborate'
-                    ? 'Open'
-                    : student.availability === 'Focusing on Studies / Busy'
-                    ? 'Studies'
-                    : student.availability || 'Active'}
-                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold text-base text-[var(--text-primary)] leading-snug truncate">
+                    {student.name}
+                  </h3>
+                  <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] mt-0.5">
+                    <span>{student.grade}</span>
+                    <span>·</span>
+                    <span>{student.role === 'teacher' ? 'Faculty' : `Sec ${student.section || 'A'}`}</span>
+                  </div>
+                </div>
               </div>
 
               {/* Bio */}
@@ -313,7 +289,7 @@ export const DiscoverStudentsView: React.FC = () => {
               </div>
 
               {/* Interests & Strengths */}
-              <div className="mt-3.5 pt-3 border-t border-[var(--border-color)]/60 text-[11px] text-[var(--text-muted)] space-y-1">
+              <div className="mt-3.5 pt-3 border-t border-[var(--border-color)]/60 text-[11px] text-[var(--text-muted)] space-y-1.5">
                 <div className="truncate">
                   <span className="font-semibold text-[var(--text-secondary)]">Interests: </span>
                   <span>{(student.interests || []).slice(0, 3).join(', ') || 'Robotics, Science, Debate'}</span>
@@ -322,32 +298,61 @@ export const DiscoverStudentsView: React.FC = () => {
                   <span className="font-semibold text-[var(--text-secondary)]">Strengths: </span>
                   <span>{(student.academicStrengths || []).slice(0, 3).join(', ') || 'Mathematics, Computer Science'}</span>
                 </div>
+                <div className="pt-1">
+                  <span
+                    title={student.availability}
+                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border w-fit inline-flex items-center gap-1.5 ${
+                      student.availability === 'Active & Seeking Projects'
+                        ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20'
+                        : student.availability === 'Open to Collaborate'
+                        ? 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20'
+                        : student.availability === 'Focusing on Studies / Busy'
+                        ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20'
+                        : 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20'
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        student.availability === 'Active & Seeking Projects'
+                          ? 'bg-emerald-500 animate-pulse'
+                          : student.availability === 'Open to Collaborate'
+                          ? 'bg-blue-500'
+                          : student.availability === 'Focusing on Studies / Busy'
+                          ? 'bg-amber-500'
+                          : 'bg-purple-500'
+                      }`}
+                    />
+                    <span>{student.availability || 'Active'}</span>
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="pt-3.5 border-t border-[var(--border-color)] flex items-center gap-2">
-              <button
-                onClick={() => {
-                  setSelectedStudentForProfile(student);
-                  setActiveTab('profile');
-                }}
-                className="flex-1 py-2 px-3 rounded-xl text-xs font-semibold bg-[var(--bg-subtle)] hover:bg-[var(--bg-muted)] text-[var(--text-primary)] border border-[var(--border-color)] transition-colors text-center cursor-pointer"
-              >
-                Profile
-              </button>
-              <button
-                onClick={() => setInviteStudentModal({ isOpen: true, student })}
-                className="p-2 rounded-xl bg-purple-600/10 hover:bg-purple-600/20 text-purple-700 dark:text-purple-300 border border-purple-500/20 transition-colors cursor-pointer"
-                title="Invite to your project"
-              >
-                <UserPlus className="w-4 h-4" />
-              </button>
+            <div className="pt-3.5 border-t border-[var(--border-color)] flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setSelectedStudentForProfile(student);
+                    setActiveTab('profile');
+                  }}
+                  className="flex-1 py-2 px-3 rounded-xl text-xs font-semibold bg-[var(--bg-subtle)] hover:bg-[var(--bg-muted)] text-[var(--text-primary)] border border-[var(--border-color)] transition-colors text-center cursor-pointer"
+                >
+                  Profile
+                </button>
+                <button
+                  onClick={() => setInviteStudentModal({ isOpen: true, student })}
+                  className="p-2 rounded-xl bg-purple-600/10 hover:bg-purple-600/20 text-purple-700 dark:text-purple-300 border border-purple-500/20 transition-colors cursor-pointer shrink-0"
+                  title="Invite to your project"
+                >
+                  <UserPlus className="w-4 h-4 shrink-0" />
+                </button>
+              </div>
               <button
                 onClick={() => openDirectMessageWith(student)}
-                className="py-2 px-3.5 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+                className="w-full py-2 px-3.5 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
               >
-                <MessageSquare className="w-3.5 h-3.5" />
+                <MessageSquare className="w-3.5 h-3.5 shrink-0" />
                 <span>Message</span>
               </button>
             </div>

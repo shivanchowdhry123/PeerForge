@@ -99,9 +99,9 @@ export function sanitizeStudentForDb(student: StudentProfile): Record<string, an
     },
     avatar: sanitizeAvatarUrl(student.avatar, student.name),
     bio: student.bio ? student.bio.trim().substring(0, 1000) : '',
-    skills: (student.skills || []).slice(0, 20),
-    interests: (student.interests || []).slice(0, 15),
-    academicStrengths: (student.academicStrengths || []).slice(0, 10),
-    achievements: (student.achievements || []).slice(0, 15)
+    skills: (student.skills || []).slice(0, 100),
+    interests: (student.interests || []).slice(0, 50),
+    academicStrengths: (student.academicStrengths || []).slice(0, 50),
+    achievements: (student.achievements || []).slice(0, 50)
   };
 }

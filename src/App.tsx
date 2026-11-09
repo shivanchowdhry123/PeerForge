@@ -143,29 +143,29 @@ const MainLayout: React.FC = () => {
         {/* Central Content Viewport (Expands across full remaining width beside sidebar) */}
         <main className="flex-1 w-full min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto">
           {/* Mobile Top Header Indicator */}
-          <div className="md:hidden flex items-center justify-between pb-3 mb-4 border-b border-[var(--border-color)]">
+          <div className="md:hidden flex items-center justify-between pb-3 mb-4 border-b border-[var(--border-color)] gap-2">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--bg-surface)] text-xs font-semibold text-[var(--text-primary)] border border-[var(--border-color)] shadow-xs hover:border-[var(--border-hover)] transition-all cursor-pointer"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[var(--bg-surface)] text-xs font-semibold text-[var(--text-primary)] border border-[var(--border-color)] shadow-xs hover:border-[var(--border-hover)] transition-all cursor-pointer shrink-0"
             >
-              <Menu className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <Menu className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
               <span>Menu</span>
             </button>
-            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider truncate shrink-0">
               {activeTab.replace('-', ' ')}
             </span>
           </div>
 
           {/* Deactivation Status Alert */}
           {currentUser?.isDeactivated && (
-            <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200 backdrop-blur-sm">
-              <div className="flex items-center gap-2.5">
+            <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200 backdrop-blur-sm flex-wrap sm:flex-nowrap">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
                 <span className="font-medium">Your profile is currently deactivated and hidden from peer directories.</span>
               </div>
               <button
                 onClick={reactivateOwnAccount}
-                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors shrink-0 shadow-xs"
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors shrink-0 shadow-xs cursor-pointer"
               >
                 Reactivate Account Now
               </button>
@@ -174,10 +174,10 @@ const MainLayout: React.FC = () => {
 
           {/* Pending Teacher Verification Notice Banner */}
           {currentUser?.role === 'teacher' && !currentUser?.isApproved && (
-            <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200 backdrop-blur-sm animate-in fade-in">
-              <div className="flex items-start gap-2.5">
+            <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200 backdrop-blur-sm animate-in fade-in flex-wrap sm:flex-nowrap">
+              <div className="flex items-start gap-2.5 min-w-0 flex-1">
                 <ShieldAlert className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <span className="font-bold block sm:inline mr-1.5">Faculty Verification Pending:</span>
                   <span className="text-amber-800 dark:text-amber-300">
                     You are not approved right now and so to limit your abilities you are registered as a student. To approve your account contact any registered peer teacher/ PeerForge Team.
@@ -201,57 +201,57 @@ const MainLayout: React.FC = () => {
       <nav className="md:hidden sticky bottom-0 z-40 w-full border-t border-[var(--border-color)] bg-[var(--bg-surface)]/95 backdrop-blur-xl px-2 py-1.5 flex items-center justify-around shadow-lg">
         <button
           onClick={() => setActiveTab('home')}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-medium transition-all cursor-pointer ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-medium transition-all cursor-pointer shrink-0 ${
             activeTab === 'home'
               ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-500/10'
               : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
           }`}
         >
-          <Home className="w-4 h-4" />
+          <Home className="w-4 h-4 shrink-0" />
           <span>Home</span>
         </button>
 
         <button
           onClick={() => setActiveTab('discover')}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-medium transition-all cursor-pointer ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-medium transition-all cursor-pointer shrink-0 ${
             activeTab === 'discover'
               ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-500/10'
               : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
           }`}
         >
-          <Compass className="w-4 h-4" />
+          <Compass className="w-4 h-4 shrink-0" />
           <span>Directory</span>
         </button>
 
         <button
           onClick={() => setActiveTab('projects')}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-medium transition-all cursor-pointer ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-medium transition-all cursor-pointer shrink-0 ${
             activeTab === 'projects'
               ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-500/10'
               : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
           }`}
         >
-          <FolderKanban className="w-4 h-4" />
+          <FolderKanban className="w-4 h-4 shrink-0" />
           <span>Projects</span>
         </button>
 
         <button
           onClick={() => setActiveTab('qa')}
-          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-medium transition-all cursor-pointer ${
+          className={`flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-medium transition-all cursor-pointer shrink-0 ${
             activeTab === 'qa'
               ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-500/10'
               : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
           }`}
         >
-          <HelpCircle className="w-4 h-4" />
+          <HelpCircle className="w-4 h-4 shrink-0" />
           <span>Doubts</span>
         </button>
 
         <button
           onClick={() => setMobileMenuOpen(true)}
-          className="flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
+          className="flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-xl text-[10px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-all cursor-pointer shrink-0"
         >
-          <Menu className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <Menu className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
           <span>Menu</span>
         </button>
       </nav>

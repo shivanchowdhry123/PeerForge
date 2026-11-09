@@ -205,9 +205,9 @@ export const MessagesView: React.FC = () => {
 
         <button
           onClick={() => setIsNewChatModalOpen(true)}
-          className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-2"
+          className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-all shadow-xs flex items-center justify-center gap-2 shrink-0 cursor-pointer"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 shrink-0" />
           <span>New Chat / Create Group</span>
         </button>
       </div>

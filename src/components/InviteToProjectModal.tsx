@@ -111,19 +111,19 @@ export const InviteToProjectModal: React.FC = () => {
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[var(--border-color)]/60">
+            <div className="flex flex-wrap items-center justify-end gap-2.5 pt-3 border-t border-[var(--border-color)]/60">
               <button
                 type="button"
                 onClick={() => setInviteStudentModal({ isOpen: false, student: null })}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-[var(--bg-subtle)] hover:bg-[var(--bg-muted)] transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-[var(--bg-subtle)] hover:bg-[var(--bg-muted)] transition-colors shrink-0 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center gap-2 shadow-xs hover:shadow-md transition-all shrink-0 cursor-pointer"
               >
-                <Send className="w-3.5 h-3.5" />
+                <Send className="w-3.5 h-3.5 shrink-0" />
                 <span>Send Collaboration Invite</span>
               </button>
             </div>

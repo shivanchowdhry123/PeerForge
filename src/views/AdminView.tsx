@@ -173,19 +173,19 @@ export const AdminView: React.FC = () => {
       </div>
 
       {/* Console Tab Selector */}
-      <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-2 text-xs font-semibold overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-2 text-xs font-semibold overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab('approvals')}
-          className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+          className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer shrink-0 ${
             activeTab === 'approvals'
               ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-200 font-bold'
               : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
           }`}
         >
-          <UserCheck className="w-3.5 h-3.5 text-amber-600" />
+          <UserCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
           <span>Pending Teacher Approvals</span>
           {pendingTeachers.length > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full bg-amber-600 text-white text-[10px] font-bold">
+            <span className="px-1.5 py-0.2 rounded-full bg-amber-600 text-white text-[10px] font-bold shrink-0">
               {pendingTeachers.length}
             </span>
           )}
@@ -193,7 +193,7 @@ export const AdminView: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('students')}
-          className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+          className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
             activeTab === 'students'
               ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300'
               : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -203,21 +203,20 @@ export const AdminView: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('contact')}
-          className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+          className={`px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer shrink-0 ${
             activeTab === 'contact'
               ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300'
               : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
           }`}
         >
-          <HelpCircle className="w-3.5 h-3.5" />
+          <HelpCircle className="w-3.5 h-3.5 shrink-0" />
           <span>Contact & Support Messages</span>
           {newInquiriesCount > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-[10px] font-bold">
+            <span className="px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-[10px] font-bold shrink-0">
               {newInquiriesCount}
             </span>
           )}
         </button>
-
       </div>
 
       {/* Tab 0: Pending Teacher Approvals */}

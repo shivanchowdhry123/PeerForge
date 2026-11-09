@@ -73,8 +73,8 @@ export const HomeView: React.FC = () => {
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-blue-600/20 via-transparent to-transparent opacity-80 dark:opacity-100 pointer-events-none" />
 
           {/* Banner Text with Sleek Glass Accent & Anti-Slop Typography */}
-          <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6 text-white">
-            <div className="space-y-2.5">
+          <div className="relative z-10 flex flex-col gap-4 text-white w-full">
+            <div className="space-y-2.5 w-full">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 dark:bg-white/5 border border-white/20 dark:border-white/10 backdrop-blur-md text-[11px] font-semibold tracking-wider uppercase text-blue-200 dark:text-blue-300 shadow-2xs">
                 <span>OPG World School · Dwarka</span>
                 <span aria-hidden="true" className="text-white/40">/</span>
@@ -83,12 +83,12 @@ export const HomeView: React.FC = () => {
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight drop-shadow-xs">
                 PeerForge Directory
               </h1>
-              <p className="text-xs sm:text-sm text-slate-200 dark:text-slate-300/90 max-w-2xl leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-200 dark:text-slate-300/90 w-full leading-relaxed">
                 A collaborative student directory designed by Class 11 students at OPG World School for Classes 9 through 12. Connect for STEM projects, national Olympiads, MUN debate teams, and peer doubt-solving.
               </p>
             </div>
 
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex flex-wrap items-center justify-end gap-3 shrink-0 pt-1">
               <button
                 onClick={() => setActiveTab('ai-finder')}
                 className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-purple-600/30 dark:shadow-purple-900/40 border border-purple-400/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
@@ -184,50 +184,50 @@ export const HomeView: React.FC = () => {
       </div>
 
 
-      {/* Quick Navigation Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Quick Navigation Cards (2x2 grid on mobile/tablet, 4 columns on large screens) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <button
           onClick={() => setActiveTab('ai-finder')}
-          className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-surface)]/80 hover:bg-[var(--bg-surface)] border border-[var(--border-color)] hover:border-purple-400/50 dark:hover:border-purple-500/50 transition-all text-left shadow-xs hover:shadow-md hover:-translate-y-0.5 group cursor-pointer backdrop-blur-md"
+          className="p-3.5 sm:p-5 rounded-2xl bg-[var(--bg-surface)]/80 hover:bg-[var(--bg-surface)] border border-[var(--border-color)] hover:border-purple-400/50 dark:hover:border-purple-500/50 transition-all text-left shadow-xs hover:shadow-md hover:-translate-y-0.5 group cursor-pointer backdrop-blur-md"
         >
-          <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-            <Sparkles className="w-5 h-5" />
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-2.5 sm:mb-3 group-hover:scale-110 transition-transform">
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">Find Teammates</h3>
-          <p className="text-[11px] text-[var(--text-muted)] mt-1">AI skill matchmaking</p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-0.5 sm:mt-1">AI skill matchmaking</p>
         </button>
 
         <button
           onClick={() => setActiveTab('projects')}
-          className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-surface)]/80 hover:bg-[var(--bg-surface)] border border-[var(--border-color)] hover:border-blue-400/50 dark:hover:border-blue-500/50 transition-all text-left shadow-xs hover:shadow-md hover:-translate-y-0.5 group cursor-pointer backdrop-blur-md"
+          className="p-3.5 sm:p-5 rounded-2xl bg-[var(--bg-surface)]/80 hover:bg-[var(--bg-surface)] border border-[var(--border-color)] hover:border-blue-400/50 dark:hover:border-blue-500/50 transition-all text-left shadow-xs hover:shadow-md hover:-translate-y-0.5 group cursor-pointer backdrop-blur-md"
         >
-          <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-            <FolderKanban className="w-5 h-5" />
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-2.5 sm:mb-3 group-hover:scale-110 transition-transform">
+            <FolderKanban className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">Start Project</h3>
-          <p className="text-[11px] text-[var(--text-muted)] mt-1">Recruit peer roles</p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-0.5 sm:mt-1">Recruit peer roles</p>
         </button>
 
         <button
           onClick={() => setActiveTab('qa')}
-          className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-surface)]/80 hover:bg-[var(--bg-surface)] border border-[var(--border-color)] hover:border-emerald-400/50 dark:hover:border-emerald-500/50 transition-all text-left shadow-xs hover:shadow-md hover:-translate-y-0.5 group cursor-pointer backdrop-blur-md"
+          className="p-3.5 sm:p-5 rounded-2xl bg-[var(--bg-surface)]/80 hover:bg-[var(--bg-surface)] border border-[var(--border-color)] hover:border-emerald-400/50 dark:hover:border-emerald-500/50 transition-all text-left shadow-xs hover:shadow-md hover:-translate-y-0.5 group cursor-pointer backdrop-blur-md"
         >
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-            <HelpCircle className="w-5 h-5" />
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2.5 sm:mb-3 group-hover:scale-110 transition-transform">
+            <HelpCircle className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">Ask Doubt</h3>
-          <p className="text-[11px] text-[var(--text-muted)] mt-1">Questions & answers</p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-0.5 sm:mt-1">Questions & answers</p>
         </button>
 
         <button
           onClick={() => setActiveTab('discover')}
-          className="p-4 sm:p-5 rounded-2xl bg-[var(--bg-surface)]/80 hover:bg-[var(--bg-surface)] border border-[var(--border-color)] hover:border-indigo-400/50 dark:hover:border-indigo-500/50 transition-all text-left shadow-xs hover:shadow-md hover:-translate-y-0.5 group cursor-pointer backdrop-blur-md"
+          className="p-3.5 sm:p-5 rounded-2xl bg-[var(--bg-surface)]/80 hover:bg-[var(--bg-surface)] border border-[var(--border-color)] hover:border-indigo-400/50 dark:hover:border-indigo-500/50 transition-all text-left shadow-xs hover:shadow-md hover:-translate-y-0.5 group cursor-pointer backdrop-blur-md"
         >
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-            <Compass className="w-5 h-5" />
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-2.5 sm:mb-3 group-hover:scale-110 transition-transform">
+            <Compass className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <h3 className="text-xs sm:text-sm font-bold text-[var(--text-primary)]">Browse Directory</h3>
-          <p className="text-[11px] text-[var(--text-muted)] mt-1">Verified abilities & grades</p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-0.5 sm:mt-1">Verified abilities & grades</p>
         </button>
       </div>
 
@@ -237,7 +237,7 @@ export const HomeView: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           {/* Open Collaboration Opportunities */}
           <div className="p-6 rounded-3xl bg-[var(--bg-surface)]/85 border border-[var(--border-color)] space-y-4 shadow-xs backdrop-blur-md">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h3 className="text-base font-bold text-[var(--text-primary)]">
                   Open Project Opportunities
@@ -248,7 +248,7 @@ export const HomeView: React.FC = () => {
               </div>
               <button
                 onClick={() => setActiveTab('projects')}
-                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer self-start sm:self-auto shrink-0"
               >
                 <span>View all</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -312,7 +312,7 @@ export const HomeView: React.FC = () => {
 
           {/* Recent Q&A Discussions */}
           <div className="p-6 rounded-3xl bg-[var(--bg-surface)]/85 border border-[var(--border-color)] space-y-4 shadow-xs backdrop-blur-md">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h3 className="text-base font-bold text-[var(--text-primary)]">
                   Academic Q&A & Doubts
@@ -323,7 +323,7 @@ export const HomeView: React.FC = () => {
               </div>
               <button
                 onClick={() => setActiveTab('qa')}
-                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer self-start sm:self-auto shrink-0"
               >
                 <span>View all</span>
                 <ChevronRight className="w-3.5 h-3.5" />
